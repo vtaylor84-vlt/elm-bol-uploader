@@ -163,15 +163,6 @@ const App: React.FC = () => {
     return () => { window.removeEventListener('online', handleStatus); window.removeEventListener('offline', handleStatus); clearInterval(inv); };
   }, []);
 
-  // DIAGNOSTIC TOOL INTEGRATION
-  const checkConnection = () => {
-    if (!GOOGLE_SCRIPT_URL) {
-      alert("⚠️ CONNECTION BLANK: REACT_APP_GAS_URL is missing. Please trigger 'Clear Cache & Deploy' in Netlify.");
-    } else {
-      alert("✅ CONNECTION FOUND: App is linked to Google Apps Script.");
-    }
-  };
-
   const handleManualSync = async () => {
     if (vaultEntries.length === 0 || isSyncing) return;
     setIsSyncing(true); playSound(440, 'sine', 0.2);
@@ -217,23 +208,52 @@ const App: React.FC = () => {
   };
 
   if (isLocked) return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 text-white font-sans">
-      <button onClick={() => { let s=0; const inv=setInterval(()=>{ s++; setAuthStage(s); playSound(200+(s*100),'sine',0.1); if(s>=4){ clearInterval(inv); playSound(800,'square',0.3,0.1); setTimeout(()=>setIsLocked(false),500); }},600); }} className="w-40 h-40 border-2 border-zinc-800 rounded-full flex items-center justify-center animate-pulse shadow-2xl">
-        <span className="text-5xl">🛡️</span>
-      </button>
-      <p className="mt-8 text-[10px] font-black uppercase tracking-[0.5em] text-zinc-500 text-center animate-pulse">Click to Connect</p>
-      
-      {/* DIAGNOSTIC BUTTON */}
-      <button onClick={checkConnection} className="mt-12 px-6 py-2 border border-zinc-800 rounded-full text-[9px] font-black uppercase tracking-widest text-zinc-600 hover:text-white transition-colors">Verify Connection</button>
+    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 text-white font-sans overflow-hidden relative">
+      {/* TOP RIGHT LIVE STATUS */}
+      <div className="absolute top-6 right-6 flex items-center gap-2 px-4 py-2 bg-zinc-900/50 rounded-full border border-zinc-800">
+        <div className={`w-2 h-2 rounded-full animate-pulse ${GOOGLE_SCRIPT_URL ? 'bg-green-500 shadow-[0_0_8px_#22c55e]' : 'bg-red-500 shadow-[0_0_8px_#ef4444]'}`}></div>
+        <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400">
+          {GOOGLE_SCRIPT_URL ? 'Uplink: Online' : 'Uplink: Offline'}
+        </span>
+      </div>
 
-      <div className="mt-10 space-y-3 font-mono text-[10px]">
-        {['ENCRYPTING...', 'VERIFYING...', 'HANDSHAKE SECURE'].map((l, i) => (<div key={i} className={authStage > i ? (i===2?'text-green-500':'text-blue-400') : 'text-zinc-800'}>{`> ${l}`}</div>))}
+      <div className="relative group">
+        {/* ENHANCED SHIELD UI */}
+        <div className="absolute -inset-4 bg-blue-500/20 rounded-full blur-2xl group-hover:bg-blue-500/40 transition-all duration-1000"></div>
+        <button 
+          onClick={() => { 
+            let s=0; 
+            const inv=setInterval(()=>{ 
+              s++; setAuthStage(s); 
+              playSound(200+(s*100),'sine',0.1); 
+              if(s>=4){ clearInterval(inv); playSound(800,'square',0.3,0.1); setTimeout(()=>setIsLocked(false),500); }
+            },600); 
+          }} 
+          className="relative w-48 h-48 border-4 border-blue-500/30 rounded-full flex flex-col items-center justify-center bg-zinc-950 shadow-[0_0_50px_rgba(59,130,246,0.2)] hover:shadow-[0_0_80px_rgba(59,130,246,0.4)] hover:border-blue-400 transition-all duration-500 active:scale-90"
+        >
+          <span className="text-6xl mb-2 drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]">🛡️</span>
+          <span className="text-[10px] font-black text-blue-400 tracking-[0.2em] animate-pulse">INITIALIZE</span>
+        </button>
+      </div>
+
+      <p className="mt-12 text-[10px] font-black uppercase tracking-[0.5em] text-zinc-500 text-center">
+        Tap Shield to Unlock Terminal
+      </p>
+      
+      <div className="mt-10 space-y-3 font-mono text-[10px] w-48">
+        {['ENCRYPTING...', 'VERIFYING...', 'HANDSHAKE SECURE'].map((l, i) => (
+          <div key={i} className={`flex items-center gap-2 ${authStage > i ? (i===2?'text-green-500':'text-blue-400') : 'text-zinc-800'}`}>
+            <span>{authStage > i ? '●' : '○'}</span>
+            <span className="tracking-widest">{`> ${l}`}</span>
+          </div>
+        ))}
       </div>
     </div>
   );
 
   return (
     <div className={`min-h-screen transition-colors duration-1000 ${solarMode ? 'bg-white text-black' : 'bg-[#020202] text-zinc-100'} pb-24 font-sans relative`}>
+      {/* STATUS BAR REMAINS FOR OPERATIONAL FEEDBACK */}
       <div className={`fixed top-0 left-0 right-0 py-2 text-center text-[9px] font-black uppercase tracking-[0.3em] z-[100] transition-all ${vaultEntries.length > 0 ? 'bg-orange-600' : isOffline ? 'bg-red-600' : 'bg-green-600 opacity-0'}`}>
         {vaultEntries.length > 0 ? `SYNC REQUIRED: ${vaultEntries.length} LOADS PENDING` : 'TERMINAL ENCRYPTED & SECURE'}
       </div>
@@ -244,7 +264,17 @@ const App: React.FC = () => {
         <div className="flex justify-between items-center mb-4">
            <button onClick={()=>{ setCompany(''); setDriverName(''); setLoadNum(''); setBolNum(''); setPuCity(''); setPuState(''); setDelCity(''); setDelState(''); setBolProtocol(''); setUploadedFiles([]); playSound(100,'square',0.2); }} 
              className={`px-4 py-2 border-2 rounded-full font-black uppercase text-[9px] tracking-widest transition-all ${isAnyFieldFilled ? 'bg-green-600 border-green-400 text-white shadow-xl' : 'border-zinc-800 text-zinc-600 opacity-50'}`}>Clear All</button>
-           <button onClick={() => setSolarMode(!solarMode)} className={`p-3 rounded-full border-2 font-black uppercase text-[9px] tracking-widest ${solarMode ? 'bg-black text-white' : 'bg-white text-black'}`}>{solarMode ? '🌙 Midnight' : '☀️ Solar'}</button>
+           
+           {/* RE-INTEGRATED TOP STATUS IN ACTIVE MODE */}
+           <div className="flex items-center gap-3">
+             <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border ${solarMode ? 'bg-zinc-100 border-zinc-200' : 'bg-zinc-900 border-zinc-800'}`}>
+                <div className={`w-1.5 h-1.5 rounded-full ${GOOGLE_SCRIPT_URL ? 'bg-green-500 shadow-[0_0_5px_#22c55e]' : 'bg-red-500 animate-pulse'}`}></div>
+                <span className={`text-[8px] font-black uppercase tracking-widest ${solarMode ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                  {GOOGLE_SCRIPT_URL ? 'Uplink' : 'No Link'}
+                </span>
+             </div>
+             <button onClick={() => setSolarMode(!solarMode)} className={`p-3 rounded-full border-2 font-black uppercase text-[9px] tracking-widest ${solarMode ? 'bg-black text-white' : 'bg-white text-black'}`}>{solarMode ? '🌙 Midnight' : '☀️ Solar'}</button>
+           </div>
         </div>
         <div className={`w-full min-h-[220px] rounded-[3.5rem] border-2 transition-all duration-1000 flex items-center justify-center ${company ? 'bg-black shadow-2xl' : 'bg-zinc-900/50 border-zinc-800'}`} style={{ borderColor: company ? themeHex : '' }}>
            {!company && <h1 className="text-5xl font-black italic tracking-tighter uppercase text-zinc-700">QLM<span className="text-zinc-500">CONNECT</span></h1>}
@@ -253,6 +283,7 @@ const App: React.FC = () => {
         </div>
       </header>
 
+      {/* REST OF THE APP SECTIONS (01-05) CONTINUE HERE UNCHANGED... */}
       <div className="max-w-4xl mx-auto space-y-8 px-4 font-sans">
         <section className={`bg-zinc-900/40 border-2 rounded-[2.5rem] p-8 shadow-2xl border-zinc-800`} style={{ borderColor: (company && driverName) ? themeHex : '' }}>
           <h3 className={`text-[11px] font-black uppercase tracking-[0.6em] mb-8 ${(company && driverName) ? themeColor : 'text-zinc-500'}`}>[ 01 ] Identification</h3>
