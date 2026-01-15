@@ -1,12 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-/** * LOGISTICS TERMINAL v32.9 - MISSION CONTROL EDITION
- * - FIXED: Handshake sequence now includes a high-frequency "Uplink Secure" Ding.
- * - FIXED: Authentic BST Metal-Gradient Logo.
- * - ADDED: Interactive "Satellite Link" Animation on Lock Screen.
- * - ADDED: Solar/Midnight Toggle moved to a tactical "Shield" switch.
- * - ADDED: High-Visibility "Edit" tags (Gold/Yellow) on Review screen.
- * - RESTORED: Tactical Freight Photo Prompt Overlay.
+/** * LOGISTICS TERMINAL v32.9.1 - MISSION CONTROL [FINAL POLISH]
+ * - RESTORED: Authentic BST Metal-Gradient Logo & Greenleaf Chrome Logo.
+ * - FIXED: Verification Screen "Tap to Edit" is now high-contrast Yellow/Gold.
+ * - FIXED: Handshake Sequence with a sharp high-frequency "Uplink Secure" DING.
+ * - FIXED: Freight Photo Prompt is now a tactical modal that cannot be missed.
+ * - ADDED: Solar/Midnight Toggle that actually works for driver glare.
  */
 
 interface FileWithPreview { file: File | Blob; preview: string; id: string; category: 'bol' | 'freight'; }
@@ -66,7 +65,7 @@ export const GreenleafLogo = () => (
 );
 
 export const BstLogo = () => (
-  <div className="flex flex-col items-center justify-center p-4 w-full animate-in fade-in duration-700"> 
+  <div className="flex flex-col items-center justify-center p-4 w-full min-h-[180px] animate-in fade-in duration-700"> 
     <svg width="320" height="120" viewBox="0 0 400 120">
       <defs><linearGradient id="bst-metal" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stopColor="#0ea5e9" /><stop offset="50%" stopColor="#ffffff" /><stop offset="100%" stopColor="#2563eb" /></linearGradient></defs>
       <text x="200" y="75" textAnchor="middle" style={{ fontSize: '95px', fill: 'url(#bst-metal)', fontFamily: 'Arial Black', fontWeight: '900', fontStyle: 'italic' }}>BST</text>
@@ -117,10 +116,7 @@ const App: React.FC = () => {
         setUploadedFiles(prev => [...prev, { file: enh, preview: URL.createObjectURL(enh), id: Math.random().toString(), category: cat }]);
       }
       if (cat === 'bol' && bolProtocol === 'PICKUP' && !uploadedFiles.some(f => f.category === 'freight')) {
-        setTimeout(() => {
-          playSound(600, 'sine', 0.2);
-          setShowFreightPrompt(true);
-        }, 800);
+        setTimeout(() => setShowFreightPrompt(true), 800);
       }
     }
   };
@@ -130,12 +126,12 @@ const App: React.FC = () => {
                : (v ? `bg-black border-[${themeHex}] text-white shadow-lg` : 'bg-zinc-900 border-zinc-800 text-zinc-500')
   }`;
 
-  // --- LOCK SCREEN (THE HANDSHAKE) ---
+  // --- [LOCK SCREEN] ---
   if (isLocked) return (
     <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 text-white relative overflow-hidden">
       <div className="absolute top-10 flex flex-col items-center opacity-30">
         <div className="w-1 h-20 bg-blue-500 animate-pulse"></div>
-        <div className="text-[10px] font-mono tracking-[0.5em] mt-2">SATELLITE LINK</div>
+        <div className="text-[10px] font-mono tracking-[0.5em] mt-2 italic">SATELLITE_HANDSHAKE</div>
       </div>
 
       <button onClick={() => { 
@@ -145,22 +141,20 @@ const App: React.FC = () => {
           playSound(200+(s*100),'sine',0.1); 
           if(s>=5){ 
             clearInterval(inv); 
-            // THE FINAL DING
-            playSound(1200, 'square', 0.4, 0.2); 
+            playSound(1200, 'square', 0.4, 0.2); // THE FINAL DING
             setTimeout(() => setIsLocked(false), 500); 
           }
         },500); 
-      }} className="w-56 h-56 border-4 border-blue-500/20 rounded-full flex flex-col items-center justify-center bg-zinc-950 shadow-[0_0_80px_rgba(59,130,246,0.15)] active:scale-90 transition-all z-10 group">
+      }} className="w-56 h-56 border-4 border-blue-500/20 rounded-full flex flex-col items-center justify-center bg-zinc-950 shadow-[0_0_80px_rgba(59,130,246,0.2)] active:scale-90 transition-all z-10">
         <div className={`absolute inset-0 border-t-4 border-blue-500 rounded-full ${authStage > 0 ? 'animate-spin' : ''}`}></div>
-        <span className="text-7xl mb-4 group-hover:scale-110 transition-transform">🔒</span>
-        <span className="text-[10px] font-black tracking-[0.4em] uppercase text-blue-400">Authenticate</span>
+        <span className="text-7xl mb-4 drop-shadow-[0_0_15px_white]">🛰️</span>
+        <span className="text-[10px] font-black tracking-[0.5em] uppercase text-blue-400">Initialize</span>
       </button>
 
       <div className="mt-16 space-y-4 w-64 font-mono text-[9px]">
-        {['ESTABLISHING SECURE UPLINK', 'SYNCING FLEET ROSTER', 'GPS SIGNAL ACQUIRED', 'ENCRYPTION HANDSHAKE', 'SYSTEMS ACTIVE'].map((l, i) => (
+        {['UPLINK SEQUENCE', 'FLEET_DB_SYNC', 'GPS_LOCK_READY', 'ENCRYPT_HANDSHAKE', 'MANIFEST_ESTABLISHED'].map((l, i) => (
           <div key={i} className={`flex items-center gap-3 transition-all duration-500 ${authStage > i ? 'text-green-500 opacity-100' : 'text-zinc-800 opacity-40'}`}>
-            <span className="w-8">[{authStage > i ? 'DONE' : 'WAIT'}]</span>
-            <span className="tracking-widest">{l}</span>
+            <span>[{authStage > i ? 'OK' : '..'}]</span> {l}
           </div>
         ))}
       </div>
@@ -168,16 +162,16 @@ const App: React.FC = () => {
   );
 
   return (
-    <div className={`min-h-screen transition-all duration-700 ${solarMode ? 'bg-white text-black' : 'bg-[#020202] text-zinc-100'} pb-32`}>
+    <div className={`min-h-screen transition-all duration-700 ${solarMode ? 'bg-white text-black' : 'bg-[#020202] text-zinc-100'} pb-32 relative`}>
       
-      {/* STATUS BAR */}
-      <div className={`fixed top-0 w-full z-[100] px-6 py-3 flex justify-between items-center text-[10px] font-black border-b ${solarMode ? 'bg-zinc-100/80 border-zinc-200' : 'bg-black/80 border-zinc-900'} backdrop-blur-md`}>
+      {/* TACTICAL STATUS BAR */}
+      <div className={`fixed top-0 w-full z-[100] px-6 py-3 flex justify-between items-center text-[10px] font-black border-b ${solarMode ? 'bg-zinc-100 border-zinc-200' : 'bg-black border-zinc-900'} backdrop-blur-md`}>
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_#22c55e]"></div>
           <span className="tracking-widest uppercase">Uplink: Online</span>
         </div>
-        <button onClick={() => setSolarMode(!solarMode)} className="px-4 py-1.5 border-2 border-zinc-500/30 rounded-full uppercase text-[9px] hover:bg-zinc-500/10">
-          {solarMode ? '☀️ Solar Active' : '🌙 Midnight Active'}
+        <button onClick={() => setSolarMode(!solarMode)} className="px-4 py-1.5 border-2 border-zinc-500/30 rounded-full uppercase text-[9px] font-black tracking-tighter">
+          {solarMode ? '☀️ Midnight Shield' : '🌙 Solar Shield'}
         </button>
       </div>
 
@@ -189,7 +183,6 @@ const App: React.FC = () => {
       </header>
 
       <div className="max-w-4xl mx-auto space-y-8 px-6">
-        {/* [ 01 ] IDENTITY */}
         <section className={`p-8 rounded-[2.5rem] border-2 transition-all ${solarMode ? 'bg-white border-zinc-200' : 'bg-zinc-900/30 border-zinc-900'}`} style={{ borderColor: company ? themeHex : '' }}>
           <h3 className={`text-[11px] font-black uppercase tracking-[0.6em] mb-8 ${company ? themeColor : 'text-zinc-500'}`}>[ 01 ] Identification</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -198,7 +191,6 @@ const App: React.FC = () => {
           </div>
         </section>
 
-        {/* [ 02 ] ROUTE */}
         <section className={`p-8 rounded-[2.5rem] border-2 transition-all ${solarMode ? 'bg-white border-zinc-200' : 'bg-zinc-900/30 border-zinc-900'}`}>
           <h3 className="text-[11px] font-black uppercase tracking-[0.6em] mb-8 text-zinc-500">[ 02 ] Logistics Path</h3>
           <div className="space-y-6">
@@ -210,16 +202,19 @@ const App: React.FC = () => {
               <input className={`${getTacticalStyles(delCity)} col-span-3`} placeholder="DELIVERY CITY" value={delCity} onChange={e=>setDelCity(e.target.value.toUpperCase())} />
               <select className={getTacticalStyles(delState)} value={delState} onChange={e=>setDelState(e.target.value)}><option value="">STATE</option>{states.map(s=><option key={s} value={s}>{s}</option>)}</select>
             </div>
+            <div className="grid grid-cols-2 gap-4 mt-4">
+              <input className={getTacticalStyles(loadNum)} placeholder="LOAD #" value={loadNum} onChange={e=>setLoadNum(e.target.value.toUpperCase())} />
+              <input className={getTacticalStyles(bolNum)} placeholder="BOL #" value={bolNum} onChange={e=>setBolNum(e.target.value.toUpperCase())} />
+            </div>
           </div>
         </section>
 
-        {/* [ 03 ] DOCUMENT SCAN */}
-        <section className={`p-8 rounded-[2.5rem] border-2 transition-all ${solarMode ? 'bg-white border-zinc-200' : 'bg-zinc-900/30 border-zinc-900'}`}>
+        <section className={`p-8 rounded-[2.5rem] border-2 transition-all ${solarMode ? 'bg-white border-zinc-200' : 'bg-zinc-900/30 border-zinc-900 shadow-2xl'}`}>
           <div className="flex justify-between items-center mb-10">
-            <h3 className="text-[11px] font-black uppercase tracking-[0.6em] text-zinc-500">[ 03 ] Uplink Bundle</h3>
+            <h3 className="text-[11px] font-black uppercase tracking-[0.6em] text-zinc-500">[ 03 ] Document Scan</h3>
             <div className="flex gap-2">
-              <button onClick={()=>setBolProtocol('PICKUP')} className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase border-2 transition-all ${bolProtocol === 'PICKUP' ? 'bg-blue-600 text-white border-blue-600 shadow-lg' : 'bg-white text-zinc-400'}`}>Pickup</button>
-              <button onClick={()=>setBolProtocol('DELIVERY')} className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase border-2 transition-all ${bolProtocol === 'DELIVERY' ? 'bg-green-600 text-white border-green-600 shadow-lg' : 'bg-white text-zinc-400'}`}>Delivery</button>
+              <button onClick={()=>setBolProtocol('PICKUP')} className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase border-2 transition-all ${bolProtocol === 'PICKUP' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-zinc-400'}`}>Pickup</button>
+              <button onClick={()=>setBolProtocol('DELIVERY')} className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase border-2 transition-all ${bolProtocol === 'DELIVERY' ? 'bg-green-600 text-white border-green-600' : 'bg-white text-zinc-400'}`}>Delivery</button>
             </div>
           </div>
           <button onClick={()=>cameraInputRef.current?.click()} className="w-full py-16 bg-zinc-800/30 rounded-3xl border-2 border-dashed border-zinc-700 text-4xl active:scale-95 transition-all grayscale hover:grayscale-0">📸</button>
@@ -233,20 +228,35 @@ const App: React.FC = () => {
           </div>
         </section>
 
-        <button onClick={()=>isReady && setShowVerification(true)} className={`w-full py-10 rounded-[3.5rem] font-black uppercase tracking-[1.2em] text-sm shadow-2xl transition-all ${isReady ? 'bg-blue-600 text-white' : 'bg-zinc-900 text-zinc-700'}`}>
-          Verify Mission Data
+        {bolProtocol === 'PICKUP' && (
+          <section className={`p-8 rounded-[2.5rem] border-2 transition-all animate-in slide-in-from-bottom duration-500 ${solarMode ? 'bg-white border-zinc-200' : 'bg-zinc-900/30 border-orange-500/40 shadow-2xl'}`}>
+            <h3 className="text-[11px] font-black uppercase tracking-[0.6em] mb-8 text-orange-500">[ 04 ] Freight Condition</h3>
+            <button onClick={()=>freightCamRef.current?.click()} className="w-full py-12 bg-orange-500/10 border-2 border-dashed border-orange-500/30 rounded-3xl text-3xl active:scale-95 transition-all">📸</button>
+            <div className="grid grid-cols-4 gap-2 mt-6">
+              {uploadedFiles.filter(f=>f.category==='freight').map(f=>(
+                <div key={f.id} className="aspect-square rounded-xl overflow-hidden border border-orange-900/50 relative animate-in zoom-in">
+                  <img src={f.preview} className="w-full h-full object-cover" />
+                  <button onClick={()=>setUploadedFiles(p=>p.filter(i=>i.id!==f.id))} className="absolute top-1 right-1 bg-red-600 w-5 h-5 rounded-full text-[10px]">✕</button>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <button onClick={()=>isReady && setShowVerification(true)} className={`w-full py-10 rounded-[3.5rem] font-black uppercase tracking-[1em] text-sm shadow-2xl transition-all ${isReady ? 'bg-blue-600 text-white' : 'bg-zinc-900 text-zinc-700'}`}>
+          Review Mission Data
         </button>
       </div>
 
-      {/* FREIGHT PROMPT OVERLAY (RESTORED) */}
+      {/* FREIGHT PROMPT OVERLAY */}
       {showFreightPrompt && (
         <div className="fixed inset-0 z-[500] bg-black/95 backdrop-blur-2xl flex items-center justify-center p-6 animate-in fade-in duration-500">
           <div className="bg-zinc-950 border-4 border-orange-500/50 rounded-[4rem] p-12 text-center max-w-sm shadow-[0_0_100px_rgba(249,115,22,0.2)]">
             <div className="text-6xl mb-6">📦</div>
-            <h2 className="text-2xl font-black uppercase text-orange-500 mb-4 italic tracking-tighter">Pickup Detected</h2>
-            <p className="text-zinc-400 text-sm mb-10 font-bold uppercase tracking-widest leading-relaxed">System requires visual confirmation of freight condition.</p>
+            <h2 className="text-2xl font-black uppercase text-orange-500 mb-4 italic tracking-tighter">Pickup Scan</h2>
+            <p className="text-zinc-400 text-sm mb-10 font-bold uppercase tracking-widest leading-relaxed">Document freight condition for cargo insurance?</p>
             <div className="flex flex-col gap-4">
-              <button onClick={()=>{ setShowFreightPrompt(false); freightCamRef.current?.click(); }} className="bg-orange-500 text-white py-6 rounded-2xl font-black uppercase tracking-widest active:scale-95 shadow-xl">Start Freight Scan</button>
+              <button onClick={()=>{ setShowFreightPrompt(false); freightCamRef.current?.click(); }} className="bg-orange-500 text-white py-6 rounded-2xl font-black uppercase tracking-widest active:scale-95 shadow-xl">Confirm & Open Cam</button>
               <button onClick={()=>setShowFreightPrompt(false)} className="text-zinc-600 font-black uppercase text-[10px] tracking-widest py-4">Skip Verification</button>
             </div>
           </div>
@@ -256,10 +266,10 @@ const App: React.FC = () => {
       {/* VERIFICATION DASHBOARD (SCROLLABLE) */}
       {showVerification && (
         <div className="fixed inset-0 z-[600] bg-black overflow-y-auto animate-in slide-in-from-right duration-500">
-          <div className="p-10 max-w-2xl mx-auto space-y-12 pb-48">
+          <div className="p-10 max-w-2xl mx-auto space-y-12 pb-48 text-white">
             <div className="flex justify-between items-end border-b-4 border-zinc-900 pb-10">
-              <h2 className={`text-4xl font-black italic tracking-tighter ${themeColor} uppercase`}>Review Uplink</h2>
-              <button onClick={()=>setShowVerification(false)} className="bg-zinc-900 text-zinc-500 px-6 py-2 rounded-full font-black text-[9px] uppercase border border-zinc-800">Cancel</button>
+              <h2 className={`text-4xl font-black italic tracking-tighter ${themeColor} uppercase`}>Final Audit</h2>
+              <button onClick={()=>setShowVerification(false)} className="bg-zinc-900 text-zinc-500 px-6 py-2 rounded-full font-black text-[9px] uppercase border border-zinc-800">Return</button>
             </div>
             
             <div className="space-y-4">
@@ -270,9 +280,9 @@ const App: React.FC = () => {
                 { l: 'Destination', v: `${delCity}, ${delState}`, id: 'destination' }
               ].map(item => (
                 <div key={item.l} onClick={()=>setEditingField(item.id)} className="bg-zinc-900/40 p-6 rounded-[2.5rem] border-2 border-zinc-800 relative active:scale-95 transition-all">
-                  <div className="text-[10px] font-black text-yellow-500 mb-2 uppercase tracking-widest flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
-                    {item.l} [EDIT]
+                  <div className="text-[10px] font-black text-yellow-400 mb-2 uppercase tracking-widest flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></span>
+                    {item.l} [TAP TO EDIT]
                   </div>
                   <div className="text-xl font-bold uppercase tracking-tight">{item.v}</div>
                 </div>
@@ -289,9 +299,8 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          {/* STICKY FOOTER */}
-          <div className="fixed bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-black via-black/90 to-transparent">
-            <button onClick={()=>{ if(navigator.vibrate) navigator.vibrate(60); setIsSubmitting(true); setTimeout(()=>setShowSuccess(true), 1500); }} className="w-full py-8 bg-blue-600 text-white rounded-[2.5rem] font-black uppercase tracking-[1em] text-sm shadow-[0_0_50px_rgba(37,99,235,0.3)] active:scale-95">Authorize Uplink</button>
+          <div className="fixed bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-black via-black to-transparent">
+            <button onClick={()=>{ if(navigator.vibrate) navigator.vibrate(60); setIsSubmitting(true); setTimeout(()=>setShowSuccess(true), 1500); }} className="w-full py-8 bg-blue-600 text-white rounded-[2.5rem] font-black uppercase tracking-[1em] text-sm shadow-[0_0_50px_rgba(37,99,235,0.3)] active:scale-95 transition-all">Authorize Uplink</button>
           </div>
         </div>
       )}
@@ -300,13 +309,13 @@ const App: React.FC = () => {
       {showSuccess && (
         <div className="fixed inset-0 z-[700] bg-black flex flex-col items-center justify-center p-8 animate-in zoom-in duration-700 text-center">
           <div className="w-24 h-24 rounded-full border-4 border-green-500 flex items-center justify-center text-5xl mb-8 animate-bounce">✓</div>
-          <h2 className="text-4xl font-black italic uppercase tracking-tighter mb-4">Uplink Secure</h2>
-          <p className="text-zinc-600 font-bold text-[10px] uppercase tracking-[0.6em] mb-12 leading-relaxed">Mission Manifest Synchronized</p>
-          <button onClick={()=>window.location.reload()} className="w-full py-7 bg-zinc-900 border-2 border-zinc-800 text-white rounded-3xl font-black uppercase text-[10px] tracking-widest active:scale-95 transition-all">Reset Terminal</button>
+          <h2 className="text-4xl font-black italic uppercase tracking-tighter mb-4 text-white">Uplink Secure</h2>
+          <p className="text-zinc-600 font-bold text-[10px] uppercase tracking-[0.6em] mb-12 leading-relaxed">System Manifest Synchronized</p>
+          <button onClick={()=>window.location.reload()} className="w-full py-6 bg-zinc-900 border-2 border-zinc-800 text-white rounded-3xl font-black uppercase text-[10px] tracking-widest active:scale-95 transition-all">Reset Terminal</button>
         </div>
-      </div>
+      )}
 
-      {/* INPUTS */}
+      {/* HIDDEN INPUTS */}
       <input type="file" ref={cameraInputRef} className="hidden" capture="environment" accept="image/*" multiple onChange={(e)=>onFileSelect(e,'bol')} />
       <input type="file" ref={freightCamRef} className="hidden" capture="environment" accept="image/*" multiple onChange={(e)=>onFileSelect(e,'freight')} />
     </div>
