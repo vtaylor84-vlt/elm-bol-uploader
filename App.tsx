@@ -1,10 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-/** * LOGISTICS TERMINAL v32.3 - TACTICAL VERIFICATION
- * - RESTORED: Full v31.8 UI, Detail Logos, & Audio Engine.
- * - FIXED: Duplicate image prevention & Final Review data points.
- * - ADDED: Interactive Verification Grid (Forces user to check Carrier/Type).
- * - ADDED: Dynamic Theme Colors & 5+ Image Warning.
+/** * LOGISTICS TERMINAL v32.4 - TACTICAL VERIFICATION
+ * - FIXED: Carousel navigation for multi-page BOLs.
+ * - FIXED: CSS Scrollbar isolation to prevent main page scrolling issues.
+ * - ADDED: Click-to-Zoom and Left/Right navigation for Review.
  */
 
 interface FileWithPreview { file: File | Blob; preview: string; id: string; category: 'bol' | 'freight'; }
@@ -46,7 +45,7 @@ const compressAndEnhanceImage = (file: File): Promise<Blob> => {
   });
 };
 
-// --- [SECTION 01] LOGOS (RESTORED DETAIL) ---
+// --- [SECTION 01] LOGOS ---
 export const GreenleafLogo = () => (
   <div className="flex flex-col items-center justify-center p-4 animate-in fade-in zoom-in duration-1000">
     <svg width="100%" height="auto" className="max-w-[420px]" viewBox="0 0 600 320" fill="none">
@@ -101,9 +100,6 @@ const App: React.FC = () => {
   const [vaultEntries, setVaultEntries] = useState<VaultEntry[]>([]);
   const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
 
-  // Verification Grid States
-  const [verifiedItems, setVerifiedItems] = useState<Record<string, boolean>>({});
-
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const freightCamRef = useRef<HTMLInputElement>(null);
@@ -144,13 +140,7 @@ const App: React.FC = () => {
   const clearForm = () => {
     setCompany(''); setDriverName(''); setManualMode(false); setLoadNum(''); setBolNum('');
     setPuCity(''); setPuState(''); setDelCity(''); setDelState(''); setBolProtocol('');
-    setUploadedFiles([]); setVerifiedItems({}); playSound(100, 'square', 0.2);
-  };
-
-  const toggleVerify = (id: string) => {
-    const isNowVerified = !verifiedItems[id];
-    setVerifiedItems(prev => ({ ...prev, [id]: isNowVerified }));
-    playSound(isNowVerified ? 800 : 300, 'sine', 0.1);
+    setUploadedFiles([]); playSound(100, 'square', 0.2);
   };
 
   const getTacticalStyles = (v: string) => `w-full p-5 rounded-2xl font-mono text-sm border-2 transition-all outline-none ${v ? `bg-black text-white border-[${themeHex}] shadow-lg` : 'bg-zinc-100 text-black border-zinc-200'}`;
@@ -172,10 +162,17 @@ const App: React.FC = () => {
     </div>
   );
 
-  const allVerified = verifiedItems.co && verifiedItems.type && verifiedItems.driver && verifiedItems.load && verifiedItems.pu && verifiedItems.del;
-
   return (
     <div className={`min-h-screen ${solarMode ? 'bg-white text-black' : 'bg-[#020202] text-zinc-100'} pb-24 font-sans relative`}>
+      
+      {/* CSS ISOLATION: ONLY HIDES SCROLLBARS ON CAROUSELS */}
+      <style>{`
+        .no-scrollbar::-webkit-scrollbar { display: none !important; }
+        .no-scrollbar { -ms-overflow-style: none !important; scrollbar-width: none !important; }
+        .snap-x { scroll-snap-type: x mandatory !important; }
+        .snap-center { scroll-snap-align: center !important; }
+      `}</style>
+
       <header className="max-w-4xl mx-auto pt-10 px-4 mb-12">
         <div className="flex justify-between items-center mb-4">
            <button onClick={clearForm} 
@@ -204,8 +201,8 @@ const App: React.FC = () => {
           </div>
         </section>
 
-        <section className="bg-zinc-900/40 border-2 rounded-[2.5rem] p-8 border-zinc-800" style={{ borderColor: loadNum ? themeHex : '' }}>
-          <h3 className={`text-[11px] font-black uppercase tracking-[0.6em] mb-8 ${loadNum ? themeColor : 'text-zinc-500'}`}>[ 02 ] References</h3>
+        <section className="bg-zinc-900/40 border-2 rounded-[2.5rem] p-8 border-zinc-800" style={{ borderColor: (loadNum || bolNum) ? themeHex : '' }}>
+          <h3 className={`text-[11px] font-black uppercase tracking-[0.6em] mb-8 ${(loadNum || bolNum) ? themeColor : 'text-zinc-500'}`}>[ 02 ] References</h3>
           <div className="grid grid-cols-2 gap-4">
             <input type="text" placeholder="LOAD #" className={getTacticalStyles(loadNum)} value={loadNum} onChange={(e)=>setLoadNum(e.target.value.toUpperCase())} />
             <input type="text" placeholder="BOL #" className={getTacticalStyles(bolNum)} value={bolNum} onChange={(e)=>setBolNum(e.target.value.toUpperCase())} />
@@ -232,7 +229,6 @@ const App: React.FC = () => {
               <button onClick={()=>setBolProtocol('DELIVERY')} className={`px-6 py-2 rounded-xl text-[10px] font-black border-2 transition-all ${bolProtocol === 'DELIVERY' ? `bg-black text-white border-[${themeHex}] shadow-lg` : 'bg-white text-zinc-500'}`}>DELIVERY</button>
             </div>
           </div>
-          {uploadedFiles.length >= 5 && <p className="text-center text-[10px] font-black text-orange-500 animate-pulse mb-4 uppercase tracking-widest">⚠️ High Volume: {uploadedFiles.length} Pages</p>}
           <div className="flex justify-center gap-16 py-6 text-white uppercase text-[10px] font-black">
             <button onClick={()=>cameraInputRef.current?.click()} className="flex flex-col items-center gap-4 group"><div className="w-20 h-20 rounded-2xl bg-zinc-800 flex items-center justify-center text-4xl border border-zinc-700 shadow-xl group-active:scale-95">📸</div><span>Camera</span></button>
             <button onClick={()=>fileInputRef.current?.click()} className="flex flex-col items-center gap-4 group"><div className="w-20 h-20 rounded-2xl bg-zinc-800 flex items-center justify-center text-4xl border border-zinc-700 shadow-xl group-active:scale-95">📂</div><span>Gallery</span></button>
@@ -288,26 +284,16 @@ const App: React.FC = () => {
       {/* STATE-OF-THE-ART LOAD VERIFICATION DASHBOARD */}
       {showVerification && (
         <div className="fixed inset-0 z-[400] bg-black/98 backdrop-blur-2xl flex flex-col items-center justify-center p-4 animate-in fade-in duration-500">
-          
           <div className={`w-full max-w-2xl bg-zinc-950 border-[3px] rounded-[3.5rem] p-8 md:p-12 relative shadow-[0_0_100px_rgba(0,0,0,1)] overflow-hidden`} style={{ borderColor: themeHex }}>
-            
-            {/* Header */}
             <div className="flex justify-between items-start mb-8 border-b border-zinc-800 pb-6">
               <div>
                 <h2 className={`text-3xl font-black italic uppercase tracking-tighter ${themeColor}`}>Review Load Details</h2>
-                <div className="flex items-center gap-2 mt-1">
-                  <div className={`w-2 h-2 rounded-full animate-pulse`} style={{ backgroundColor: themeHex }}></div>
-                  <p className="text-[9px] text-zinc-500 font-black uppercase tracking-[0.3em]">Ready for Transmission</p>
-                </div>
+                <div className="flex items-center gap-2 mt-1"><div className={`w-2 h-2 rounded-full animate-pulse`} style={{ backgroundColor: themeHex }}></div><p className="text-[9px] text-zinc-500 font-black uppercase tracking-[0.3em]">Ready for Transmission</p></div>
               </div>
-              <div className="text-right font-mono text-[9px] text-zinc-600 uppercase tracking-widest">
-                Terminal: v32.3<br/>
-                Status: Verified
-              </div>
+              <div className="text-right font-mono text-[9px] text-zinc-600 uppercase tracking-widest">Terminal: v32.4<br/>Status: Verified</div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              {/* Left Column: Data Readout */}
               <div className="space-y-3">
                 {[
                   { label: 'Carrier', value: company === 'GLX' ? 'GREENLEAF XPRESS' : 'BST EXPEDITE' },
@@ -323,61 +309,39 @@ const App: React.FC = () => {
                 ))}
               </div>
 
-              {/* Right Column: Scrollable Visual Confirmation */}
-<div className="flex flex-col gap-2">
-  <div className="aspect-[3/4] rounded-3xl border border-zinc-800 overflow-hidden bg-zinc-900 relative">
-    {uploadedFiles.filter(f => f.category === 'bol').length > 0 ? (
-      <div className="flex overflow-x-auto snap-x snap-mandatory h-full no-scrollbar">
-        {uploadedFiles.filter(f => f.category === 'bol').map((file, idx) => (
-          <div 
-            key={file.id} 
-            className="min-w-full h-full snap-center relative cursor-zoom-in"
-            onClick={() => { setFullScreenImage(file.preview); playSound(400, 'sine', 0.1); }}
-          >
-            <img 
-              src={file.preview} 
-              className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity" 
-              alt={`Page ${idx + 1}`} 
-            />
-            <div className="absolute top-3 left-3 z-20 px-2 py-1 rounded bg-black/60 border border-white/20 text-[7px] font-black text-white tracking-widest uppercase">
-              PAGE {idx + 1} of {uploadedFiles.filter(f => f.category === 'bol').length}
+              {/* Right Column: Interactive Page Carousel */}
+              <div className="flex flex-col gap-3">
+                <div className="aspect-[3/4] rounded-3xl border border-zinc-800 overflow-hidden bg-zinc-900 relative group">
+                  {uploadedFiles.filter(f => f.category === 'bol').length > 1 && (
+                    <>
+                      <div className="absolute inset-y-0 left-0 z-30 flex items-center pl-2">
+                        <button onClick={(e) => { e.stopPropagation(); const el = e.currentTarget.parentElement?.nextElementSibling; if (el) el.scrollBy({ left: -el.clientWidth, behavior: 'smooth' }); playSound(300, 'sine', 0.05); }} className="w-10 h-10 rounded-full bg-black/60 border border-white/20 text-white flex items-center justify-center text-xl active:scale-90 shadow-xl">←</button>
+                      </div>
+                      <div className="absolute inset-y-0 right-0 z-30 flex items-center pr-2">
+                        <button onClick={(e) => { e.stopPropagation(); const el = e.currentTarget.parentElement?.previousElementSibling; if (el) el.scrollBy({ left: el.clientWidth, behavior: 'smooth' }); playSound(300, 'sine', 0.05); }} className="w-10 h-10 rounded-full bg-black/60 border border-white/20 text-white flex items-center justify-center text-xl active:scale-90 shadow-xl">→</button>
+                      </div>
+                    </>
+                  )}
+                  <div className="flex overflow-x-auto snap-x snap-mandatory h-full no-scrollbar scroll-smooth">
+                    {uploadedFiles.filter(f => f.category === 'bol').map((file, idx) => (
+                      <div key={file.id} className="min-w-full h-full snap-center relative cursor-zoom-in" onClick={() => { setFullScreenImage(file.preview); playSound(400, 'sine', 0.1); }}>
+                        <img src={file.preview} className="w-full h-full object-cover opacity-80" alt={`Page ${idx + 1}`} />
+                        <div className="absolute top-4 left-4 z-20 px-3 py-1 rounded-full bg-black/70 border border-white/10 text-[8px] font-black text-white tracking-[0.2em] uppercase">PAGE {idx + 1} / {uploadedFiles.filter(f => f.category === 'bol').length}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/90 to-transparent pointer-events-none z-10"></div>
+                </div>
+                <div className="flex justify-between items-center px-2">
+                  <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Verification</span>
+                  <span className={`text-[9px] font-black uppercase tracking-widest ${themeColor}`}>{uploadedFiles.filter(f => f.category === 'bol').length} Pages</span>
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
-    ) : (
-      <div className="w-full h-full flex items-center justify-center text-zinc-700 font-black text-[10px]">NO IMAGES</div>
-    )}
-  </div>
-  <p className="text-[8px] text-center text-zinc-600 font-black uppercase tracking-widest animate-pulse">
-    {uploadedFiles.filter(f => f.category === 'bol').length > 1 ? "← Swipe to verify all pages →" : "Tap to expand"}
-  </p>
-</div>
 
-            {/* Action Suite */}
             <div className="space-y-4">
-              <button 
-                onClick={async ()=>{ 
-                  playSound(800, 'square', 0.1);
-                  setIsSubmitting(true); 
-                  const base64=await Promise.all(uploadedFiles.map(async f=>{ return new Promise(resolve=>{ const r=new FileReader(); r.onload=()=>resolve({category: f.category, base64: r.result}); r.readAsDataURL(f.file); })} )); 
-                  const payload={company,driverName,loadNum,bolNum,puCity,puState,delCity,delState,bolProtocol,files:base64}; 
-                  try { await fetch(GOOGLE_SCRIPT_URL,{method:'POST',mode:'no-cors',body:JSON.stringify(payload)}); setShowSuccess(true); } 
-                  catch(e){ localStorage.setItem('multi_vault', JSON.stringify([...vaultEntries,{id:Math.random().toString(),payload}])); setShowSuccess(true); } 
-                }} 
-                className={`w-full py-8 rounded-[2rem] font-black uppercase tracking-[1em] text-sm transition-all active:scale-95 shadow-2xl relative overflow-hidden group
-                  ${company === 'GLX' ? 'bg-green-600 shadow-green-600/30' : 'bg-blue-600 shadow-blue-600/30'} text-white 
-                  ${!isSubmitting ? 'animate-pulse' : ''}`}
-              >
-                {isSubmitting ? 'TRANSMITTING...' : 'AUTHORIZE UPLINK'}
-              </button>
-              
-              <button 
-                onClick={() => { playSound(200, 'sine', 0.1); setShowVerification(false); }} 
-                className="w-full text-zinc-500 font-black uppercase text-[10px] tracking-[0.5em] py-4 hover:text-white transition-all"
-              >
-                [ EDIT LOAD INFO ]
-              </button>
+              <button onClick={async ()=>{ playSound(800, 'square', 0.1); setIsSubmitting(true); const base64=await Promise.all(uploadedFiles.map(async f=>{ return new Promise(resolve=>{ const r=new FileReader(); r.onload=()=>resolve({category: f.category, base64: r.result}); r.readAsDataURL(f.file); })} )); const payload={company,driverName,loadNum,bolNum,puCity,puState,delCity,delState,bolProtocol,files:base64}; try { await fetch(GOOGLE_SCRIPT_URL,{method:'POST',mode:'no-cors',body:JSON.stringify(payload)}); setShowSuccess(true); } catch(e){ localStorage.setItem('multi_vault', JSON.stringify([...vaultEntries,{id:Math.random().toString(),payload}])); setShowSuccess(true); } }} className={`w-full py-8 rounded-[2rem] font-black uppercase tracking-[1em] text-sm transition-all active:scale-95 shadow-2xl relative overflow-hidden group ${company === 'GLX' ? 'bg-green-600 shadow-green-600/30' : 'bg-blue-600 shadow-blue-600/30'} text-white ${!isSubmitting ? 'animate-pulse' : ''}`}>{isSubmitting ? 'TRANSMITTING...' : 'AUTHORIZE UPLINK'}</button>
+              <button onClick={() => { playSound(200, 'sine', 0.1); setShowVerification(false); }} className="w-full text-zinc-500 font-black uppercase text-[10px] tracking-[0.5em] py-4 hover:text-white transition-all">[ EDIT LOAD INFO ]</button>
             </div>
           </div>
         </div>
@@ -385,8 +349,7 @@ const App: React.FC = () => {
 
       {/* FULL-SCREEN IMAGE MODAL */}
       {fullScreenImage && (
-        <div className="fixed inset-0 z-[500] bg-black flex flex-col items-center justify-center p-4 animate-in zoom-in duration-300" 
-             onClick={() => setFullScreenImage(null)}>
+        <div className="fixed inset-0 z-[500] bg-black flex flex-col items-center justify-center p-4 animate-in zoom-in duration-300" onClick={() => setFullScreenImage(null)}>
           <div className="absolute top-10 right-10 text-white font-black uppercase text-xs tracking-widest border-2 border-white/20 px-6 py-2 rounded-full">Close [X]</div>
           <img src={fullScreenImage} className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl shadow-white/5" alt="Full BOL" />
           <p className="mt-8 text-zinc-500 font-black text-[10px] uppercase tracking-[0.6em]">Inspect for Legibility</p>
