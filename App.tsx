@@ -99,7 +99,8 @@ const App: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [vaultEntries, setVaultEntries] = useState<VaultEntry[]>([]);
-
+  const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
+  
   // Verification Grid States
   const [verifiedItems, setVerifiedItems] = useState<Record<string, boolean>>({});
 
@@ -284,59 +285,68 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* STATE-OF-THE-ART MISSION CONTROL DASHBOARD */}
+      {/* STATE-OF-THE-ART LOAD VERIFICATION DASHBOARD */}
       {showVerification && (
         <div className="fixed inset-0 z-[400] bg-black/98 backdrop-blur-2xl flex flex-col items-center justify-center p-4 animate-in fade-in duration-500">
           
-          {/* Main Dashboard Container */}
           <div className={`w-full max-w-2xl bg-zinc-950 border-[3px] rounded-[3.5rem] p-8 md:p-12 relative shadow-[0_0_100px_rgba(0,0,0,1)] overflow-hidden`} style={{ borderColor: themeHex }}>
             
-            {/* Top Status Bar */}
-            <div className="flex justify-between items-start mb-10 border-b border-zinc-800 pb-6">
+            {/* Header */}
+            <div className="flex justify-between items-start mb-8 border-b border-zinc-800 pb-6">
               <div>
-                <h2 className={`text-3xl font-black italic uppercase tracking-tighter ${themeColor}`}>Manifest Review</h2>
+                <h2 className={`text-3xl font-black italic uppercase tracking-tighter ${themeColor}`}>Review Load Details</h2>
                 <div className="flex items-center gap-2 mt-1">
                   <div className={`w-2 h-2 rounded-full animate-pulse`} style={{ backgroundColor: themeHex }}></div>
-                  <p className="text-[9px] text-zinc-500 font-black uppercase tracking-[0.3em]">System Ready for Transmission</p>
+                  <p className="text-[9px] text-zinc-500 font-black uppercase tracking-[0.3em]">Ready for Transmission</p>
                 </div>
               </div>
-              <div className="text-right font-mono text-[10px] text-zinc-600">
-                TERMINAL_V32.3<br/>
-                {new Date().toLocaleTimeString()}
+              <div className="text-right font-mono text-[9px] text-zinc-600 uppercase tracking-widest">
+                Terminal: v32.3<br/>
+                Status: Verified
               </div>
             </div>
 
-            {/* Data Grid: High Scannability */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-              {[
-                { label: 'Carrier', value: company === 'GLX' ? 'GREENLEAF XPRESS' : 'BST EXPEDITE', icon: '🏢' },
-                { label: 'Driver', value: driverName, icon: '🆔' },
-                { label: 'Ref #', value: loadNum || bolNum || 'NOT PROVIDED', sub: loadNum ? 'PRIMARY: LOAD' : 'PRIMARY: BOL', icon: '📂' },
-                { label: 'Protocol', value: bolProtocol, icon: '🛰️' },
-                { label: 'Origin', value: `${puCity}, ${puState}`, icon: '🛫' },
-                { label: 'Destination', value: `${delCity}, ${delState}`, icon: '🛬' },
-              ].map((item, idx) => (
-                <div key={idx} className="bg-zinc-900/40 border border-zinc-800/50 p-5 rounded-[2rem] group hover:bg-zinc-900 transition-all">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm">{item.icon}</span>
-                    <span className="text-[8px] font-black uppercase text-zinc-500 tracking-widest">{item.label}</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              {/* Left Column: Data Readout */}
+              <div className="space-y-3">
+                {[
+                  { label: 'Carrier', value: company === 'GLX' ? 'GREENLEAF XPRESS' : 'BST EXPEDITE' },
+                  { label: 'Operator', value: driverName },
+                  { label: 'Reference', value: loadNum || bolNum || '---', sub: loadNum ? 'PRIMARY: LOAD #' : 'PRIMARY: BOL #' },
+                  { label: 'Route', value: `${puCity} → ${delCity}` },
+                ].map((item, idx) => (
+                  <div key={idx} className="bg-zinc-900/30 border border-zinc-800/50 p-4 rounded-2xl">
+                    <span className="text-[8px] font-black uppercase text-zinc-600 tracking-widest block mb-1">{item.label}</span>
+                    <div className="text-sm font-bold text-white uppercase truncate">{item.value}</div>
+                    {item.sub && <div className={`text-[8px] font-bold mt-1 opacity-60 ${themeColor}`}>{item.sub}</div>}
                   </div>
-                  <div className="text-md font-bold text-white uppercase truncate">{item.value}</div>
-                  {item.sub && <div className={`text-[8px] font-bold mt-1 opacity-60 ${themeColor}`}>{item.sub}</div>}
-                </div>
-              ))}
-            </div>
-
-            {/* Content Summary */}
-            <div className={`mb-10 p-4 rounded-2xl border bg-black/50 flex justify-around items-center`} style={{ borderColor: `${themeHex}33` }}>
-              <div className="text-center">
-                <div className="text-[9px] font-black text-zinc-500 uppercase mb-1">Documents</div>
-                <div className="text-xl font-black text-white">{uploadedFiles.length} <span className="text-[10px] text-zinc-600">FILES</span></div>
+                ))}
               </div>
-              <div className="w-[1px] h-8 bg-zinc-800"></div>
-              <div className="text-center">
-                <div className="text-[9px] font-black text-zinc-500 uppercase mb-1">Integrity</div>
-                <div className="text-xl font-black text-green-500">100%</div>
+
+              {/* Right Column: Clickable Visual Confirmation */}
+              <div className="relative group cursor-zoom-in" 
+                   onClick={() => {
+                     const img = uploadedFiles.find(f => f.category === 'bol')?.preview;
+                     if (img) { setFullScreenImage(img); playSound(400, 'sine', 0.1); }
+                   }}>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10 rounded-3xl pointer-events-none"></div>
+                <div className={`absolute top-3 left-3 z-20 px-2 py-1 rounded bg-black/60 border border-white/20 text-[8px] font-black text-white tracking-widest uppercase flex items-center gap-2`}>
+                  <span>🔍 Tap to Zoom</span>
+                </div>
+                <div className="aspect-[3/4] rounded-3xl border border-zinc-800 overflow-hidden bg-zinc-900 group-active:scale-[0.98] transition-all">
+                  {uploadedFiles.find(f => f.category === 'bol') ? (
+                    <img 
+                      src={uploadedFiles.find(f => f.category === 'bol')?.preview} 
+                      className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-all duration-500" 
+                      alt="BOL Preview" 
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-zinc-700 font-black text-[10px]">NO IMAGE</div>
+                  )}
+                </div>
+                <div className="absolute bottom-3 left-0 w-full z-20 text-center">
+                   <span className="text-[10px] font-black text-white/60 tracking-tighter uppercase">{uploadedFiles.length} TOTAL PAGES</span>
+                </div>
               </div>
             </div>
 
@@ -344,6 +354,7 @@ const App: React.FC = () => {
             <div className="space-y-4">
               <button 
                 onClick={async ()=>{ 
+                  playSound(800, 'square', 0.1);
                   setIsSubmitting(true); 
                   const base64=await Promise.all(uploadedFiles.map(async f=>{ return new Promise(resolve=>{ const r=new FileReader(); r.onload=()=>resolve({category: f.category, base64: r.result}); r.readAsDataURL(f.file); })} )); 
                   const payload={company,driverName,loadNum,bolNum,puCity,puState,delCity,delState,bolProtocol,files:base64}; 
@@ -351,31 +362,32 @@ const App: React.FC = () => {
                   catch(e){ localStorage.setItem('multi_vault', JSON.stringify([...vaultEntries,{id:Math.random().toString(),payload}])); setShowSuccess(true); } 
                 }} 
                 className={`w-full py-8 rounded-[2rem] font-black uppercase tracking-[1em] text-sm transition-all active:scale-95 shadow-2xl relative overflow-hidden group
-                  ${company === 'GLX' ? 'bg-green-600 shadow-green-600/20' : 'bg-blue-600 shadow-blue-600/20'} text-white 
-                  ${!isSubmitting ? 'animate-pulse hover:animate-none' : ''}`}
+                  ${company === 'GLX' ? 'bg-green-600 shadow-green-600/30' : 'bg-blue-600 shadow-blue-600/30'} text-white 
+                  ${!isSubmitting ? 'animate-pulse' : ''}`}
               >
-                {isSubmitting ? (
-                   <span className="flex items-center justify-center gap-4">
-                     <div className="w-5 h-5 border-3 border-white/20 border-t-white rounded-full animate-spin"></div>
-                     TRANSMITTING...
-                   </span>
-                ) : 'AUTHORIZE UPLINK'}
-                
-                {/* Visual "Glow" Overlay on the button */}
-                <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                {isSubmitting ? 'TRANSMITTING...' : 'AUTHORIZE UPLINK'}
               </button>
               
               <button 
-                onClick={() => setShowVerification(false)} 
+                onClick={() => { playSound(200, 'sine', 0.1); setShowVerification(false); }} 
                 className="w-full text-zinc-500 font-black uppercase text-[10px] tracking-[0.5em] py-4 hover:text-white transition-all"
               >
-                [ CANCEL & EDIT ]
+                [ EDIT LOAD INFO ]
               </button>
             </div>
           </div>
         </div>
       )}
-      )
+
+      {/* FULL-SCREEN IMAGE MODAL */}
+      {fullScreenImage && (
+        <div className="fixed inset-0 z-[500] bg-black flex flex-col items-center justify-center p-4 animate-in zoom-in duration-300" 
+             onClick={() => setFullScreenImage(null)}>
+          <div className="absolute top-10 right-10 text-white font-black uppercase text-xs tracking-widest border-2 border-white/20 px-6 py-2 rounded-full">Close [X]</div>
+          <img src={fullScreenImage} className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl shadow-white/5" alt="Full BOL" />
+          <p className="mt-8 text-zinc-500 font-black text-[10px] uppercase tracking-[0.6em]">Inspect for Legibility</p>
+        </div>
+      )}
 
       {showSuccess && <div className="fixed inset-0 z-[500] bg-black flex items-center justify-center text-white text-5xl font-black animate-bounce" onClick={()=>window.location.reload()}>✓ TRANSMITTED</div>}
 
