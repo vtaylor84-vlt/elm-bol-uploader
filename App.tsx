@@ -6,6 +6,7 @@ import React, { useState, useRef, useEffect } from 'react';
  * - ADDED: State-of-the-Art Success Terminal with Receipt & Save function.
  * - ADDED: Tactical Inline Editing (Tap cards to change data).
  * - ADDED: Detailed Route View (City + State in Review).
+ * - RESTORED: Pickup Freight Prompt overlay.
  */
 
 interface FileWithPreview { file: File | Blob; preview: string; id: string; category: 'bol' | 'freight'; }
@@ -292,6 +293,21 @@ const App: React.FC = () => {
         </button>
       </div>
 
+      {/* PICKUP DETECTION POPUP */}
+      {showFreightPrompt && (
+        <div className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center p-6">
+          <div className={`bg-zinc-900 border-2 rounded-[3.5rem] p-10 text-center ${company==='GLX'?'border-green-500':'border-blue-500'}`}>
+            <h2 className={`text-xl font-black uppercase mb-4 ${themeColor}`}>Pickup Detected</h2>
+            <p className="text-zinc-400 text-sm mb-8 font-bold uppercase tracking-widest">Take photos of freight loaded on trailer?</p>
+            <div className="flex flex-col gap-4">
+              <button onClick={()=>{ setShowFreightPrompt(false); freightCamRef.current?.click(); }} className={`${company==='GLX'?'bg-green-600':'bg-blue-600'} text-white py-4 rounded-xl font-black uppercase tracking-widest shadow-xl active:scale-95`}>Yes, Open Camera</button>
+              <button onClick={()=>setShowFreightPrompt(false)} className="text-zinc-500 font-black uppercase text-[10px] tracking-widest">No, Skip</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* VERIFICATION DASHBOARD */}
       {showVerification && (
         <div className="fixed inset-0 z-[400] bg-black/98 backdrop-blur-2xl flex flex-col items-center justify-center p-4 animate-in fade-in duration-500">
           <div className={`w-full max-w-2xl bg-zinc-950 border-[3px] rounded-[3.5rem] p-8 md:p-12 relative shadow-2xl overflow-hidden`} style={{ borderColor: themeHex }}>
