@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 /** * LOGISTICS TERMINAL v32.4 - TACTICAL VERIFICATION
- * - FIXED: Carousel navigation for multi-page BOLs.
- * - FIXED: CSS Scrollbar isolation to prevent main page scrolling issues.
+ * - FIXED: Carousel navigation for multi-page BOLs using carouselRef.
+ * - FIXED: CSS Scrollbar isolation with important flags.
  * - ADDED: Click-to-Zoom and Left/Right navigation for Review.
  */
 
@@ -104,6 +104,7 @@ const App: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const freightCamRef = useRef<HTMLInputElement>(null);
   const freightFileRef = useRef<HTMLInputElement>(null);
+  const carouselRef = useRef<HTMLDivElement>(null); 
 
   const states = ['AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'];
   const themeHex = company === 'GLX' ? '#22c55e' : company === 'BST' ? '#3b82f6' : '#6366f1';
@@ -165,12 +166,11 @@ const App: React.FC = () => {
   return (
     <div className={`min-h-screen ${solarMode ? 'bg-white text-black' : 'bg-[#020202] text-zinc-100'} pb-24 font-sans relative`}>
       
-      {/* CSS ISOLATION: ONLY HIDES SCROLLBARS ON CAROUSELS */}
       <style>{`
         .no-scrollbar::-webkit-scrollbar { display: none !important; }
         .no-scrollbar { -ms-overflow-style: none !important; scrollbar-width: none !important; }
         .snap-x { scroll-snap-type: x mandatory !important; }
-        .snap-center { scroll-snap-align: center !important; }
+        .snap-center { scroll-snap-align: center !important; flex-shrink: 0 !important; }
       `}</style>
 
       <header className="max-w-4xl mx-auto pt-10 px-4 mb-12">
@@ -268,20 +268,6 @@ const App: React.FC = () => {
         </button>
       </div>
 
-      {showFreightPrompt && (
-        <div className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center p-6">
-          <div className={`bg-zinc-900 border-2 rounded-[3.5rem] p-10 text-center ${company==='GLX'?'border-green-500':'border-blue-500'}`}>
-            <h2 className={`text-xl font-black uppercase mb-4 ${themeColor}`}>Pickup Detected</h2>
-            <p className="text-zinc-400 text-sm mb-8 font-bold uppercase tracking-widest">Take photos of freight loaded on trailer?</p>
-            <div className="flex flex-col gap-4">
-              <button onClick={()=>{ setShowFreightPrompt(false); freightCamRef.current?.click(); }} className={`${company==='GLX'?'bg-green-600':'bg-blue-600'} text-white py-4 rounded-xl font-black uppercase tracking-widest shadow-xl active:scale-95`}>Yes, Open Camera</button>
-              <button onClick={()=>setShowFreightPrompt(false)} className="text-zinc-500 font-black uppercase text-[10px] tracking-widest">No, Skip</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* STATE-OF-THE-ART LOAD VERIFICATION DASHBOARD */}
       {showVerification && (
         <div className="fixed inset-0 z-[400] bg-black/98 backdrop-blur-2xl flex flex-col items-center justify-center p-4 animate-in fade-in duration-500">
           <div className={`w-full max-w-2xl bg-zinc-950 border-[3px] rounded-[3.5rem] p-8 md:p-12 relative shadow-[0_0_100px_rgba(0,0,0,1)] overflow-hidden`} style={{ borderColor: themeHex }}>
@@ -309,22 +295,21 @@ const App: React.FC = () => {
                 ))}
               </div>
 
-              {/* Right Column: Interactive Page Carousel */}
               <div className="flex flex-col gap-3">
                 <div className="aspect-[3/4] rounded-3xl border border-zinc-800 overflow-hidden bg-zinc-900 relative group">
                   {uploadedFiles.filter(f => f.category === 'bol').length > 1 && (
                     <>
                       <div className="absolute inset-y-0 left-0 z-30 flex items-center pl-2">
-                        <button onClick={(e) => { e.stopPropagation(); const el = e.currentTarget.parentElement?.nextElementSibling; if (el) el.scrollBy({ left: -el.clientWidth, behavior: 'smooth' }); playSound(300, 'sine', 0.05); }} className="w-10 h-10 rounded-full bg-black/60 border border-white/20 text-white flex items-center justify-center text-xl active:scale-90 shadow-xl">←</button>
+                        <button type="button" onClick={(e) => { e.stopPropagation(); if (carouselRef.current) { carouselRef.current.scrollBy({ left: -carouselRef.current.clientWidth, behavior: 'smooth' }); playSound(300, 'sine', 0.05); } }} className="w-10 h-10 rounded-full bg-black/70 border border-white/20 text-white flex items-center justify-center text-xl active:scale-90 shadow-2xl">←</button>
                       </div>
                       <div className="absolute inset-y-0 right-0 z-30 flex items-center pr-2">
-                        <button onClick={(e) => { e.stopPropagation(); const el = e.currentTarget.parentElement?.previousElementSibling; if (el) el.scrollBy({ left: el.clientWidth, behavior: 'smooth' }); playSound(300, 'sine', 0.05); }} className="w-10 h-10 rounded-full bg-black/60 border border-white/20 text-white flex items-center justify-center text-xl active:scale-90 shadow-xl">→</button>
+                        <button type="button" onClick={(e) => { e.stopPropagation(); if (carouselRef.current) { carouselRef.current.scrollBy({ left: carouselRef.current.clientWidth, behavior: 'smooth' }); playSound(300, 'sine', 0.05); } }} className="w-10 h-10 rounded-full bg-black/70 border border-white/20 text-white flex items-center justify-center text-xl active:scale-90 shadow-2xl">→</button>
                       </div>
                     </>
                   )}
-                  <div className="flex overflow-x-auto snap-x snap-mandatory h-full no-scrollbar scroll-smooth">
+                  <div ref={carouselRef} className="flex overflow-x-auto snap-x snap-mandatory h-full no-scrollbar scroll-smooth">
                     {uploadedFiles.filter(f => f.category === 'bol').map((file, idx) => (
-                      <div key={file.id} className="min-w-full h-full snap-center relative cursor-zoom-in" onClick={() => { setFullScreenImage(file.preview); playSound(400, 'sine', 0.1); }}>
+                      <div key={file.id} className="min-w-full h-full snap-center relative cursor-zoom-in flex-shrink-0" onClick={() => { setFullScreenImage(file.preview); playSound(400, 'sine', 0.1); }}>
                         <img src={file.preview} className="w-full h-full object-cover opacity-80" alt={`Page ${idx + 1}`} />
                         <div className="absolute top-4 left-4 z-20 px-3 py-1 rounded-full bg-black/70 border border-white/10 text-[8px] font-black text-white tracking-[0.2em] uppercase">PAGE {idx + 1} / {uploadedFiles.filter(f => f.category === 'bol').length}</div>
                       </div>
@@ -332,22 +317,31 @@ const App: React.FC = () => {
                   </div>
                   <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/90 to-transparent pointer-events-none z-10"></div>
                 </div>
-                <div className="flex justify-between items-center px-2">
-                  <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Verification</span>
-                  <span className={`text-[9px] font-black uppercase tracking-widest ${themeColor}`}>{uploadedFiles.filter(f => f.category === 'bol').length} Pages</span>
-                </div>
               </div>
             </div>
 
             <div className="space-y-4">
-              <button onClick={async ()=>{ playSound(800, 'square', 0.1); setIsSubmitting(true); const base64=await Promise.all(uploadedFiles.map(async f=>{ return new Promise(resolve=>{ const r=new FileReader(); r.onload=()=>resolve({category: f.category, base64: r.result}); r.readAsDataURL(f.file); })} )); const payload={company,driverName,loadNum,bolNum,puCity,puState,delCity,delState,bolProtocol,files:base64}; try { await fetch(GOOGLE_SCRIPT_URL,{method:'POST',mode:'no-cors',body:JSON.stringify(payload)}); setShowSuccess(true); } catch(e){ localStorage.setItem('multi_vault', JSON.stringify([...vaultEntries,{id:Math.random().toString(),payload}])); setShowSuccess(true); } }} className={`w-full py-8 rounded-[2rem] font-black uppercase tracking-[1em] text-sm transition-all active:scale-95 shadow-2xl relative overflow-hidden group ${company === 'GLX' ? 'bg-green-600 shadow-green-600/30' : 'bg-blue-600 shadow-blue-600/30'} text-white ${!isSubmitting ? 'animate-pulse' : ''}`}>{isSubmitting ? 'TRANSMITTING...' : 'AUTHORIZE UPLINK'}</button>
-              <button onClick={() => { playSound(200, 'sine', 0.1); setShowVerification(false); }} className="w-full text-zinc-500 font-black uppercase text-[10px] tracking-[0.5em] py-4 hover:text-white transition-all">[ EDIT LOAD INFO ]</button>
+              <button 
+                onClick={async ()=>{ 
+                  playSound(800, 'square', 0.1); 
+                  setIsSubmitting(true); 
+                  const base64=await Promise.all(uploadedFiles.map(async f=>{ return new Promise(resolve=>{ const r=new FileReader(); r.onload=()=>resolve({category: f.category, base64: r.result}); r.readAsDataURL(f.file); })} )); 
+                  const payload={company,driverName,loadNum,bolNum,puCity,puState,delCity,delState,bolProtocol,files:base64}; 
+                  try { await fetch(GOOGLE_SCRIPT_URL,{method:'POST',mode:'no-cors',body:JSON.stringify(payload)}); setShowSuccess(true); } 
+                  catch(e){ localStorage.setItem('multi_vault', JSON.stringify([...vaultEntries,{id:Math.random().toString(),payload}])); setShowSuccess(true); } 
+                }} 
+                className={`w-full py-8 rounded-[2rem] font-black uppercase tracking-[1em] text-sm transition-all active:scale-95 shadow-2xl relative overflow-hidden group ${company === 'GLX' ? 'bg-green-600 shadow-green-600/30' : 'bg-blue-600 shadow-blue-600/30'} text-white ${!isSubmitting ? 'animate-pulse' : ''}`}
+              >
+                {isSubmitting ? 'TRANSMITTING...' : 'AUTHORIZE UPLINK'}
+              </button>
+              <button onClick={() => { playSound(200, 'sine', 0.1); setShowVerification(false); }} className="w-full text-zinc-500 font-black uppercase text-[10px] tracking-[0.5em] py-4 hover:text-white transition-all">
+                [ EDIT LOAD INFO ]
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* FULL-SCREEN IMAGE MODAL */}
       {fullScreenImage && (
         <div className="fixed inset-0 z-[500] bg-black flex flex-col items-center justify-center p-4 animate-in zoom-in duration-300" onClick={() => setFullScreenImage(null)}>
           <div className="absolute top-10 right-10 text-white font-black uppercase text-xs tracking-widest border-2 border-white/20 px-6 py-2 rounded-full">Close [X]</div>
