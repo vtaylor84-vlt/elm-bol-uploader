@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 /** * LOGISTICS TERMINAL v32.5 - MISSION CONTROL EDITION
- * - FIXED: Carousel navigation for multi-page BOLs.
- * - FIXED: CSS Scrollbar isolation with native scroll fallback.
+ * - FIXED: Carousel navigation for multi-page BOLs with native scroll fallback.
  * - ADDED: Interactive Uplink Sequence (Satellite Animation).
  * - ADDED: State-of-the-Art Success Terminal with Receipt & Save function.
+ * - ADDED: Tactical Inline Editing (Tap cards to change data).
+ * - ADDED: Detailed Route View (City + State in Review).
  */
 
 interface FileWithPreview { file: File | Blob; preview: string; id: string; category: 'bol' | 'freight'; }
@@ -100,6 +101,7 @@ const App: React.FC = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [vaultEntries, setVaultEntries] = useState<VaultEntry[]>([]);
   const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
+  const [editingField, setEditingField] = useState<string | null>(null);
 
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -170,8 +172,20 @@ const App: React.FC = () => {
       <style>{`
         .no-scrollbar::-webkit-scrollbar { display: none !important; }
         .no-scrollbar { -ms-overflow-style: none !important; scrollbar-width: none !important; }
-        .snap-x { scroll-snap-type: x mandatory !important; }
-        .snap-center { scroll-snap-align: center !important; flex-shrink: 0 !important; }
+        .image-filmstrip {
+          display: flex;
+          overflow-x: auto;
+          overflow-y: hidden;
+          white-space: nowrap;
+          -webkit-overflow-scrolling: touch;
+          gap: 10px;
+          padding-bottom: 10px;
+        }
+        .filmstrip-item {
+          flex: 0 0 100%;
+          width: 100%;
+          height: 100%;
+        }
         .animate-progress-glow {
           box-shadow: 0 0 15px ${themeHex};
           animation: loading-pulse 2s infinite ease-in-out;
@@ -291,13 +305,17 @@ const App: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
               <div className="space-y-3">
                 {[
-                  { label: 'Carrier', value: company === 'GLX' ? 'GREENLEAF XPRESS' : 'BST EXPEDITE' },
-                  { label: 'Operator', value: driverName },
-                  { label: 'Reference', value: loadNum || bolNum || '---', sub: loadNum ? 'LOAD #' : 'BOL #' },
-                  { label: 'Route', value: `${puCity} → ${delCity}` },
+                  { label: 'Carrier', value: company === 'GLX' ? 'GREENLEAF XPRESS' : 'BST EXPEDITE', id: 'company' },
+                  { label: 'Operator', value: driverName, id: 'driverName' },
+                  { label: 'Reference', value: loadNum || bolNum || '---', sub: loadNum ? 'LOAD #' : 'BOL #', id: 'reference' },
+                  { label: 'Pickup', value: `${puCity}, ${puState}`, id: 'origin' },
+                  { label: 'Destination', value: `${delCity}, ${delState}`, id: 'destination' },
                 ].map((item, idx) => (
-                  <div key={idx} className="bg-zinc-900/30 border border-zinc-800/50 p-4 rounded-2xl">
-                    <span className="text-[8px] font-black uppercase text-zinc-600 tracking-widest block mb-1">{item.label}</span>
+                  <div key={idx} onClick={() => setEditingField(item.id)} className="bg-zinc-900/30 border border-zinc-800/50 p-4 rounded-2xl cursor-pointer hover:border-zinc-600 transition-all group">
+                    <div className="flex justify-between items-start">
+                      <span className="text-[8px] font-black uppercase text-zinc-600 tracking-widest block mb-1">{item.label}</span>
+                      <span className="text-[7px] font-black text-white/20 uppercase opacity-0 group-hover:opacity-100">Tap to Edit</span>
+                    </div>
                     <div className="text-sm font-bold text-white uppercase truncate">{item.value}</div>
                     {item.sub && <div className={`text-[8px] font-bold mt-1 opacity-60 ${themeColor}`}>{item.sub}</div>}
                   </div>
@@ -305,27 +323,17 @@ const App: React.FC = () => {
               </div>
 
               <div className="flex flex-col gap-3">
-                <div className="aspect-[3/4] rounded-3xl border border-zinc-800 overflow-hidden bg-zinc-900 relative group">
-                  {uploadedFiles.filter(f => f.category === 'bol').length > 1 && (
-                    <>
-                      <div className="absolute inset-y-0 left-0 z-30 flex items-center pl-2">
-                        <button type="button" onClick={(e) => { e.stopPropagation(); if (carouselRef.current) { carouselRef.current.scrollBy({ left: -carouselRef.current.clientWidth, behavior: 'smooth' }); playSound(300, 'sine', 0.05); } }} className="w-10 h-10 rounded-full bg-black/70 border border-white/20 text-white flex items-center justify-center text-xl active:scale-90 shadow-2xl">←</button>
-                      </div>
-                      <div className="absolute inset-y-0 right-0 z-30 flex items-center pr-2">
-                        <button type="button" onClick={(e) => { e.stopPropagation(); if (carouselRef.current) { carouselRef.current.scrollBy({ left: carouselRef.current.clientWidth, behavior: 'smooth' }); playSound(300, 'sine', 0.05); } }} className="w-10 h-10 rounded-full bg-black/70 border border-white/20 text-white flex items-center justify-center text-xl active:scale-90 shadow-2xl">→</button>
-                      </div>
-                    </>
-                  )}
-                  <div ref={carouselRef} className="flex overflow-x-auto snap-x snap-mandatory h-full no-scrollbar scroll-smooth">
-                    {uploadedFiles.filter(f => f.category === 'bol').map((file, idx) => (
-                      <div key={file.id} className="min-w-full h-full snap-center relative cursor-zoom-in flex-shrink-0" onClick={() => { setFullScreenImage(file.preview); playSound(400, 'sine', 0.1); }}>
-                        <img src={file.preview} className="w-full h-full object-cover opacity-80" alt={`Page ${idx + 1}`} />
-                        <div className="absolute top-4 left-4 z-20 px-3 py-1 rounded-full bg-black/70 border border-white/10 text-[8px] font-black text-white tracking-[0.2em] uppercase">PAGE {idx + 1} / {uploadedFiles.filter(f => f.category === 'bol').length}</div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/90 to-transparent pointer-events-none z-10"></div>
+                <div className="aspect-[3/4] rounded-3xl border border-zinc-800 bg-zinc-900 p-2 overflow-hidden">
+                   <div className="image-filmstrip h-full no-scrollbar">
+                     {uploadedFiles.filter(f => f.category === 'bol').map((file, idx) => (
+                       <div key={file.id} className="filmstrip-item cursor-zoom-in" onClick={() => setFullScreenImage(file.preview)}>
+                         <img src={file.preview} className="w-full h-full object-cover rounded-2xl" alt="Preview" />
+                         <div className="text-[7px] font-black text-center mt-1 text-zinc-500 uppercase">PAGE {idx+1} OF {uploadedFiles.filter(f => f.category === 'bol').length}</div>
+                       </div>
+                     ))}
+                   </div>
                 </div>
+                <p className="text-[8px] text-center text-zinc-600 font-black uppercase tracking-widest">Swipe Left/Right to Review Pages</p>
               </div>
             </div>
 
@@ -344,9 +352,41 @@ const App: React.FC = () => {
                 AUTHORIZE UPLINK
               </button>
               <button onClick={() => { playSound(200, 'sine', 0.1); setShowVerification(false); }} className="w-full text-zinc-500 font-black uppercase text-[10px] tracking-[0.5em] py-4 hover:text-white transition-all">
-                [ EDIT LOAD INFO ]
+                [ RETURN TO EDITOR ]
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* TACTICAL INLINE EDITOR */}
+      {editingField && (
+        <div className="fixed inset-0 z-[800] bg-black/90 backdrop-blur-xl flex items-center justify-center p-6 animate-in fade-in zoom-in duration-300">
+          <div className="w-full max-w-sm bg-zinc-900 border-2 border-zinc-700 rounded-[2.5rem] p-8 shadow-2xl">
+            <h3 className="text-[10px] font-black uppercase text-zinc-500 tracking-[0.4em] mb-6 text-center">Edit Field</h3>
+            <div className="space-y-4">
+              {editingField === 'origin' && (
+                <div className="space-y-4">
+                  <input type="text" value={puCity} onChange={(e)=>setPuCity(e.target.value.toUpperCase())} className={getTacticalStyles(puCity)} placeholder="CITY" />
+                  <select value={puState} onChange={(e)=>setPuState(e.target.value)} className={getTacticalStyles(puState)}>{states.map(s=><option key={s} value={s}>{s}</option>)}</select>
+                </div>
+              )}
+              {editingField === 'destination' && (
+                <div className="space-y-4">
+                  <input type="text" value={delCity} onChange={(e)=>setDelCity(e.target.value.toUpperCase())} className={getTacticalStyles(delCity)} placeholder="CITY" />
+                  <select value={delState} onChange={(e)=>setDelState(e.target.value)} className={getTacticalStyles(delState)}>{states.map(s=><option key={s} value={s}>{s}</option>)}</select>
+                </div>
+              )}
+              {editingField === 'reference' && (
+                <div className="space-y-4">
+                  <input type="text" value={loadNum} onChange={(e)=>setLoadNum(e.target.value.toUpperCase())} className={getTacticalStyles(loadNum)} placeholder="LOAD #" />
+                  <input type="text" value={bolNum} onChange={(e)=>setBolNum(e.target.value.toUpperCase())} className={getTacticalStyles(bolNum)} placeholder="BOL #" />
+                </div>
+              )}
+              {editingField === 'driverName' && <input type="text" value={driverName} onChange={(e)=>setDriverName(e.target.value.toUpperCase())} className={getTacticalStyles(driverName)} />}
+              {editingField === 'company' && <select className={getTacticalStyles(company)} value={company} onChange={(e)=>setCompany(e.target.value as any)}><option value="GLX">GREENLEAF XPRESS</option><option value="BST">BST EXPEDITE INC</option></select>}
+            </div>
+            <button onClick={() => { setEditingField(null); playSound(800, 'sine', 0.1); }} className={`w-full mt-8 py-5 rounded-3xl font-black uppercase tracking-widest text-xs bg-white text-black active:scale-95`}>Save & Return</button>
           </div>
         </div>
       )}
