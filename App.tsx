@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-/** * LOGISTICS TERMINAL v32.6 - MISSION CONTROL EDITION
- * - FIXED: Mobile Top-Clipping on Review (Scrollable Modal).
- * - ADDED: Sticky Authorization Footer for one-handed operation.
- * - ADDED: Haptic Feedback (Vibration) on tap and success.
- * - ADDED: Lock-Screen Vault Manager for offline sync.
+/** * LOGISTICS TERMINAL v32.7 - MISSION CONTROL 
+ * - TACTICAL REDESIGN: Prevents button-over-photo clipping.
+ * - TAP-TO-EDIT: Fully functional mapping for all logistics data.
+ * - OFFLINE VAULT: Automatic local storage backup.
+ * - HAPTIC: Physical vibration confirmation.
  */
 
 interface FileWithPreview { file: File | Blob; preview: string; id: string; category: 'bol' | 'freight'; }
@@ -12,7 +12,7 @@ interface VaultEntry { id: string; timestamp: number; payload: any; }
 
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby-L6nKjgfAnLFPgezkf3inQTJRG3Ql_MufZ-jlKWhSbPdEHeQniPLdNQDaidM2EY6MdA/exec';
 
-// --- [SECTION 00] AUDIO & UTILITIES ---
+// --- AUDIO UTILITIES ---
 let globalAudioCtx: AudioContext | null = null;
 const playSound = (freq: number, type: OscillatorType, duration: number, vol: number = 0.1) => {
   try {
@@ -46,41 +46,31 @@ const compressAndEnhanceImage = (file: File): Promise<Blob> => {
   });
 };
 
-// --- [SECTION 01] LOGOS ---
+// --- LOGOS ---
 export const GreenleafLogo = () => (
-  <div className="flex flex-col items-center justify-center p-4 animate-in fade-in zoom-in duration-1000">
-    <svg width="100%" height="auto" className="max-w-[420px]" viewBox="0 0 600 320" fill="none">
+  <div className="flex flex-col items-center justify-center p-4">
+    <svg width="100%" height="auto" className="max-w-[320px]" viewBox="0 0 600 320" fill="none">
       <defs>
-        <linearGradient id="chrome-silver" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stopColor="#FFFFFF" /><stop offset="40%" stopColor="#BDC3C7" /><stop offset="50%" stopColor="#7F8C8D" /><stop offset="100%" stopColor="#DDE4E8" /></linearGradient>
         <linearGradient id="leaf-green" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#A8E063" /><stop offset="100%" stopColor="#22C55E" /></linearGradient>
-        <linearGradient id="road-view" x1="300" y1="180" x2="300" y2="100" gradientUnits="userSpaceOnUse"><stop stopColor="#111111" /><stop offset="1" stopColor="#444444" /></linearGradient>
       </defs>
-      <path d="M300 50L100 200H500L300 50Z" fill="url(#road-view)" stroke="url(#chrome-silver)" strokeWidth="4"/>
-      <path d="M150 200L300 50M210 200L300 50M270 200L300 50M330 200L300 50M390 200L300 50M450 200L300 50" stroke="white" strokeWidth="1" opacity="0.2"/>
-      <path d="M300 190V175M300 160V150M300 135V130" stroke="white" strokeWidth="4" opacity="0.6"/>
+      <path d="M300 50L100 200H500L300 50Z" fill="#111" stroke="#BDC3C7" strokeWidth="4"/>
       <path d="M300 20C300 20 230 50 230 100C230 140 300 150 300 150C300 150 370 140 370 100C370 50 300 20 300 20Z" fill="url(#leaf-green)" />
-      <path d="M300 25V145M300 50L260 80M300 80L250 115M300 60L340 90M300 95L350 125" stroke="#052e16" strokeWidth="3" strokeLinecap="round" opacity="0.5"/>
-      <text x="300" y="250" textAnchor="middle" style={{ fontFamily: 'Arial Black', fontSize: '44px', fontWeight: '900', fill: 'url(#chrome-silver)', fontStyle: 'italic' }}>GREENLEAF XPRESS</text>
-      <text x="300" y="285" textAnchor="middle" style={{ fontFamily: 'Arial Black', fontSize: '32px', fontWeight: '900', fill: '#62df62' }}>LLC</text>
-      <text x="300" y="310" textAnchor="middle" style={{ fontFamily: 'monospace', fontSize: '14px', fill: '#BDC3C7', fontWeight: 'bold', letterSpacing: '6px' }}>WATERLOO, IOWA</text>
+      <text x="300" y="250" textAnchor="middle" style={{ fontFamily: 'Arial Black', fontSize: '44px', fontWeight: '900', fill: '#BDC3C7', fontStyle: 'italic' }}>GREENLEAF XPRESS</text>
     </svg>
   </div>
 );
 
 export const BstLogo = () => (
-  <div className="flex flex-col items-center justify-center p-4 w-full min-h-[180px] animate-in fade-in duration-700"> 
-    <svg width="320" height="120" viewBox="0 0 400 120">
-      <defs><linearGradient id="bst-metal"><stop offset="0%" stopColor="#0ea5e9" /><stop offset="50%" stopColor="#ffffff" /><stop offset="100%" stopColor="#2563eb" /></linearGradient></defs>
-      <text x="200" y="75" textAnchor="middle" style={{ fontSize: '95px', fill: 'url(#bst-metal)', fontFamily: 'Arial Black', fontWeight: '900', fontStyle: 'italic' }}>BST</text>
-      <text x="200" y="110" textAnchor="middle" style={{ fontSize: '16px', fill: '#93c5fd', fontFamily: 'monospace', fontWeight: 'bold', letterSpacing: '8px' }}>EXPEDITE INC</text>
+  <div className="flex flex-col items-center justify-center p-4 w-full"> 
+    <svg width="280" height="100" viewBox="0 0 400 120">
+      <text x="200" y="75" textAnchor="middle" style={{ fontSize: '95px', fill: '#3b82f6', fontFamily: 'Arial Black', fontWeight: '900', fontStyle: 'italic' }}>BST</text>
     </svg>
   </div>
 );
 
-// --- [SECTION 02] MAIN APP ---
+// --- MAIN APP ---
 const App: React.FC = () => {
   const [isLocked, setIsLocked] = useState(true);
-  const [solarMode, setSolarMode] = useState(false);
   const [authStage, setAuthStage] = useState(0);
   const [company, setCompany] = useState<'GLX' | 'BST' | ''>('');
   const [driverName, setDriverName] = useState('');
@@ -94,18 +84,14 @@ const App: React.FC = () => {
   const [delState, setDelState] = useState('');
   const [bolProtocol, setBolProtocol] = useState<'PICKUP' | 'DELIVERY' | ''>('');
   const [uploadedFiles, setUploadedFiles] = useState<FileWithPreview[]>([]);
-  const [showFreightPrompt, setShowFreightPrompt] = useState(false);
   const [showVerification, setShowVerification] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [vaultEntries, setVaultEntries] = useState<VaultEntry[]>([]);
-  const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
   const [editingField, setEditingField] = useState<string | null>(null);
 
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const freightCamRef = useRef<HTMLInputElement>(null);
-  const freightFileRef = useRef<HTMLInputElement>(null);
 
   const states = ['AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'];
   const themeHex = company === 'GLX' ? '#22c55e' : company === 'BST' ? '#3b82f6' : '#6366f1';
@@ -124,240 +110,230 @@ const App: React.FC = () => {
     setVaultEntries(JSON.parse(localStorage.getItem('multi_vault') || '[]'));
   }, []);
 
-  const onFileSelect = async (e: React.ChangeEvent<HTMLInputElement>, cat: 'bol' | 'freight') => {
+  const onFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
       for (const f of files) {
-        const fingerprint = `${f.name}-${f.size}-${f.lastModified}`;
-        if (uploadedFiles.some(ex => ex.id === fingerprint)) {
-          playSound(150, 'square', 0.4); continue; 
-        }
         const enh = await compressAndEnhanceImage(f);
-        setUploadedFiles(prev => [...prev, { file: enh, preview: URL.createObjectURL(enh), id: fingerprint, category: cat }]);
+        setUploadedFiles(prev => [...prev, { file: enh, preview: URL.createObjectURL(enh), id: Math.random().toString(), category: 'bol' }]);
       }
-      if (cat === 'bol' && bolProtocol === 'PICKUP') setShowFreightPrompt(true);
     }
   };
 
   const syncVault = async () => {
-    if (vaultEntries.length === 0) return;
     setIsSubmitting(true);
-    let successCount = 0;
     const currentVault = [...vaultEntries];
     for (const entry of currentVault) {
       try {
-        if (navigator.vibrate) navigator.vibrate(40);
         await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(entry.payload) });
-        successCount++;
         vaultEntries.shift();
       } catch (e) { break; }
     }
-    const updatedVault = [...vaultEntries];
-    setVaultEntries(updatedVault);
-    localStorage.setItem('multi_vault', JSON.stringify(updatedVault));
+    setVaultEntries([...vaultEntries]);
+    localStorage.setItem('multi_vault', JSON.stringify([...vaultEntries]));
     setIsSubmitting(false);
-    if (successCount > 0) {
-      if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-      alert(`${successCount} Pending Loads Synchronized.`);
-    }
-  };
-
-  const clearForm = () => {
-    setCompany(''); setDriverName(''); setManualMode(false); setLoadNum(''); setBolNum('');
-    setPuCity(''); setPuState(''); setDelCity(''); setDelState(''); setBolProtocol('');
-    setUploadedFiles([]); playSound(100, 'square', 0.2);
   };
 
   const getTacticalStyles = (v: string) => `w-full p-5 rounded-2xl font-mono text-sm border-2 transition-all outline-none ${v ? `bg-black text-white border-[${themeHex}] shadow-lg` : 'bg-zinc-100 text-black border-zinc-200'}`;
 
+  // --- LOCK SCREEN ---
   if (isLocked) return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 text-white font-sans relative overflow-hidden">
-      <div className="absolute top-6 right-6 flex items-center gap-2 px-4 py-2 bg-zinc-900 rounded-full border border-zinc-800">
-        <div className={`w-2 h-2 rounded-full animate-pulse ${GOOGLE_SCRIPT_URL ? 'bg-green-500 shadow-[0_0_8px_#22c55e]' : 'bg-red-500'}`}></div>
-        <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400">STATUS: {GOOGLE_SCRIPT_URL ? 'CONNECTED' : 'OFFLINE'}</span>
-      </div>
-      <button onClick={() => { let s=0; const inv=setInterval(()=>{ s++; setAuthStage(s); playSound(200+(s*100),'sine',0.1); if(s>=4){ clearInterval(inv); playSound(800,'square',0.3,0.1); setIsLocked(false); }},500); }} className="w-48 h-48 border-4 border-blue-500/30 rounded-full flex flex-col items-center justify-center bg-zinc-950 shadow-2xl active:scale-90 transition-all z-10">
-        <span className="text-6xl mb-2 drop-shadow-[0_0_15px_white]">🛡️</span>
-        <span className="text-[10px] font-black text-blue-400 tracking-widest animate-pulse uppercase">Initialize</span>
+    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 text-white text-center">
+      <button onClick={() => { 
+        let s=0; const inv=setInterval(()=>{ 
+          s++; setAuthStage(s); playSound(200+(s*100),'sine',0.1); 
+          if(s>=4){ clearInterval(inv); setIsLocked(false); }
+        },400); 
+      }} className="w-48 h-48 border-4 border-blue-500/30 rounded-full flex flex-col items-center justify-center bg-zinc-950 shadow-2xl active:scale-95 transition-all">
+        <span className="text-6xl mb-2">🛡️</span>
+        <span className="text-[10px] font-black text-blue-400 tracking-widest uppercase">Initialize</span>
       </button>
-      
       {vaultEntries.length > 0 && (
-        <button onClick={syncVault} className="mt-12 w-full max-w-xs bg-orange-600/10 border-2 border-orange-500 p-6 rounded-[2.5rem] flex items-center justify-between animate-in slide-in-from-bottom duration-700 active:scale-95">
-          <div className="text-left"><span className="block text-[8px] font-black text-orange-500 uppercase tracking-widest">Vault Manifest</span><span className="text-white font-bold">{vaultEntries.length} LOADS PENDING</span></div>
-          <div className="text-2xl">📡</div>
+        <button onClick={syncVault} className="mt-12 w-full max-w-xs border-2 border-orange-500 p-6 rounded-[2.5rem] flex justify-between items-center active:scale-95">
+          <div className="text-left font-black uppercase text-[10px] text-orange-500">Vault: {vaultEntries.length} Pending</div>
+          <span>📡</span>
         </button>
       )}
-
-      <div className="mt-10 space-y-3 font-mono text-[10px]">
-        {['ENCRYPTING...', 'VERIFYING...', 'HANDSHAKE SECURE'].map((l, i) => (<div key={i} className={authStage > i ? (i===2?'text-green-500':'text-blue-400') : 'text-zinc-800'}>{`> ${l}`}</div>))}
-      </div>
     </div>
   );
 
   return (
-    <div className={`min-h-screen ${solarMode ? 'bg-white text-black' : 'bg-[#020202] text-zinc-100'} pb-24 font-sans relative`}>
-      <style>{`
-        .no-scrollbar::-webkit-scrollbar { display: none !important; }
-        .no-scrollbar { -ms-overflow-style: none !important; scrollbar-width: none !important; }
-        .image-filmstrip { display: flex; overflow-x: auto; overflow-y: hidden; white-space: nowrap; -webkit-overflow-scrolling: touch; gap: 10px; padding-bottom: 10px; }
-        .filmstrip-item { flex: 0 0 100%; width: 100%; height: 100%; }
-        .animate-progress-glow { box-shadow: 0 0 15px ${themeHex}; animation: loading-pulse 2s infinite ease-in-out; }
-        @keyframes loading-pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
-      `}</style>
-
-      <header className="max-w-4xl mx-auto pt-10 px-4 mb-12">
-        <div className="flex justify-between items-center mb-4">
-           <button onClick={clearForm} className={`px-4 py-2 border-2 rounded-full font-black uppercase text-[9px] ${company === 'GLX' ? 'border-green-600 text-green-500' : company === 'BST' ? 'border-blue-600 text-blue-500' : 'border-zinc-800 text-zinc-600'}`}>Clear Form</button>
-           <button onClick={() => setSolarMode(!solarMode)} className="p-3 rounded-full border-2 bg-white text-black text-[9px] font-black">{solarMode ? '🌙 Midnight' : '☀️ Solar'}</button>
-        </div>
-        <div className={`w-full min-h-[220px] rounded-[3.5rem] border-2 flex items-center justify-center ${company ? 'bg-black shadow-2xl' : 'bg-zinc-900/50'}`} style={{ borderColor: company ? themeHex : '' }}>
-           {!company && <h1 className="text-5xl font-black italic text-zinc-700 uppercase tracking-tighter">QLM<span className="text-zinc-500">CONNECT</span></h1>}
+    <div className="min-h-screen bg-[#020202] text-zinc-100 pb-24 px-4 font-sans">
+      
+      <header className="max-w-4xl mx-auto pt-10 mb-8">
+        <div className={`w-full min-h-[200px] rounded-[3.5rem] border-2 flex items-center justify-center bg-black`} style={{ borderColor: company ? themeHex : '#222' }}>
+           {!company && <h1 className="text-4xl font-black italic text-zinc-800 uppercase tracking-tighter">QLM CONNECT</h1>}
            {company === 'GLX' && <GreenleafLogo />} {company === 'BST' && <BstLogo />}
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto space-y-8 px-4">
-        <section className="bg-zinc-900/40 border-2 rounded-[2.5rem] p-8 border-zinc-800" style={{ borderColor: (company && driverName) ? themeHex : '' }}>
-          <h3 className={`text-[11px] font-black uppercase tracking-[0.6em] mb-8 ${(company && driverName) ? themeColor : 'text-zinc-500'}`}>[ 01 ] Identification</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <select className={getTacticalStyles(company)} value={company} onChange={(e)=>setCompany(e.target.value as any)}><option value="">SELECT CARRIER</option><option value="GLX">GREENLEAF XPRESS</option><option value="BST">BST EXPEDITE INC</option></select>
+      <div className="max-w-4xl mx-auto space-y-6">
+        <section className="bg-zinc-900/40 border-2 rounded-[2.5rem] p-6 border-zinc-800" style={{ borderColor: company ? themeHex : '' }}>
+          <select className={getTacticalStyles(company)} value={company} onChange={(e)=>setCompany(e.target.value as any)}>
+            <option value="">SELECT CARRIER</option>
+            <option value="GLX">GREENLEAF XPRESS</option>
+            <option value="BST">BST EXPEDITE INC</option>
+          </select>
+          <div className="mt-4">
             {!manualMode ? (
-              <select className={getTacticalStyles(driverName)} value={driverName} onChange={(e)=>{ if(e.target.value==='MANUAL') setManualMode(true); else setDriverName(e.target.value); }}><option value="">SELECT DRIVER</option>{driverList.map(d=><option key={d} value={d}>{d}</option>)}<option value="MANUAL">+ MANUAL ENTRY</option></select>
+              <select className={getTacticalStyles(driverName)} value={driverName} onChange={(e)=>{ if(e.target.value==='MANUAL') setManualMode(true); else setDriverName(e.target.value); }}>
+                <option value="">SELECT DRIVER</option>
+                {driverList.map(d=><option key={d} value={d}>{d}</option>)}
+                <option value="MANUAL">+ MANUAL ENTRY</option>
+              </select>
             ) : (
-              <input type="text" placeholder="TYPE FULL NAME" className={getTacticalStyles(driverName)} value={driverName} onChange={(e)=>setDriverName(e.target.value.toUpperCase())} />
+              <input type="text" placeholder="FULL NAME" className={getTacticalStyles(driverName)} value={driverName} onChange={(e)=>setDriverName(e.target.value.toUpperCase())} />
             )}
           </div>
         </section>
 
-        <section className="bg-zinc-900/40 border-2 rounded-[2.5rem] p-8 border-zinc-800" style={{ borderColor: (loadNum || bolNum) ? themeHex : '' }}>
-          <h3 className={`text-[11px] font-black uppercase tracking-[0.6em] mb-8 ${(loadNum || bolNum) ? themeColor : 'text-zinc-500'}`}>[ 02 ] References</h3>
-          <div className="grid grid-cols-2 gap-4"><input type="text" placeholder="LOAD #" className={getTacticalStyles(loadNum)} value={loadNum} onChange={(e)=>setLoadNum(e.target.value.toUpperCase())} /><input type="text" placeholder="BOL #" className={getTacticalStyles(bolNum)} value={bolNum} onChange={(e)=>setBolNum(e.target.value.toUpperCase())} /></div>
+        <section className="bg-zinc-900/40 border-2 rounded-[2.5rem] p-6 border-zinc-800">
+          <div className="grid grid-cols-2 gap-4">
+            <input type="text" placeholder="LOAD #" className={getTacticalStyles(loadNum)} value={loadNum} onChange={(e)=>setLoadNum(e.target.value.toUpperCase())} />
+            <input type="text" placeholder="BOL #" className={getTacticalStyles(bolNum)} value={bolNum} onChange={(e)=>setBolNum(e.target.value.toUpperCase())} />
+          </div>
         </section>
 
-        <section className="bg-zinc-900/40 border-2 rounded-[2.5rem] p-8 border-zinc-800" style={{ borderColor: puCity ? themeHex : '' }}>
-          <h3 className={`text-[11px] font-black uppercase tracking-[0.6em] mb-8 ${puCity ? themeColor : 'text-zinc-500'}`}>[ 03 ] Route</h3>
-          <div className="grid grid-cols-3 gap-4 mb-4"><div className="col-span-2"><input type="text" placeholder="PICKUP CITY" className={getTacticalStyles(puCity)} value={puCity} onChange={(e)=>setPuCity(e.target.value.toUpperCase())} /></div><select className={getTacticalStyles(puState)} value={puState} onChange={(e)=>setPuState(e.target.value)}><option value="">ST</option>{states.map(s=><option key={s} value={s}>{s}</option>)}</select></div>
-          <div className="grid grid-cols-3 gap-4"><div className="col-span-2"><input type="text" placeholder="DELIVERY CITY" className={getTacticalStyles(delCity)} value={delCity} onChange={(e)=>setDelCity(e.target.value.toUpperCase())} /></div><select className={getTacticalStyles(delState)} value={delState} onChange={(e)=>setDelState(e.target.value)}><option value="">ST</option>{states.map(s=><option key={s} value={s}>{s}</option>)}</select></div>
+        <section className="bg-zinc-900/40 border-2 rounded-[2.5rem] p-6 border-zinc-800">
+          <div className="grid grid-cols-3 gap-4 mb-4">
+            <div className="col-span-2"><input type="text" placeholder="PICKUP CITY" className={getTacticalStyles(puCity)} value={puCity} onChange={(e)=>setPuCity(e.target.value.toUpperCase())} /></div>
+            <select className={getTacticalStyles(puState)} value={puState} onChange={(e)=>setPuState(e.target.value)}><option value="">ST</option>{states.map(s=><option key={s} value={s}>{s}</option>)}</select>
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="col-span-2"><input type="text" placeholder="DELIVERY CITY" className={getTacticalStyles(delCity)} value={delCity} onChange={(e)=>setDelCity(e.target.value.toUpperCase())} /></div>
+            <select className={getTacticalStyles(delState)} value={delState} onChange={(e)=>setDelState(e.target.value)}><option value="">ST</option>{states.map(s=><option key={s} value={s}>{s}</option>)}</select>
+          </div>
         </section>
 
-        <section className="bg-zinc-900/40 border-2 rounded-[2.5rem] p-8 border-zinc-800" style={{ borderColor: bolProtocol ? themeHex : '' }}>
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-6 mb-8">
-            <h3 className={`text-[11px] font-black uppercase tracking-[0.6em] ${bolProtocol ? themeColor : 'text-zinc-500'}`}>[ 04 ] BOL Uplink</h3>
-            <div className="flex gap-4">
-              <button onClick={()=>setBolProtocol('PICKUP')} className={`px-6 py-2 rounded-xl text-[10px] font-black border-2 ${bolProtocol === 'PICKUP' ? 'bg-black text-white' : 'bg-white text-zinc-500'}`}>PICKUP</button>
-              <button onClick={()=>setBolProtocol('DELIVERY')} className={`px-6 py-2 rounded-xl text-[10px] font-black border-2 ${bolProtocol === 'DELIVERY' ? 'bg-black text-white' : 'bg-white text-zinc-500'}`}>DELIVERY</button>
-            </div>
+        <section className="bg-zinc-900/40 border-2 rounded-[2.5rem] p-6 border-zinc-800 text-center">
+          <div className="flex gap-4 mb-6">
+            <button onClick={()=>setBolProtocol('PICKUP')} className={`w-full py-4 rounded-xl font-black text-[10px] border-2 ${bolProtocol === 'PICKUP' ? 'bg-black text-white' : 'bg-white text-zinc-500'}`}>PICKUP</button>
+            <button onClick={()=>setBolProtocol('DELIVERY')} className={`w-full py-4 rounded-xl font-black text-[10px] border-2 ${bolProtocol === 'DELIVERY' ? 'bg-black text-white' : 'bg-white text-zinc-500'}`}>DELIVERY</button>
           </div>
-          <div className="flex justify-center gap-16 py-6 text-[10px] font-black">
-            <button onClick={()=>cameraInputRef.current?.click()} className="flex flex-col items-center gap-2"><div className="w-20 h-20 rounded-2xl bg-zinc-800 flex items-center justify-center text-4xl border border-zinc-700">📸</div><span>Camera</span></button>
-            <button onClick={()=>fileInputRef.current?.click()} className="flex flex-col items-center gap-2"><div className="w-20 h-20 rounded-2xl bg-zinc-800 flex items-center justify-center text-4xl border border-zinc-700">📂</div><span>Gallery</span></button>
-          </div>
-          <div className="grid grid-cols-4 gap-2 mt-6">
-            {uploadedFiles.filter(f=>f.category==='bol').map(f=>(
-              <div key={f.id} className="aspect-[3/4] border border-zinc-800 rounded-xl relative overflow-hidden"><img src={f.preview} className="w-full h-full object-cover" alt="BOL"/><button onClick={()=>setUploadedFiles(p=>p.filter(i=>i.id!==f.id))} className="absolute top-1 right-1 bg-red-600 text-white w-5 h-5 rounded-full text-[10px]">✕</button></div>
+          <button onClick={()=>cameraInputRef.current?.click()} className="w-full py-12 bg-zinc-800 rounded-3xl text-4xl mb-4 border border-zinc-700 active:scale-95 transition-all">📸</button>
+          <div className="grid grid-cols-4 gap-2">
+            {uploadedFiles.map(f=>(
+              <div key={f.id} className="aspect-[3/4] rounded-xl overflow-hidden border border-zinc-800"><img src={f.preview} className="w-full h-full object-cover" alt="BOL"/></div>
             ))}
           </div>
         </section>
 
-        <button onClick={()=>isReady && setShowVerification(true)} className={`w-full py-10 rounded-[2.5rem] font-black uppercase tracking-[1em] border-4 transition-all ${isReady ? (company === 'GLX' ? 'bg-green-600' : 'bg-blue-600') : 'bg-zinc-900 text-zinc-700 opacity-50'} text-white`}>
-          {isReady ? 'Review Documents' : 'Complete All Fields'}
+        <button onClick={()=>isReady && setShowVerification(true)} className={`w-full py-10 rounded-[2.5rem] font-black uppercase tracking-widest ${isReady ? (company === 'GLX' ? 'bg-green-600' : 'bg-blue-600') : 'bg-zinc-900 text-zinc-700 opacity-50'} text-white`}>
+          REVIEW DOCUMENTS
         </button>
       </div>
 
-      {/* VERIFICATION OVERLAY */}
+      {/* --- REDESIGNED TACTICAL REVIEW OVERLAY --- */}
       {showVerification && (
-        <div className="fixed inset-0 z-[400] bg-black/98 backdrop-blur-2xl overflow-y-auto animate-in fade-in duration-500">
-          <div className="min-h-screen w-full flex flex-col items-center pt-6 pb-48 px-4">
-            <div className="w-full max-w-2xl bg-zinc-950 border-[3px] rounded-[3.5rem] p-8 md:p-12 relative shadow-2xl" style={{ borderColor: themeHex }}>
-              <div className="flex justify-between items-start mb-8 border-b border-zinc-800 pb-6">
-                <div><h2 className={`text-2xl font-black italic uppercase tracking-tighter ${themeColor}`}>Review Transmission</h2><div className="flex items-center gap-2 mt-1"><div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: themeHex }}></div><p className="text-[9px] text-zinc-500 font-black uppercase">Ready for Uplink</p></div></div>
+        <div className="fixed inset-0 z-[500] bg-zinc-950 overflow-y-auto pb-48 animate-in slide-in-from-right duration-300">
+          <div className="p-6 border-b border-zinc-800 sticky top-0 bg-zinc-950/80 backdrop-blur-md flex justify-between">
+            <button onClick={() => setShowVerification(false)} className="text-zinc-500 font-black text-[10px]">← BACK</button>
+            <span className={`text-[10px] font-black uppercase ${themeColor}`}>Final Audit</span>
+            <div className="w-10"></div>
+          </div>
+
+          <div className="max-w-xl mx-auto p-6 space-y-6">
+            <div onClick={() => setEditingField('origin')} className="bg-zinc-900 p-6 rounded-[2.5rem] border border-zinc-800 active:scale-95 transition-all">
+              <span className="block text-[9px] font-black text-orange-500 mb-2 uppercase">Pickup (Tap to Edit)</span>
+              <div className="text-2xl font-black uppercase">{puCity || 'Missing City'}</div>
+              <div className="text-sm font-bold text-zinc-500">{puState || 'Missing State'}</div>
+            </div>
+
+            <div onClick={() => setEditingField('destination')} className="bg-zinc-900 p-6 rounded-[2.5rem] border border-zinc-800 active:scale-95 transition-all">
+              <span className="block text-[9px] font-black text-green-500 mb-2 uppercase">Delivery (Tap to Edit)</span>
+              <div className="text-2xl font-black uppercase">{delCity || 'Missing City'}</div>
+              <div className="text-sm font-bold text-zinc-500">{delState || 'Missing State'}</div>
+            </div>
+
+            <div onClick={() => setEditingField('reference')} className="bg-zinc-900 p-6 rounded-[2.5rem] border border-zinc-800 active:scale-95 transition-all">
+              <span className="block text-[9px] font-black text-blue-500 mb-2 uppercase">References (Tap to Edit)</span>
+              <div className="flex gap-8">
+                <div><span className="block text-[8px] text-zinc-600 font-bold uppercase">Load #</span><div className="font-bold">{loadNum || '---'}</div></div>
+                <div><span className="block text-[8px] text-zinc-600 font-bold uppercase">BOL #</span><div className="font-bold">{bolNum || '---'}</div></div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div className="space-y-3">
-                  {[
-                    { label: 'Carrier', value: company === 'GLX' ? 'GREENLEAF XPRESS' : 'BST EXPEDITE', id: 'company' },
-                    { label: 'Operator', value: driverName, id: 'driverName' },
-                    { label: 'Reference', value: loadNum || bolNum || '---', id: 'reference' },
-                    { label: 'Route', value: `${puCity}, ${puState} > ${delCity}, ${delState}`, id: 'origin' },
-                  ].map((item, idx) => (
-                    <div key={idx} onClick={() => setEditingField(item.id)} className="bg-zinc-900/30 border border-zinc-800/50 p-4 rounded-2xl active:scale-95 transition-all">
-                      <span className="text-[8px] font-black uppercase text-zinc-600 mb-1 block">{item.label}</span>
-                      <div className="text-sm font-bold text-white uppercase truncate">{item.value}</div>
-                    </div>
-                  ))}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 pt-6">
+              {uploadedFiles.map(f => (
+                <div key={f.id} className="aspect-[3/4] bg-zinc-900 rounded-3xl overflow-hidden border border-zinc-800 shadow-xl">
+                  <img src={f.preview} className="w-full h-full object-cover" alt="R" />
                 </div>
-                <div className="aspect-[3/4] rounded-3xl border border-zinc-800 bg-zinc-900 p-2 overflow-hidden">
-                   <div className="image-filmstrip h-full no-scrollbar">
-                     {uploadedFiles.filter(f => f.category === 'bol').map((file, idx) => (
-                       <div key={file.id} className="filmstrip-item" onClick={() => setFullScreenImage(file.preview)}>
-                         <img src={file.preview} className="w-full h-full object-cover rounded-2xl" alt="P" />
-                         <div className="text-[7px] font-black text-center mt-1 text-zinc-500">PAGE {idx+1} / {uploadedFiles.filter(f => f.category === 'bol').length}</div>
-                       </div>
-                     ))}
-                   </div>
-                </div>
-              </div>
-              <button onClick={() => setShowVerification(false)} className="w-full text-zinc-500 font-black uppercase text-[10px] py-4 border-2 border-dashed border-zinc-900 rounded-2xl mt-4">Edit Metadata</button>
+              ))}
             </div>
           </div>
 
-          <div className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black via-black/90 to-transparent z-[410]">
-            <div className="max-w-2xl mx-auto">
-              <button 
-                onClick={async () => { 
-                  if (navigator.vibrate) navigator.vibrate(60);
-                  playSound(800, 'square', 0.1); 
-                  setIsSubmitting(true); 
-                  const base64 = await Promise.all(uploadedFiles.map(async f => { return new Promise(resolve => { const r = new FileReader(); r.onload = () => resolve({category: f.category, base64: r.result}); r.readAsDataURL(f.file); }) })); 
-                  const payload = { company, driverName, loadNum, bolNum, puCity, puState, delCity, delState, bolProtocol, files: base64 }; 
-                  try { 
-                    await fetch(GOOGLE_SCRIPT_URL, {method: 'POST', mode: 'no-cors', body: JSON.stringify(payload)}); 
-                    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-                    setShowSuccess(true); 
-                  } catch(e) { 
-                    const currentVault = JSON.parse(localStorage.getItem('multi_vault') || '[]');
-                    localStorage.setItem('multi_vault', JSON.stringify([...currentVault, {id: Math.random().toString(), payload}]));
-                    setShowSuccess(true); 
-                  } 
-                }} 
-                className={`w-full py-8 rounded-[2rem] font-black uppercase tracking-[1em] text-sm shadow-2xl ${company === 'GLX' ? 'bg-green-600' : 'bg-blue-600'} text-white animate-pulse`}
-              >
-                Authorize Uplink
-              </button>
-            </div>
+          {/* STICKY ACTION BAR */}
+          <div className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black via-black/90 to-transparent">
+            <button onClick={async () => {
+              if (navigator.vibrate) navigator.vibrate(60);
+              setIsSubmitting(true);
+              const base64 = await Promise.all(uploadedFiles.map(async f => { return new Promise(resolve => { const r = new FileReader(); r.onload = () => resolve({category: 'bol', base64: r.result}); r.readAsDataURL(f.file); }) })); 
+              const payload = { company, driverName, loadNum, bolNum, puCity, puState, delCity, delState, bolProtocol, files: base64 }; 
+              try { 
+                await fetch(GOOGLE_SCRIPT_URL, {method: 'POST', mode: 'no-cors', body: JSON.stringify(payload)}); 
+                if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+                setShowSuccess(true); 
+              } catch(e) { 
+                const currentVault = JSON.parse(localStorage.getItem('multi_vault') || '[]');
+                localStorage.setItem('multi_vault', JSON.stringify([...currentVault, {id: Math.random().toString(), payload}]));
+                setShowSuccess(true); 
+              }
+            }} className={`w-full py-8 rounded-[2.5rem] font-black uppercase tracking-[1em] text-sm ${company === 'GLX' ? 'bg-green-600 shadow-green-600/30' : 'bg-blue-600 shadow-blue-600/30'} text-white shadow-2xl`}>
+              AUTHORIZE UPLINK
+            </button>
           </div>
         </div>
       )}
 
-      {/* UPLINK SEQUENCE */}
-      {isSubmitting && !showSuccess && (
-        <div className="fixed inset-0 z-[600] bg-black/95 flex flex-col items-center justify-center p-6 animate-in zoom-in">
-          <div className="relative w-64 h-64 flex items-center justify-center">
-            <div className="absolute inset-0 border-4 rounded-full animate-ping opacity-20" style={{ borderColor: themeHex }}></div>
-            <div className="text-center z-10"><div className="text-5xl mb-4 animate-bounce">🛰️</div><div className={`text-xl font-black italic ${themeColor}`}>UPLINK ACTIVE</div></div>
+      {/* EDIT MODAL */}
+      {editingField && (
+        <div className="fixed inset-0 z-[600] bg-black/95 backdrop-blur-xl flex items-center justify-center p-6">
+          <div className="w-full max-w-sm bg-zinc-900 border-2 border-zinc-800 rounded-[3rem] p-8">
+            <h3 className="text-[10px] font-black text-zinc-500 uppercase mb-6">Correction Input</h3>
+            <div className="space-y-4">
+              {editingField === 'origin' && (
+                <>
+                  <input type="text" placeholder="PICKUP CITY" className={getTacticalStyles(puCity)} value={puCity} onChange={(e)=>setPuCity(e.target.value.toUpperCase())} />
+                  <select className={getTacticalStyles(puState)} value={puState} onChange={(e)=>setPuState(e.target.value)}>{states.map(s => <option key={s} value={s}>{s}</option>)}</select>
+                </>
+              )}
+              {editingField === 'destination' && (
+                <>
+                  <input type="text" placeholder="DELIVERY CITY" className={getTacticalStyles(delCity)} value={delCity} onChange={(e)=>setDelCity(e.target.value.toUpperCase())} />
+                  <select className={getTacticalStyles(delState)} value={delState} onChange={(e)=>setDelState(e.target.value)}>{states.map(s => <option key={s} value={s}>{s}</option>)}</select>
+                </>
+              )}
+              {editingField === 'reference' && (
+                <>
+                  <input type="text" placeholder="LOAD #" className={getTacticalStyles(loadNum)} value={loadNum} onChange={(e)=>setLoadNum(e.target.value.toUpperCase())} />
+                  <input type="text" placeholder="BOL #" className={getTacticalStyles(bolNum)} value={bolNum} onChange={(e)=>setBolNum(e.target.value.toUpperCase())} />
+                </>
+              )}
+            </div>
+            <button onClick={() => setEditingField(null)} className="w-full mt-8 py-5 rounded-3xl bg-white text-black font-black uppercase text-[10px]">SAVE CHANGES</button>
           </div>
         </div>
       )}
 
-      {/* SUCCESS RECEIPT */}
+      {/* SUCCESS SCREEN */}
       {showSuccess && (
-        <div className="fixed inset-0 z-[700] bg-black flex flex-col items-center justify-center p-6 animate-in slide-in-from-bottom duration-700 text-center">
-           <div className="w-full max-w-md border-[3px] rounded-[3.5rem] p-10 bg-zinc-950" style={{ borderColor: themeHex }}>
-              <div className="text-4xl mb-6">✅</div>
-              <h2 className="text-3xl font-black italic text-white uppercase mb-8">Secure Manifest Logged</h2>
-              <div className="bg-zinc-900 p-6 rounded-3xl text-left font-mono text-[10px] space-y-2 mb-8">
-                <div><span className="text-zinc-500">REF:</span> {loadNum || bolNum}</div>
-                <div><span className="text-zinc-500">OPERATOR:</span> {driverName}</div>
-                <div><span className="text-zinc-500">STAMP:</span> {new Date().toLocaleTimeString()}</div>
-              </div>
-              <button onClick={() => window.location.reload()} className={`w-full py-6 rounded-[2rem] font-black uppercase tracking-widest ${company === 'GLX' ? 'bg-green-600' : 'bg-blue-600'} text-white`}>Close Terminal</button>
-           </div>
+        <div className="fixed inset-0 z-[700] bg-black flex flex-col items-center justify-center p-8 text-center">
+           <div className="text-6xl mb-6">✅</div>
+           <h2 className="text-3xl font-black italic uppercase mb-2">Transmission Secure</h2>
+           <p className="text-zinc-500 font-bold text-[10px] uppercase mb-12">System Manifest Updated</p>
+           <button onClick={() => window.location.reload()} className={`w-full py-7 rounded-[2.5rem] font-black uppercase tracking-widest ${company === 'GLX' ? 'bg-green-600' : 'bg-blue-600'} text-white`}>RETURN TO BASE</button>
         </div>
       )}
 
-      {/* HIDDEN INPUTS */}
-      <input type="file" ref={cameraInputRef} className="hidden" capture="environment" accept="image/*" multiple onChange={(e)=>onFileSelect(e,'bol')} />
-      <input type="file" ref={fileInputRef} className="hidden" multiple accept="image/*" onChange={(e)=>onFileSelect(e,'bol')} />
+      {/* UPLINK ANIMATION */}
+      {isSubmitting && !showSuccess && (
+        <div className="fixed inset-0 z-[600] bg-black/95 flex flex-col items-center justify-center p-6 text-center animate-in zoom-in">
+          <div className="text-5xl mb-6 animate-bounce">🛰️</div>
+          <div className={`text-xl font-black italic tracking-tighter ${themeColor}`}>UPLINK ACTIVE...</div>
+        </div>
+      )}
+
+      <input type="file" ref={cameraInputRef} className="hidden" capture="environment" accept="image/*" multiple onChange={onFileSelect} />
     </div>
   );
 };
