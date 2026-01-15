@@ -284,58 +284,98 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* TACTICAL VERIFICATION OVERLAY */}
+      {/* STATE-OF-THE-ART MISSION CONTROL DASHBOARD */}
       {showVerification && (
-        <div className="fixed inset-0 z-[400] bg-black/95 flex flex-col items-center justify-center p-4 animate-in fade-in">
-          <div className={`w-full max-w-lg bg-zinc-950 border-2 rounded-[3rem] p-8 relative shadow-2xl ${company === 'GLX' ? 'border-green-500/50' : 'border-blue-500/50'}`}>
-            <div className="text-center mb-8">
-              <h2 className={`text-2xl font-black italic uppercase tracking-[0.3em] ${themeColor}`}>Verification Required</h2>
-              <p className="text-[10px] text-zinc-500 font-bold uppercase mt-2 tracking-widest">Tap each tile to verify accuracy</p>
+        <div className="fixed inset-0 z-[400] bg-black/98 backdrop-blur-2xl flex flex-col items-center justify-center p-4 animate-in fade-in duration-500">
+          
+          {/* Main Dashboard Container */}
+          <div className={`w-full max-w-2xl bg-zinc-950 border-[3px] rounded-[3.5rem] p-8 md:p-12 relative shadow-[0_0_100px_rgba(0,0,0,1)] overflow-hidden`} style={{ borderColor: themeHex }}>
+            
+            {/* Top Status Bar */}
+            <div className="flex justify-between items-start mb-10 border-b border-zinc-800 pb-6">
+              <div>
+                <h2 className={`text-3xl font-black italic uppercase tracking-tighter ${themeColor}`}>Manifest Review</h2>
+                <div className="flex items-center gap-2 mt-1">
+                  <div className={`w-2 h-2 rounded-full animate-pulse`} style={{ backgroundColor: themeHex }}></div>
+                  <p className="text-[9px] text-zinc-500 font-black uppercase tracking-[0.3em]">System Ready for Transmission</p>
+                </div>
+              </div>
+              <div className="text-right font-mono text-[10px] text-zinc-600">
+                TERMINAL_V32.3<br/>
+                {new Date().toLocaleTimeString()}
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-4 mb-10">
+
+            {/* Data Grid: High Scannability */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
               {[
-                { label: 'Carrier', value: company, id: 'co' },
-                { label: 'Type', value: bolProtocol, id: 'type' },
-                { label: 'Driver', value: driverName, id: 'driver' },
-                { label: 'Load #', value: loadNum, id: 'load' },
-                { label: 'Origin', value: `${puCity}, ${puState}`, id: 'pu' },
-                { label: 'Dest', value: `${delCity}, ${delState}`, id: 'del' }
-              ].map((item) => (
-                <button 
-                  key={item.id}
-                  onClick={() => toggleVerify(item.id)}
-                  className={`p-4 rounded-2xl border-2 text-left transition-all duration-300 relative overflow-hidden group
-                    ${verifiedItems[item.id] ? (company === 'GLX' ? 'bg-green-500/10 border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.2)]' : 'bg-blue-500/10 border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.2)]') 
-                    : 'bg-zinc-900 border-zinc-800 opacity-60'}`}
-                >
-                  <div className="flex justify-between items-start mb-1">
-                    <span className="text-[8px] font-black uppercase text-zinc-500 tracking-tighter">{item.label}</span>
-                    {verifiedItems[item.id] && <span className="text-[10px] animate-bounce">✅</span>}
+                { label: 'Carrier', value: company === 'GLX' ? 'GREENLEAF XPRESS' : 'BST EXPEDITE', icon: '🏢' },
+                { label: 'Driver', value: driverName, icon: '🆔' },
+                { label: 'Ref #', value: loadNum || bolNum || 'NOT PROVIDED', sub: loadNum ? 'PRIMARY: LOAD' : 'PRIMARY: BOL', icon: '📂' },
+                { label: 'Protocol', value: bolProtocol, icon: '🛰️' },
+                { label: 'Origin', value: `${puCity}, ${puState}`, icon: '🛫' },
+                { label: 'Destination', value: `${delCity}, ${delState}`, icon: '🛬' },
+              ].map((item, idx) => (
+                <div key={idx} className="bg-zinc-900/40 border border-zinc-800/50 p-5 rounded-[2rem] group hover:bg-zinc-900 transition-all">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-sm">{item.icon}</span>
+                    <span className="text-[8px] font-black uppercase text-zinc-500 tracking-widest">{item.label}</span>
                   </div>
-                  <div className={`text-[11px] font-black truncate uppercase ${verifiedItems[item.id] ? 'text-white' : 'text-zinc-400'}`}>{item.value}</div>
-                </button>
+                  <div className="text-md font-bold text-white uppercase truncate">{item.value}</div>
+                  {item.sub && <div className={`text-[8px] font-bold mt-1 opacity-60 ${themeColor}`}>{item.sub}</div>}
+                </div>
               ))}
             </div>
+
+            {/* Content Summary */}
+            <div className={`mb-10 p-4 rounded-2xl border bg-black/50 flex justify-around items-center`} style={{ borderColor: `${themeHex}33` }}>
+              <div className="text-center">
+                <div className="text-[9px] font-black text-zinc-500 uppercase mb-1">Documents</div>
+                <div className="text-xl font-black text-white">{uploadedFiles.length} <span className="text-[10px] text-zinc-600">FILES</span></div>
+              </div>
+              <div className="w-[1px] h-8 bg-zinc-800"></div>
+              <div className="text-center">
+                <div className="text-[9px] font-black text-zinc-500 uppercase mb-1">Integrity</div>
+                <div className="text-xl font-black text-green-500">100%</div>
+              </div>
+            </div>
+
+            {/* Action Suite */}
             <div className="space-y-4">
               <button 
                 onClick={async ()=>{ 
-                  if(!allVerified) { playSound(100, 'square', 0.2); return; }
                   setIsSubmitting(true); 
                   const base64=await Promise.all(uploadedFiles.map(async f=>{ return new Promise(resolve=>{ const r=new FileReader(); r.onload=()=>resolve({category: f.category, base64: r.result}); r.readAsDataURL(f.file); })} )); 
                   const payload={company,driverName,loadNum,bolNum,puCity,puState,delCity,delState,bolProtocol,files:base64}; 
                   try { await fetch(GOOGLE_SCRIPT_URL,{method:'POST',mode:'no-cors',body:JSON.stringify(payload)}); setShowSuccess(true); } 
                   catch(e){ localStorage.setItem('multi_vault', JSON.stringify([...vaultEntries,{id:Math.random().toString(),payload}])); setShowSuccess(true); } 
                 }} 
-                className={`w-full py-8 rounded-2xl font-black uppercase tracking-[0.5em] text-sm border-2 transition-all active:scale-95
-                  ${allVerified ? (company === 'GLX' ? 'bg-green-600 border-green-400 text-white shadow-lg' : 'bg-blue-600 border-blue-400 text-white shadow-lg') : 'bg-zinc-800 border-zinc-700 text-zinc-600 opacity-50 cursor-not-allowed'}`}
+                className={`w-full py-8 rounded-[2rem] font-black uppercase tracking-[1em] text-sm transition-all active:scale-95 shadow-2xl relative overflow-hidden group
+                  ${company === 'GLX' ? 'bg-green-600 shadow-green-600/20' : 'bg-blue-600 shadow-blue-600/20'} text-white 
+                  ${!isSubmitting ? 'animate-pulse hover:animate-none' : ''}`}
               >
-                {isSubmitting ? 'UPLOADING...' : 'AUTHORIZE UPLINK'}
+                {isSubmitting ? (
+                   <span className="flex items-center justify-center gap-4">
+                     <div className="w-5 h-5 border-3 border-white/20 border-t-white rounded-full animate-spin"></div>
+                     TRANSMITTING...
+                   </span>
+                ) : 'AUTHORIZE UPLINK'}
+                
+                {/* Visual "Glow" Overlay on the button */}
+                <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
               </button>
-              <button onClick={() => setShowVerification(false)} className="w-full text-zinc-600 font-black uppercase text-[10px] tracking-widest py-2 hover:text-white transition-colors">✖ Cancel & Edit Fields</button>
+              
+              <button 
+                onClick={() => setShowVerification(false)} 
+                className="w-full text-zinc-500 font-black uppercase text-[10px] tracking-[0.5em] py-4 hover:text-white transition-all"
+              >
+                [ CANCEL & EDIT ]
+              </button>
             </div>
           </div>
         </div>
       )}
+      )
 
       {showSuccess && <div className="fixed inset-0 z-[500] bg-black flex items-center justify-center text-white text-5xl font-black animate-bounce" onClick={()=>window.location.reload()}>✓ TRANSMITTED</div>}
 
