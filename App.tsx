@@ -100,7 +100,7 @@ const App: React.FC = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [vaultEntries, setVaultEntries] = useState<VaultEntry[]>([]);
   const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
-  
+
   // Verification Grid States
   const [verifiedItems, setVerifiedItems] = useState<Record<string, boolean>>({});
 
@@ -323,32 +323,36 @@ const App: React.FC = () => {
                 ))}
               </div>
 
-              {/* Right Column: Clickable Visual Confirmation */}
-              <div className="relative group cursor-zoom-in" 
-                   onClick={() => {
-                     const img = uploadedFiles.find(f => f.category === 'bol')?.preview;
-                     if (img) { setFullScreenImage(img); playSound(400, 'sine', 0.1); }
-                   }}>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10 rounded-3xl pointer-events-none"></div>
-                <div className={`absolute top-3 left-3 z-20 px-2 py-1 rounded bg-black/60 border border-white/20 text-[8px] font-black text-white tracking-widest uppercase flex items-center gap-2`}>
-                  <span>🔍 Tap to Zoom</span>
-                </div>
-                <div className="aspect-[3/4] rounded-3xl border border-zinc-800 overflow-hidden bg-zinc-900 group-active:scale-[0.98] transition-all">
-                  {uploadedFiles.find(f => f.category === 'bol') ? (
-                    <img 
-                      src={uploadedFiles.find(f => f.category === 'bol')?.preview} 
-                      className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-all duration-500" 
-                      alt="BOL Preview" 
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-zinc-700 font-black text-[10px]">NO IMAGE</div>
-                  )}
-                </div>
-                <div className="absolute bottom-3 left-0 w-full z-20 text-center">
-                   <span className="text-[10px] font-black text-white/60 tracking-tighter uppercase">{uploadedFiles.length} TOTAL PAGES</span>
-                </div>
-              </div>
+              {/* Right Column: Scrollable Visual Confirmation */}
+<div className="flex flex-col gap-2">
+  <div className="aspect-[3/4] rounded-3xl border border-zinc-800 overflow-hidden bg-zinc-900 relative">
+    {uploadedFiles.filter(f => f.category === 'bol').length > 0 ? (
+      <div className="flex overflow-x-auto snap-x snap-mandatory h-full no-scrollbar">
+        {uploadedFiles.filter(f => f.category === 'bol').map((file, idx) => (
+          <div 
+            key={file.id} 
+            className="min-w-full h-full snap-center relative cursor-zoom-in"
+            onClick={() => { setFullScreenImage(file.preview); playSound(400, 'sine', 0.1); }}
+          >
+            <img 
+              src={file.preview} 
+              className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity" 
+              alt={`Page ${idx + 1}`} 
+            />
+            <div className="absolute top-3 left-3 z-20 px-2 py-1 rounded bg-black/60 border border-white/20 text-[7px] font-black text-white tracking-widest uppercase">
+              PAGE {idx + 1} of {uploadedFiles.filter(f => f.category === 'bol').length}
             </div>
+          </div>
+        ))}
+      </div>
+    ) : (
+      <div className="w-full h-full flex items-center justify-center text-zinc-700 font-black text-[10px]">NO IMAGES</div>
+    )}
+  </div>
+  <p className="text-[8px] text-center text-zinc-600 font-black uppercase tracking-widest animate-pulse">
+    {uploadedFiles.filter(f => f.category === 'bol').length > 1 ? "← Swipe to verify all pages →" : "Tap to expand"}
+  </p>
+</div>
 
             {/* Action Suite */}
             <div className="space-y-4">
