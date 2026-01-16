@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-/** * LOGISTICS TERMINAL v33.1 - OPERATIONAL EDITION
- * - FIXED: Verbiage updated to driver-standard lingo.
- * - RESTORED: Solar (Day) / Midnight (Night) Mode toggle.
- * - FIXED: Tap to Edit now correctly targets all fields in Review.
- * - ADDED: Image Inspector (Tap BOL/POD in review to see full size).
- * - ADDED: Capacity Prompt for freight loaded on trailer.
+/** * LOGISTICS TERMINAL v33.2 - TACTICAL FORCE
+ * - FIXED: Handshake audio is now a high-intensity Power-Up sequence.
+ * - RESTORED: QLMCONNECT Branding on the main dashboard.
+ * - RESTORED: Day (Solar) / Night (Midnight) Mode Toggle in Header.
+ * - FIXED: "Ready for Uplink" is now a glowing button state, not a floating label.
+ * - ADDED: Tactical Review Entries screen with full "Tap to Edit" targeting.
  */
 
 interface FileWithPreview { file: File | Blob; preview: string; id: string; category: 'bol' | 'freight'; }
@@ -13,16 +13,19 @@ interface VaultEntry { id: string; timestamp: number; payload: any; }
 
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby-L6nKjgfAnLFPgezkf3inQTJRG3Ql_MufZ-jlKWhSbPdEHeQniPLdNQDaidM2EY6MdA/exec';
 
-// --- AUDIO UTILITIES ---
-const playTone = (freq: number, duration: number) => {
+// --- [SECTION 00] POWER-UP AUDIO ---
+const playPowerUp = (stage: number) => {
   try {
     const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
     const osc = ctx.createOscillator(); const gain = ctx.createGain();
-    osc.type = 'sine'; osc.frequency.setValueAtTime(freq, ctx.currentTime);
-    gain.gain.setValueAtTime(0.05, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    // Stage-based frequencies: Low rumble to high-frequency engage
+    const freqs = [110, 220, 440, 880, 1760];
+    osc.type = stage === 5 ? 'square' : 'sawtooth'; 
+    osc.frequency.setValueAtTime(freqs[stage-1] || 440, ctx.currentTime);
+    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
     osc.connect(gain); gain.connect(ctx.destination);
-    osc.start(); osc.stop(ctx.currentTime + duration);
+    osc.start(); osc.stop(ctx.currentTime + 0.5);
   } catch (e) { }
 };
 
@@ -38,7 +41,7 @@ const compressImage = (file: File): Promise<Blob> => {
         else { if (h > MAX) { w *= MAX / h; h = MAX; } }
         canvas.width = w; canvas.height = h;
         const ctx = canvas.getContext('2d');
-        if (ctx) { ctx.filter = "contrast(1.1) brightness(1.02)"; ctx.drawImage(img, 0, 0, w, h); }
+        if (ctx) { ctx.filter = "contrast(1.1) brightness(1.03)"; ctx.drawImage(img, 0, 0, w, h); }
         canvas.toBlob((b) => resolve(b || file), 'image/jpeg', 0.8);
       };
     };
@@ -46,7 +49,7 @@ const compressImage = (file: File): Promise<Blob> => {
 };
 
 // --- AUTHENTIC LOGOS ---
-export const GreenleafLogo = () => (
+const GreenleafLogo = () => (
   <div className="flex flex-col items-center justify-center p-4 animate-in fade-in duration-1000">
     <svg width="100%" height="auto" className="max-w-[400px]" viewBox="0 0 600 320" fill="none">
       <defs>
@@ -65,7 +68,7 @@ export const GreenleafLogo = () => (
   </div>
 );
 
-export const BstLogo = () => (
+const BstLogo = () => (
   <div className="flex flex-col items-center justify-center p-4 w-full animate-in fade-in duration-700"> 
     <svg width="320" height="120" viewBox="0 0 400 120">
       <defs><linearGradient id="bst-metal" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stopColor="#0ea5e9" /><stop offset="50%" stopColor="#ffffff" /><stop offset="100%" stopColor="#2563eb" /></linearGradient></defs>
@@ -123,7 +126,7 @@ const App: React.FC = () => {
     }
   };
 
-  const inputStyle = (v: string) => `w-full p-5 rounded-2xl font-mono text-sm border-2 transition-all outline-none ${
+  const getInpStyle = (v: string) => `w-full p-5 rounded-2xl font-mono text-sm border-2 transition-all outline-none ${
     solarMode ? (v ? 'bg-zinc-50 border-zinc-900 text-black' : 'bg-white border-zinc-200 text-zinc-400') 
                : (v ? `bg-black border-[${themeHex}] text-white shadow-lg` : 'bg-zinc-900 border-zinc-800 text-zinc-500')
   }`;
@@ -131,24 +134,24 @@ const App: React.FC = () => {
   // --- LOCK SCREEN ---
   if (isLocked) return (
     <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 text-white font-sans overflow-hidden">
-      <div className="absolute top-12 flex flex-col items-center opacity-30">
+      <div className="absolute top-12 flex flex-col items-center opacity-40">
         <div className="w-1 h-12 bg-blue-500 animate-pulse"></div>
-        <div className="text-[10px] font-black tracking-[0.4em] mt-4">SECURE TERMINAL</div>
+        <div className="text-[10px] font-black tracking-[0.5em] mt-4 italic">QLMCONNECT ENGINE</div>
       </div>
 
       <button onClick={() => { 
         let s=0; const inv=setInterval(()=>{ 
-          s++; setAuthStage(s); playTone(200 + (s * 50), 0.1); 
-          if(s>=5){ clearInterval(inv); playTone(880, 0.5); setTimeout(() => setIsLocked(false), 600); }
-        },400); 
-      }} className="w-60 h-60 border-2 border-blue-500/20 rounded-full flex flex-col items-center justify-center bg-zinc-950 shadow-[0_0_100px_rgba(59,130,246,0.1)] active:scale-90 transition-all z-10">
-        <div className={`absolute inset-0 border-t-2 border-blue-500 rounded-full ${authStage > 0 ? 'animate-spin' : ''}`}></div>
-        <span className="text-7xl mb-4">🚛</span>
-        <span className="text-[11px] font-black tracking-[0.4em] uppercase text-blue-400 animate-pulse">Start App</span>
+          s++; setAuthStage(s); playPowerUp(s);
+          if(s>=5){ clearInterval(inv); setTimeout(() => setIsLocked(false), 600); }
+        },350); 
+      }} className="w-64 h-64 border-4 border-blue-500/10 rounded-full flex flex-col items-center justify-center bg-zinc-950 shadow-[0_0_120px_rgba(59,130,246,0.2)] active:scale-95 transition-all z-10 group">
+        <div className={`absolute inset-0 border-t-4 border-blue-500 rounded-full ${authStage > 0 ? 'animate-spin' : ''}`}></div>
+        <span className="text-8xl mb-4 group-active:scale-110 transition-transform">⛽</span>
+        <span className="text-[12px] font-black tracking-[0.3em] uppercase text-blue-500 animate-pulse">Engage Terminal</span>
       </button>
 
-      <div className="mt-16 space-y-3 w-64 font-mono text-[9px] text-zinc-700">
-        {['SYSTEMS_CHECK', 'ROSTER_SYNC', 'NETWORK_READY', 'GPS_SIGNAL', 'CONNECTING'].map((l, i) => (
+      <div className="mt-16 space-y-3 w-64 font-mono text-[9px] text-zinc-800">
+        {['CORE_HANDSHAKE', 'ROSTER_PULL', 'UPLINK_READY', 'ENCRYPTION_SET', 'READY'].map((l, i) => (
           <div key={i} className={`flex items-center gap-3 ${authStage > i ? 'text-green-500' : ''}`}>
             <span>[{authStage > i ? 'OK' : '..'}]</span> {l}
           </div>
@@ -158,67 +161,67 @@ const App: React.FC = () => {
   );
 
   return (
-    <div className={`min-h-screen transition-all duration-500 ${solarMode ? 'bg-zinc-100 text-black' : 'bg-[#020202] text-zinc-100'} pb-32`}>
+    <div className={`min-h-screen transition-all duration-700 ${solarMode ? 'bg-zinc-100 text-black' : 'bg-[#020202] text-zinc-100'} pb-32`}>
       
       {/* HEADER BAR */}
-      <div className={`fixed top-0 w-full z-[100] px-6 py-4 flex justify-between items-center text-[10px] font-black border-b ${solarMode ? 'bg-white border-zinc-200 shadow-sm' : 'bg-black border-zinc-900'} backdrop-blur-md`}>
+      <div className={`fixed top-0 w-full z-[100] px-6 py-4 flex justify-between items-center text-[10px] font-black border-b ${solarMode ? 'bg-white/90 border-zinc-200 shadow-sm' : 'bg-black/90 border-zinc-900'} backdrop-blur-md`}>
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_#22c55e]"></div>
-          <span className="tracking-widest uppercase">Connected</span>
+          <span className="tracking-widest uppercase italic">Connected</span>
         </div>
-        <button onClick={() => setSolarMode(!solarMode)} className="flex items-center gap-2 px-4 py-1.5 border-2 border-zinc-700 rounded-full uppercase text-[9px] hover:bg-zinc-800 transition-colors">
+        <button onClick={() => setSolarMode(!solarMode)} className="flex items-center gap-2 px-5 py-2 border-2 border-zinc-700 rounded-lg uppercase text-[9px] font-black hover:bg-zinc-800 transition-colors">
           {solarMode ? '🌙 Switch to Night' : '☀️ Switch to Day'}
         </button>
       </div>
 
       <header className="max-w-4xl mx-auto pt-24 px-6 mb-12">
-        <div className={`w-full min-h-[220px] rounded-[3.5rem] border-2 flex items-center justify-center transition-all ${solarMode ? 'bg-white border-zinc-300' : 'bg-zinc-950 border-zinc-900 shadow-2xl'}`}>
-           {!company ? <h1 className="text-4xl font-black italic text-zinc-800 tracking-tighter">SELECT CARRIER</h1> :
+        <div className={`w-full min-h-[220px] rounded-[3.5rem] border-2 flex items-center justify-center transition-all ${solarMode ? 'bg-white border-zinc-300 shadow-xl' : 'bg-zinc-950 border-zinc-900 shadow-2xl'}`}>
+           {!company ? <h1 className="text-5xl font-black italic text-zinc-800 uppercase tracking-tighter">QLM<span className="text-zinc-500">CONNECT</span></h1> :
             company === 'GLX' ? <GreenleafLogo /> : <BstLogo />}
         </div>
       </header>
 
       <div className="max-w-4xl mx-auto space-y-8 px-6">
-        {/* IDENTIFICATION */}
+        {/* OPERATOR INFO */}
         <section className={`p-8 rounded-[2.5rem] border-2 transition-all ${solarMode ? 'bg-white border-zinc-300' : 'bg-zinc-900/30 border-zinc-800'}`}>
           <h3 className="text-[10px] font-black uppercase tracking-[0.5em] mb-8 text-zinc-600">[ 01 ] Identification</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <select className={inputStyle(company)} value={company} onChange={(e)=>setCompany(e.target.value as any)}><option value="">CHOOSE COMPANY</option><option value="GLX">GREENLEAF XPRESS</option><option value="BST">BST EXPEDITE INC</option></select>
-            <select className={inputStyle(driverName)} value={driverName} onChange={(e)=>setDriverName(e.target.value)}><option value="">SELECT DRIVER</option>{driverList.map(d=><option key={d} value={d}>{d}</option>)}</select>
+            <select className={getInpStyle(company)} value={company} onChange={(e)=>setCompany(e.target.value as any)}><option value="">CHOOSE COMPANY</option><option value="GLX">GREENLEAF XPRESS</option><option value="BST">BST EXPEDITE INC</option></select>
+            <select className={getInpStyle(driverName)} value={driverName} onChange={(e)=>setDriverName(e.target.value)}><option value="">SELECT DRIVER</option>{driverList.map(d=><option key={d} value={d}>{d}</option>)}</select>
           </div>
         </section>
 
-        {/* LOGISTICS */}
+        {/* LOGISTICS PATH */}
         <section className={`p-8 rounded-[2.5rem] border-2 transition-all ${solarMode ? 'bg-white border-zinc-300' : 'bg-zinc-900/30 border-zinc-800'}`}>
           <h3 className="text-[10px] font-black uppercase tracking-[0.5em] mb-8 text-zinc-600">[ 02 ] Logistics</h3>
           <div className="space-y-4">
             <div className="grid grid-cols-4 gap-4">
-              <input className={`${inputStyle(puCity)} col-span-3`} placeholder="PICKUP CITY" value={puCity} onChange={e=>setPuCity(e.target.value.toUpperCase())} />
-              <select className={inputStyle(puState)} value={puState} onChange={e=>setPuState(e.target.value)}><option value="">STATE</option>{states.map(s=><option key={s} value={s}>{s}</option>)}</select>
+              <input className={`${getInpStyle(puCity)} col-span-3`} placeholder="PICKUP CITY" value={puCity} onChange={e=>setPuCity(e.target.value.toUpperCase())} />
+              <select className={getInpStyle(puState)} value={puState} onChange={e=>setPuState(e.target.value)}><option value="">STATE</option>{states.map(s=><option key={s} value={s}>{s}</option>)}</select>
             </div>
             <div className="grid grid-cols-4 gap-4">
-              <input className={`${inputStyle(delCity)} col-span-3`} placeholder="DELIVERY CITY" value={delCity} onChange={e=>setDelCity(e.target.value.toUpperCase())} />
-              <select className={inputStyle(delState)} value={delState} onChange={e=>setDelState(e.target.value)}><option value="">STATE</option>{states.map(s=><option key={s} value={s}>{s}</option>)}</select>
+              <input className={`${getInpStyle(delCity)} col-span-3`} placeholder="DELIVERY CITY" value={delCity} onChange={e=>setDelCity(e.target.value.toUpperCase())} />
+              <select className={getInpStyle(delState)} value={delState} onChange={e=>setDelState(e.target.value)}><option value="">STATE</option>{states.map(s=><option key={s} value={s}>{s}</option>)}</select>
             </div>
             <div className="grid grid-cols-2 gap-4 mt-2">
-              <input className={inputStyle(loadNum)} placeholder="LOAD #" value={loadNum} onChange={e=>setLoadNum(e.target.value.toUpperCase())} />
-              <input className={inputStyle(bolNum)} placeholder="BOL #" value={bolNum} onChange={e=>setBolNum(e.target.value.toUpperCase())} />
+              <input className={getInpStyle(loadNum)} placeholder="LOAD #" value={loadNum} onChange={e=>setLoadNum(e.target.value.toUpperCase())} />
+              <input className={getInpStyle(bolNum)} placeholder="BOL #" value={bolNum} onChange={e=>setBolNum(e.target.value.toUpperCase())} />
             </div>
           </div>
         </section>
 
-        {/* SCANNING */}
+        {/* DOCUMENT UPLOAD */}
         <section className={`p-8 rounded-[2.5rem] border-2 transition-all ${solarMode ? 'bg-white border-zinc-300' : 'bg-zinc-900/30 border-zinc-800 shadow-2xl'}`}>
-          <div className="flex justify-between items-center mb-8">
-            <h3 className="text-[10px] font-black uppercase tracking-[0.5em] text-zinc-600">[ 03 ] BOL/POD Upload</h3>
+          <div className="flex justify-between items-center mb-10">
+            <h3 className="text-[10px] font-black uppercase tracking-[0.5em] text-zinc-600">[ 03 ] BOL/POD SCAN</h3>
             <div className="flex gap-2">
               <button onClick={()=>setBolProtocol('PICKUP')} className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase border-2 transition-all ${bolProtocol === 'PICKUP' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-zinc-400'}`}>Pickup</button>
               <button onClick={()=>setBolProtocol('DELIVERY')} className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase border-2 transition-all ${bolProtocol === 'DELIVERY' ? 'bg-green-600 text-white border-green-600' : 'bg-white text-zinc-400'}`}>Delivery</button>
             </div>
           </div>
           <div className="flex gap-4">
-            <button onClick={()=>cameraInputRef.current?.click()} className="flex-1 py-14 bg-zinc-800/30 rounded-3xl border-2 border-dashed border-zinc-700 text-3xl active:scale-95">📸</button>
-            <button onClick={()=>fileInputRef.current?.click()} className="flex-1 py-14 bg-zinc-800/30 rounded-3xl border-2 border-dashed border-zinc-700 text-3xl active:scale-95">📂</button>
+            <button onClick={()=>cameraInputRef.current?.click()} className="flex-1 py-14 bg-zinc-800/30 rounded-[2rem] border-2 border-dashed border-zinc-700 text-4xl active:scale-95 transition-all">📸</button>
+            <button onClick={()=>fileInputRef.current?.click()} className="flex-1 py-14 bg-zinc-800/30 rounded-[2rem] border-2 border-dashed border-zinc-700 text-4xl active:scale-95 transition-all">📂</button>
           </div>
           <div className="grid grid-cols-4 gap-2 mt-6">
             {uploadedFiles.filter(f=>f.category==='bol').map(f=>(
@@ -230,11 +233,11 @@ const App: React.FC = () => {
           </div>
         </section>
 
-        {/* FREIGHT LOADED */}
+        {/* FREIGHT CAPACITY PHOTOS */}
         {bolProtocol === 'PICKUP' && (
           <section className={`p-8 rounded-[2.5rem] border-2 animate-in slide-in-from-bottom duration-500 ${solarMode ? 'bg-white border-zinc-300' : 'bg-zinc-900/30 border-orange-500/20 shadow-2xl'}`}>
             <h3 className="text-[10px] font-black uppercase tracking-[0.5em] mb-8 text-orange-500">[ 04 ] Trailer Capacity</h3>
-            <button onClick={()=>freightCamRef.current?.click()} className="w-full py-12 bg-orange-500/10 border-2 border-dashed border-orange-500/30 rounded-3xl text-2xl active:scale-95 transition-all text-orange-500">📸 Take picture of freight loaded on trailer</button>
+            <button onClick={()=>freightCamRef.current?.click()} className="w-full py-12 bg-orange-500/10 border-2 border-dashed border-orange-500/30 rounded-3xl text-xl font-bold active:scale-95 transition-all text-orange-500">📸 Take picture of freight loaded on trailer</button>
             <div className="grid grid-cols-4 gap-2 mt-6">
               {uploadedFiles.filter(f=>f.category==='freight').map(f=>(
                 <div key={f.id} className="aspect-square rounded-xl overflow-hidden border border-orange-900 relative">
@@ -251,40 +254,40 @@ const App: React.FC = () => {
         </button>
       </div>
 
-      {/* FREIGHT PROMPT MODAL */}
+      {/* FREIGHT CAP MODAL */}
       {showFreightPrompt && (
         <div className="fixed inset-0 z-[500] bg-black/95 backdrop-blur-2xl flex items-center justify-center p-6 animate-in fade-in">
-          <div className="bg-zinc-950 border-4 border-orange-500/30 rounded-[3rem] p-12 text-center max-w-sm shadow-[0_0_100px_rgba(249,115,22,0.1)]">
-            <h2 className="text-2xl font-black uppercase text-orange-500 mb-4 italic tracking-tight">Trailer Check</h2>
-            <p className="text-zinc-500 text-[10px] mb-10 font-black uppercase tracking-widest leading-relaxed">Take a picture of freight loaded on the trailer to show available space?</p>
+          <div className="bg-zinc-950 border-4 border-orange-500/40 rounded-[3.5rem] p-12 text-center max-w-sm">
+            <h2 className="text-3xl font-black uppercase text-orange-500 mb-4 italic tracking-tight underline decoration-orange-500/30">Trailer Space</h2>
+            <p className="text-zinc-500 text-[10px] mb-10 font-black uppercase tracking-widest leading-relaxed">System requires a photo of the freight loaded on the trailer.</p>
             <div className="flex flex-col gap-4">
-              <button onClick={()=>{ setShowFreightPrompt(false); freightCamRef.current?.click(); }} className="bg-orange-600 text-white py-6 rounded-2xl font-black uppercase tracking-widest active:scale-95 shadow-xl">Capture Space</button>
-              <button onClick={()=>setShowFreightPrompt(false)} className="text-zinc-700 font-black uppercase text-[10px] tracking-widest py-4">Not Required</button>
+              <button onClick={()=>{ setShowFreightPrompt(false); freightCamRef.current?.click(); }} className="bg-orange-600 text-white py-6 rounded-2xl font-black uppercase tracking-widest active:scale-95 shadow-[0_0_20px_rgba(249,115,22,0.3)]">Open Camera</button>
+              <button onClick={()=>setShowFreightPrompt(false)} className="text-zinc-700 font-black uppercase text-[10px] tracking-widest py-4">Skip Verification</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* REVIEW TRANSMISSION DASHBOARD */}
+      {/* REVIEW DASHBOARD */}
       {showVerification && (
         <div className="fixed inset-0 z-[600] bg-zinc-950 overflow-y-auto animate-in slide-in-from-right duration-300">
-          <div className="max-w-xl mx-auto p-10 pb-56 space-y-10">
-            <div className="flex justify-between items-center border-b-2 border-zinc-900 pb-8">
-              <h2 className="text-2xl font-black italic tracking-tighter text-white uppercase">Review Entries</h2>
-              <button onClick={()=>setShowVerification(false)} className="bg-zinc-900 text-zinc-500 px-6 py-2 rounded-full font-black text-[9px] uppercase border border-zinc-800">Close</button>
+          <div className="max-w-xl mx-auto p-10 pb-56 space-y-12">
+            <div className="flex justify-between items-center border-b-2 border-zinc-900 pb-10">
+              <h2 className="text-3xl font-black italic tracking-tighter text-white uppercase">Review Entries</h2>
+              <button onClick={()=>setShowVerification(false)} className="bg-zinc-900 text-zinc-400 px-6 py-2 rounded-full font-black text-[9px] uppercase border border-zinc-800 active:scale-90 transition-all">Go Back</button>
             </div>
             
             <div className="grid grid-cols-1 gap-4">
               {[
-                { l: 'Operator', v: driverName, id: 'driverName' },
-                { l: 'Reference', v: loadNum || bolNum, id: 'reference' },
-                { l: 'Pickup Point', v: `${puCity}, ${puState}`, id: 'origin' },
-                { l: 'Destination Point', v: `${delCity}, ${delState}`, id: 'destination' }
+                { l: 'OPERATOR', v: driverName, id: 'driverName' },
+                { l: 'REFERENCE', v: loadNum || bolNum, id: 'reference' },
+                { l: 'PICKUP', v: `${puCity}, ${puState}`, id: 'origin' },
+                { l: 'DESTINATION', v: `${delCity}, ${delState}`, id: 'destination' }
               ].map(item => (
-                <div key={item.l} onClick={()=>setEditingField(item.id)} className="bg-zinc-900/50 p-6 rounded-[2.5rem] border-2 border-zinc-900 active:scale-95 transition-all group">
+                <div key={item.l} onClick={()=>setEditingField(item.id)} className="bg-zinc-900/50 p-7 rounded-[2.5rem] border-2 border-zinc-900 active:scale-95 transition-all group relative overflow-hidden">
                   <div className="flex justify-between items-center mb-1">
-                    <span className="text-[9px] font-black text-yellow-500 uppercase tracking-widest">{item.l}</span>
-                    <span className="text-[7px] font-black text-white/40 uppercase">Tap to Edit</span>
+                    <span className="text-[10px] font-black text-yellow-500 uppercase tracking-widest">{item.l}</span>
+                    <span className="text-[7px] font-black text-white/30 uppercase border border-white/10 px-2 py-0.5 rounded">Tap to Change</span>
                   </div>
                   <div className="text-xl font-bold text-white uppercase tracking-tight">{item.v}</div>
                 </div>
@@ -293,80 +296,81 @@ const App: React.FC = () => {
 
             <div className="grid grid-cols-2 gap-4">
               {uploadedFiles.map(f => (
-                <div key={f.id} className="aspect-[3/4] rounded-3xl overflow-hidden border-2 border-zinc-800 relative group cursor-pointer" onClick={() => setFullImage(f.preview)}>
-                  <img src={f.preview} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
-                  <div className="absolute top-4 left-4 bg-black/70 px-4 py-1 rounded-full text-[8px] font-black uppercase text-blue-400 border border-blue-500/30">View {f.category}</div>
+                <div key={f.id} className="aspect-[3/4] rounded-3xl overflow-hidden border-2 border-zinc-800 relative cursor-zoom-in" onClick={() => setFullImage(f.preview)}>
+                  <img src={f.preview} className="w-full h-full object-cover grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all" />
+                  <div className="absolute top-4 left-4 bg-black/80 px-4 py-1 rounded-full text-[8px] font-black uppercase text-blue-500 border border-blue-500/30">View {f.category}</div>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="fixed bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-black via-black/90 to-transparent z-[610]">
-            <div className="max-w-xl mx-auto flex flex-col items-center gap-4">
-               <div className="flex items-center gap-2 text-[9px] font-black text-blue-500 uppercase tracking-widest animate-pulse">
-                 <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_5px_#3b82f6]"></div>
-                 Ready for Uplink
-               </div>
-               <button onClick={()=>{ if(navigator.vibrate) navigator.vibrate(60); setIsSubmitting(true); setTimeout(()=>setShowSuccess(true), 1800); }} className="w-full py-8 bg-blue-600 text-white rounded-[2.5rem] font-black uppercase tracking-[1.2em] text-sm shadow-[0_0_50px_rgba(37,99,235,0.3)] active:scale-95">Authorize Uplink</button>
+          <div className="fixed bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-black via-black/95 to-transparent z-[610]">
+            <div className="max-w-xl mx-auto">
+               <button 
+                onClick={()=>{ if(navigator.vibrate) navigator.vibrate(60); setIsSubmitting(true); setTimeout(()=>setShowSuccess(true), 2000); }} 
+                className={`w-full py-8 bg-blue-600 text-white rounded-[2.5rem] font-black uppercase tracking-[1.2em] text-sm shadow-[0_0_60px_rgba(37,99,235,0.3)] active:scale-95 transition-all border-4 border-blue-400 animate-pulse`}
+               >
+                 Authorize Uplink
+               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* EDIT MODAL */}
+      {/* TACTICAL EDIT MODAL */}
       {editingField && (
-        <div className="fixed inset-0 z-[800] bg-black/98 flex items-center justify-center p-6 animate-in zoom-in">
-          <div className="w-full max-w-sm bg-zinc-900 border-2 border-zinc-800 rounded-[3rem] p-10 shadow-2xl">
-            <h3 className="text-[10px] font-black text-zinc-500 uppercase mb-8 tracking-[0.4em] text-center">Correct Entry</h3>
+        <div className="fixed inset-0 z-[800] bg-black/98 flex items-center justify-center p-6">
+          <div className="w-full max-w-sm bg-zinc-900 border-2 border-zinc-800 rounded-[3.5rem] p-10 shadow-2xl">
+            <h3 className="text-[10px] font-black text-zinc-500 uppercase mb-8 tracking-[0.4em] text-center italic">Updating Entry</h3>
             <div className="space-y-4">
               {editingField === 'origin' && (
                 <>
-                  <input type="text" placeholder="CITY" className={inputStyle(puCity)} value={puCity} onChange={(e)=>setPuCity(e.target.value.toUpperCase())} />
-                  <select className={inputStyle(puState)} value={puState} onChange={(e)=>setPuState(e.target.value)}>{states.map(s => <option key={s} value={s}>{s}</option>)}</select>
+                  <input type="text" placeholder="CITY" className={getInpStyle(puCity)} value={puCity} onChange={(e)=>setPuCity(e.target.value.toUpperCase())} />
+                  <select className={getInpStyle(puState)} value={puState} onChange={(e)=>setPuState(e.target.value)}>{states.map(s => <option key={s} value={s}>{s}</option>)}</select>
                 </>
               )}
               {editingField === 'destination' && (
                 <>
-                  <input type="text" placeholder="CITY" className={inputStyle(delCity)} value={delCity} onChange={(e)=>setDelCity(e.target.value.toUpperCase())} />
-                  <select className={inputStyle(delState)} value={delState} onChange={(e)=>setDelState(e.target.value)}>{states.map(s => <option key={s} value={s}>{s}</option>)}</select>
+                  <input type="text" placeholder="CITY" className={getInpStyle(delCity)} value={delCity} onChange={(e)=>setDelCity(e.target.value.toUpperCase())} />
+                  <select className={getInpStyle(delState)} value={delState} onChange={(e)=>setDelState(e.target.value)}>{states.map(s => <option key={s} value={s}>{s}</option>)}</select>
                 </>
               )}
               {editingField === 'reference' && (
                 <>
-                  <input type="text" placeholder="LOAD #" className={inputStyle(loadNum)} value={loadNum} onChange={(e)=>setLoadNum(e.target.value.toUpperCase())} />
-                  <input type="text" placeholder="BOL #" className={inputStyle(bolNum)} value={bolNum} onChange={(e)=>setBolNum(e.target.value.toUpperCase())} />
+                  <input type="text" placeholder="LOAD #" className={getInpStyle(loadNum)} value={loadNum} onChange={(e)=>setLoadNum(e.target.value.toUpperCase())} />
+                  <input type="text" placeholder="BOL #" className={getInpStyle(bolNum)} value={bolNum} onChange={(e)=>setBolNum(e.target.value.toUpperCase())} />
                 </>
               )}
               {editingField === 'driverName' && (
-                <select className={inputStyle(driverName)} value={driverName} onChange={(e)=>setDriverName(e.target.value)}>
+                <select className={getInpStyle(driverName)} value={driverName} onChange={(e)=>setDriverName(e.target.value)}>
                    {driverList.map(d=><option key={d} value={d}>{d}</option>)}
                 </select>
               )}
             </div>
-            <button onClick={() => { playTone(440, 0.1); setEditingField(null); }} className="w-full mt-10 py-6 rounded-3xl bg-white text-black font-black uppercase text-[10px] tracking-widest shadow-xl">Update Entry</button>
+            <button onClick={() => setEditingField(null)} className="w-full mt-10 py-6 rounded-[2rem] bg-white text-black font-black uppercase text-[10px] tracking-widest active:scale-95">Commit Changes</button>
           </div>
         </div>
       )}
 
-      {/* FULL IMAGE INSPECTOR */}
+      {/* IMAGE VIEWER */}
       {fullImage && (
         <div className="fixed inset-0 z-[900] bg-black flex flex-col items-center justify-center p-4 animate-in zoom-in" onClick={() => setFullImage(null)}>
            <button className="absolute top-10 right-10 text-white text-[10px] font-black border-2 border-white/20 px-6 py-2 rounded-full uppercase">Close [X]</button>
-           <img src={fullImage} className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl" />
+           <img src={fullImage} className="max-w-full max-h-[85vh] object-contain rounded-xl" />
         </div>
       )}
 
       {/* SUCCESS SCREEN */}
       {showSuccess && (
-        <div className="fixed inset-0 z-[700] bg-black flex flex-col items-center justify-center p-10 text-center animate-in zoom-in duration-700">
-          <div className="w-24 h-24 rounded-full border-4 border-green-500 flex items-center justify-center text-5xl mb-8">✓</div>
-          <h2 className="text-3xl font-black italic uppercase tracking-tighter mb-4 text-white">Upload Complete</h2>
+        <div className="fixed inset-0 z-[700] bg-black flex flex-col items-center justify-center p-10 text-center">
+          <div className="w-24 h-24 rounded-full border-4 border-green-500 flex items-center justify-center text-5xl mb-8 animate-bounce shadow-[0_0_40px_rgba(34,197,94,0.4)] text-green-500">✓</div>
+          <h2 className="text-3xl font-black italic uppercase tracking-tighter mb-4 text-white">Transmission Secure</h2>
           <p className="text-zinc-600 font-bold text-[10px] uppercase tracking-[0.5em] mb-12">Logistics Manifest Synchronized</p>
           <button onClick={()=>window.location.reload()} className="w-full py-6 bg-zinc-900 border-2 border-zinc-800 text-white rounded-[2rem] font-black uppercase text-[10px] tracking-widest active:scale-95">Restart Terminal</button>
         </div>
       )}
 
-      {/* HIDDEN INPUTS */}
+      {/* INPUTS */}
       <input type="file" ref={cameraInputRef} className="hidden" capture="environment" accept="image/*" multiple onChange={(e)=>onFileSelect(e,'bol')} />
       <input type="file" ref={fileInputRef} className="hidden" multiple accept="image/*" onChange={(e)=>onFileSelect(e,'bol')} />
       <input type="file" ref={freightCamRef} className="hidden" capture="environment" accept="image/*" multiple onChange={(e)=>onFileSelect(e,'freight')} />
