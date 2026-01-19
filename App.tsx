@@ -109,21 +109,20 @@ const App: React.FC = () => {
   const isReady = !!(company && driverName && (loadNum || bolNum) && puCity && puState && delCity && delState && bolProtocol && uploadedFiles.some(f => f.category === 'bol'));
 
   useEffect(() => {
-    // We use a "Proxy" to bypass the CORS block you saw in the console
-    const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
-    const targetUrl = `${GOOGLE_SCRIPT_URL}?action=getDrivers`;
+    // We use a "JSONP" approach to bypass the CORS error in your console
+    const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
+    
+    (window as any)[callbackName] = (data: string[]) => {
+      setDriverList(data);
+      delete (window as any)[callbackName];
+      const script = document.getElementById('jsonp-script');
+      if (script) script.remove();
+    };
 
-    fetch(targetUrl)
-      .then(res => res.json())
-      .then(data => {
-        console.log("Success! Drivers:", data);
-        setDriverList(data);
-      })
-      .catch(err => {
-        console.error("CORS still blocking. Trying alternative...", err);
-        // Fallback: If the proxy is busy, we show a manual entry option
-        setManualMode(true);
-      });
+    const script = document.createElement('script');
+    script.id = 'jsonp-script';
+    script.src = `${GOOGLE_SCRIPT_URL}?action=getDrivers&callback=${callbackName}`;
+    document.body.appendChild(script);
   }, []);
 
   const onFileSelect = async (e: React.ChangeEvent<HTMLInputElement>, cat: 'bol' | 'freight') => {
