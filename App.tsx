@@ -109,7 +109,14 @@ const App: React.FC = () => {
   const isReady = !!(company && driverName && (loadNum || bolNum) && puCity && puState && delCity && delState && bolProtocol && uploadedFiles.some(f => f.category === 'bol'));
 
   useEffect(() => {
-    fetch(`${GOOGLE_SCRIPT_URL}?action=getDrivers`).then(res => res.json()).then(setDriverList).catch(() => {});
+    // We add 'mode: cors' to tell the browser this is a safe request
+    fetch(`${GOOGLE_SCRIPT_URL}?action=getDrivers`, { mode: 'cors' })
+      .then(res => res.json())
+      .then(data => {
+        console.log("Drivers received:", data); // This helps us see if it worked
+        setDriverList(data);
+      })
+      .catch((err) => console.error("Driver fetch error:", err));
   }, []);
 
   const onFileSelect = async (e: React.ChangeEvent<HTMLInputElement>, cat: 'bol' | 'freight') => {
