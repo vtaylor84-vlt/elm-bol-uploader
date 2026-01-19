@@ -10,7 +10,7 @@ import React, { useState, useRef, useEffect } from 'react';
 interface FileWithPreview { file: File | Blob; preview: string; id: string; category: 'bol' | 'freight'; }
 interface VaultEntry { id: string; timestamp: number; payload: any; }
 
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwy_7Q_QmEim-hei-iUSpfimrtWkCVA1WDIGZy52cJ4FY-FbjWvbwmoHVYiV5kCUQ4/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyeSWrO4a24kt8MZFSwtidgNclLJrLKh2Z4xj9vOM8I148WacoDcYuBFkQamByCXlFq/exec';
 
 // --- [SECTION 00] POWER-UP AUDIO ---
 const playPowerUp = (stage: number) => {
