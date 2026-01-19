@@ -109,10 +109,10 @@ const App: React.FC = () => {
   const isReady = !!(company && driverName && (loadNum || bolNum) && puCity && puState && delCity && delState && bolProtocol && uploadedFiles.some(f => f.category === 'bol'));
 
   useEffect(() => {
-    // We use a "JSONP" approach to bypass the CORS error in your console
     const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
     
     (window as any)[callbackName] = (data: string[]) => {
+      console.log("Drivers received via JSONP:", data);
       setDriverList(data);
       delete (window as any)[callbackName];
       const script = document.getElementById('jsonp-script');
