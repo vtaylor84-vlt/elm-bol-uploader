@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-/** * PROJECT: QLM CONNECT v33.7 - MASTER INDUSTRIAL
+/** * PROJECT: QLM CONNECT v33.8 - MASTER INDUSTRIAL
  * - RESTORED: All v33.3 visual logic, audio, and animations.
  * - FIXED: Driver name retrieval using ?action=getDrivers.
  * - FIXED: POST payload alignment for Master API v2.6.0.
