@@ -310,7 +310,17 @@ const App: React.FC = () => {
                  if(navigator.vibrate) navigator.vibrate(60);
                  setIsSubmitting(true);
                  const base64 = await Promise.all(uploadedFiles.map(async f => { return new Promise(resolve => { const r = new FileReader(); r.onload = () => resolve({category: f.category, base64: r.result}); r.readAsDataURL(f.file); }) }));
-                 const payload = { company, driverName, loadNum, bolNum, puCity, puState, delCity, delState, bolProtocol, files: base64 };
+                 // Change this line in App.tsx:
+const payload = { 
+  company, 
+  driverName, 
+  loadNum, 
+  bolNum, 
+  origin: `${puCity} ${puState}`,      // Combine city and state for the backend
+  destination: `${delCity} ${delState}`, // Combine city and state for the backend
+  bolProtocol, 
+  files: base64 
+};
                  try {
                    await fetch(GOOGLE_SCRIPT_URL,{method:'POST',mode:'no-cors',body:JSON.stringify(payload)});
                    setShowSuccess(true);
