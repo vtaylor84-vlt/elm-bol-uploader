@@ -38,8 +38,7 @@ interface DriverOption {
 }
 
 const GOOGLE_SCRIPT_URL =
-  'const GOOGLE_SCRIPT_URL =
-  'https://script.google.com/macros/s/AKfycbxQwhSs6p01gLRgqW0mA-_qtJEFcvEiJebTqSlzNCxgRE8X7Rv_BYm_Th_saL6QQsQj/exec';';
+  'https://script.google.com/macros/s/AKfycbxQwhSs6p01gLRgqW0mA-_qtJEFcvEiJebTqSlzNCxgRE8X7Rv_BYm_Th_saL6QQsQj/exec';
 
 // --- [SECTION 00] AUDIO ENGINE ---
 const playOpenSound = () => {
