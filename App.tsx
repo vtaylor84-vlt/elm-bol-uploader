@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 /**
- * PROJECT: ELMConnect v33.9 - ORACLE FLOW PASS 1
- * - EVENT-FIRST FLOW: Pickup/Delivery now drives the workflow.
- * - GUIDED STAGES: Event -> Operator -> Assignment -> Evidence -> Review.
- * - SAFE REFACTOR: Existing upload, review, success, and submission logic preserved.
+ * PROJECT: ELMConnect v34.0 - ORACLE FLOW PASS 1A
+ * - FIXED: Driver dropdown normalization and display formatting.
+ * - FIXED: Dropdown displays Title Case names only.
+ * - FIXED: Carrier now derives from selected load companyCode/company.
+ * - UPDATED: Manual company field relabeled to "Carrier Name assigned to this load".
+ * - ADDED: Manual carrier text input for outside carriers.
  * - STAGING BACKEND: Connected to staging GAS web app.
  */
 
@@ -26,7 +28,13 @@ interface AvailableLoad {
   origin: string;
   destination: string;
   status?: string;
-  company?: 'GLX' | 'BST' | '';
+  company?: string;
+  companyCode?: string;
+}
+
+interface DriverOption {
+  value: string;
+  label: string;
 }
 
 const GOOGLE_SCRIPT_URL =
@@ -112,6 +120,54 @@ const compressImage = (file: File): Promise<Blob> => {
       };
     };
   });
+};
+
+const toTitleCaseName = (value: string) =>
+  value
+    .toLowerCase()
+    .split(' ')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+
+const normalizeDriverEntry = (entry: any): DriverOption | null => {
+  if (typeof entry === 'string') {
+    const trimmed = entry.trim();
+    if (!trimmed) return null;
+    return {
+      value: trimmed.toUpperCase(),
+      label: toTitleCaseName(trimmed)
+    };
+  }
+
+  if (entry && typeof entry === 'object') {
+    const raw =
+      entry.driverName ||
+      entry.name ||
+      entry.displayName ||
+      entry.label ||
+      entry.value ||
+      '';
+
+    const trimmed = String(raw).trim();
+    if (!trimmed) return null;
+
+    return {
+      value: trimmed.toUpperCase(),
+      label: toTitleCaseName(trimmed)
+    };
+  }
+
+  return null;
+};
+
+const getCarrierDisplayName = (rawCompany?: string) => {
+  const code = String(rawCompany || '').trim().toUpperCase();
+
+  if (code === 'BST') return 'BST Expedite Inc';
+  if (code === 'GLX') return 'Greenleaf Xpress';
+
+  return String(rawCompany || '').trim();
 };
 
 // --- LOGOS ---
@@ -241,10 +297,10 @@ const App: React.FC = () => {
   const [isLocked, setIsLocked] = useState(true);
   const [solarMode, setSolarMode] = useState(false);
   const [authStage, setAuthStage] = useState(0);
-  const [company, setCompany] = useState<'GLX' | 'BST' | ''>('');
+  const [company, setCompany] = useState('');
   const [driverName, setDriverName] = useState('');
   const [manualMode, setManualMode] = useState(false);
-  const [driverList, setDriverList] = useState<string[]>([]);
+  const [driverList, setDriverList] = useState<DriverOption[]>([]);
 
   // --- ORACLE FLOW STATES ---
   const [eventType, setEventType] = useState<'PICKUP' | 'DELIVERY' | ''>('');
@@ -334,7 +390,11 @@ const App: React.FC = () => {
   ];
 
   const themeHex =
-    company === 'GLX' ? '#22c55e' : company === 'BST' ? '#3b82f6' : '#6366f1';
+    company === 'Greenleaf Xpress'
+      ? '#22c55e'
+      : company === 'BST Expedite Inc'
+        ? '#3b82f6'
+        : '#6366f1';
 
   const hasManualAssignmentData = !!(
     loadNum &&
@@ -393,6 +453,7 @@ const App: React.FC = () => {
     setPuState('');
     setDelCity('');
     setDelState('');
+    setCompany('');
     setUploadedFiles([]);
     setShowFreightPrompt(false);
     setCurrentStage('ASSIGNMENT');
@@ -404,11 +465,19 @@ const App: React.FC = () => {
       try {
         const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getDrivers`);
         const data = await response.json();
+
         if (Array.isArray(data)) {
-          setDriverList(data);
+          const normalized = data
+            .map(normalizeDriverEntry)
+            .filter(Boolean) as DriverOption[];
+
+          setDriverList(normalized);
+        } else {
+          setDriverList([]);
         }
       } catch (err) {
         console.error('Roster Handshake Failed', err);
+        setDriverList([]);
       }
     };
 
@@ -430,6 +499,7 @@ const App: React.FC = () => {
             )}&type=${eventType}`
           );
           const data = await response.json();
+
           if (Array.isArray(data)) {
             setAvailableLoads(data);
             if (data.length === 0) setLoadSelectionError(true);
@@ -569,6 +639,9 @@ const App: React.FC = () => {
           <div className="space-y-4 animate-in fade-in slide-in-from-top duration-500">
             {availableLoads.map((load) => {
               const isSelected = selectedLoad?.loadNumber === load.loadNumber;
+              const carrierName = getCarrierDisplayName(
+                load.companyCode || load.company
+              );
 
               return (
                 <button
@@ -580,14 +653,12 @@ const App: React.FC = () => {
                     const puParts = load.origin.split(', ');
                     const delParts = load.destination.split(', ');
 
-                    setPuCity(puParts[0] || '');
-                    setPuState(puParts[1] || '');
-                    setDelCity(delParts[0] || '');
-                    setDelState(delParts[1] || '');
+                    setPuCity((puParts[0] || '').toUpperCase());
+                    setPuState((puParts[1] || '').toUpperCase());
+                    setDelCity((delParts[0] || '').toUpperCase());
+                    setDelState((delParts[1] || '').toUpperCase());
 
-                    if (load.company === 'GLX' || load.company === 'BST') {
-                      setCompany(load.company);
-                    }
+                    setCompany(carrierName || '');
 
                     setCurrentStage('EVIDENCE');
                   }}
@@ -620,9 +691,9 @@ const App: React.FC = () => {
                         </span>
                       ) : null}
 
-                      {load.company === 'GLX' || load.company === 'BST' ? (
+                      {carrierName ? (
                         <span className="px-3 py-1 rounded-full border border-zinc-700 bg-zinc-900 text-[8px] font-black uppercase tracking-widest text-zinc-300">
-                          {load.company}
+                          {carrierName}
                         </span>
                       ) : null}
                     </div>
@@ -646,6 +717,7 @@ const App: React.FC = () => {
                 setPuState('');
                 setDelCity('');
                 setDelState('');
+                setCompany('');
                 setCurrentStage('ASSIGNMENT');
               }}
               className="w-full py-4 text-[9px] font-black text-zinc-600 uppercase tracking-[0.3em]"
@@ -671,7 +743,7 @@ const App: React.FC = () => {
               <select
                 className={inpStyle(puState)}
                 value={puState}
-                onChange={(e) => setPuState(e.target.value)}
+                onChange={(e) => setPuState(e.target.value.toUpperCase())}
               >
                 <option value="">ST</option>
                 {states.map((s) => (
@@ -692,7 +764,7 @@ const App: React.FC = () => {
               <select
                 className={inpStyle(delState)}
                 value={delState}
-                onChange={(e) => setDelState(e.target.value)}
+                onChange={(e) => setDelState(e.target.value.toUpperCase())}
               >
                 <option value="">ST</option>
                 {states.map((s) => (
@@ -710,15 +782,12 @@ const App: React.FC = () => {
               onChange={(e) => setLoadNum(e.target.value.toUpperCase())}
             />
 
-            <select
+            <input
               className={inpStyle(company)}
+              placeholder="CARRIER NAME ASSIGNED TO THIS LOAD"
               value={company}
-              onChange={(e) => setCompany(e.target.value as 'GLX' | 'BST' | '')}
-            >
-              <option value="">CHOOSE COMPANY</option>
-              <option value="GLX">GREENLEAF XPRESS</option>
-              <option value="BST">BST EXPEDITE INC</option>
-            </select>
+              onChange={(e) => setCompany(e.target.value)}
+            />
 
             {manualMode && (
               <button
@@ -739,14 +808,13 @@ const App: React.FC = () => {
     );
   };
 
-  // --- AUTH SCREEN ---
   if (isLocked) {
     return (
       <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 text-white font-sans overflow-hidden">
         <div className="absolute top-12 flex flex-col items-center opacity-40">
           <div className="w-1 h-12 bg-blue-500 animate-pulse"></div>
           <div className="text-[10px] font-black tracking-[0.5em] mt-4">
-            ELMCONNECT v33.9
+            ELMCONNECT v34.0
           </div>
         </div>
 
@@ -800,7 +868,6 @@ const App: React.FC = () => {
     );
   }
 
-  // --- MAIN TERMINAL ---
   return (
     <div
       className={`min-h-screen transition-all duration-700 ${
@@ -881,10 +948,19 @@ const App: React.FC = () => {
                 </div>
               ) : null}
             </div>
-          ) : company === 'GLX' ? (
+          ) : company === 'Greenleaf Xpress' ? (
             <GreenleafLogo />
-          ) : (
+          ) : company === 'BST Expedite Inc' ? (
             <BstLogo />
+          ) : (
+            <div className="text-center px-6">
+              <h1 className="text-5xl font-black italic text-zinc-800 uppercase tracking-tighter">
+                ELM<span className="text-zinc-500">CONNECT</span>
+              </h1>
+              <div className="mt-3 text-[11px] font-black uppercase tracking-[0.35em] text-zinc-600">
+                {company}
+              </div>
+            </div>
           )}
         </div>
       </header>
@@ -960,73 +1036,46 @@ const App: React.FC = () => {
               [ 01 ] Operator
             </h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6">
               {!manualMode ? (
-                <>
-                  <select
-                    className={inpStyle(driverName)}
-                    value={driverName}
-                    onChange={(e) => {
-                      if (e.target.value === 'MANUAL') {
-                        setManualMode(true);
-                        setDriverName('');
-                        setCurrentStage('ASSIGNMENT');
-                      } else {
-                        setDriverName(e.target.value);
-                        setSelectedLoad(null);
-                        setLoadNum('');
-                        setPuCity('');
-                        setPuState('');
-                        setDelCity('');
-                        setDelState('');
-                        setCurrentStage('ASSIGNMENT');
-                      }
-                    }}
-                  >
-                    <option value="">SELECT DRIVER</option>
-                    {driverList.map((d) => (
-                      <option key={d} value={d}>
-                        {d}
-                      </option>
-                    ))}
-                    <option value="MANUAL">+ MANUAL ENTRY</option>
-                  </select>
-
-                  <select
-                    className={inpStyle(company)}
-                    value={company}
-                    onChange={(e) =>
-                      setCompany(e.target.value as 'GLX' | 'BST' | '')
+                <select
+                  className={inpStyle(driverName)}
+                  value={driverName}
+                  onChange={(e) => {
+                    if (e.target.value === 'MANUAL') {
+                      setManualMode(true);
+                      setDriverName('');
+                      setCurrentStage('ASSIGNMENT');
+                    } else {
+                      setDriverName(e.target.value.toUpperCase());
+                      setSelectedLoad(null);
+                      setLoadNum('');
+                      setPuCity('');
+                      setPuState('');
+                      setDelCity('');
+                      setDelState('');
+                      setCompany('');
+                      setCurrentStage('ASSIGNMENT');
                     }
-                  >
-                    <option value="">CHOOSE COMPANY</option>
-                    <option value="GLX">GREENLEAF XPRESS</option>
-                    <option value="BST">BST EXPEDITE INC</option>
-                  </select>
-                </>
+                  }}
+                >
+                  <option value="">SELECT DRIVER</option>
+                  {driverList.map((d) => (
+                    <option key={d.value} value={d.value}>
+                      {d.label}
+                    </option>
+                  ))}
+                  <option value="MANUAL">+ MANUAL ENTRY</option>
+                </select>
               ) : (
-                <>
-                  <input
-                    type="text"
-                    placeholder="TYPE FULL NAME"
-                    className={inpStyle(driverName)}
-                    value={driverName}
-                    onChange={(e) => setDriverName(e.target.value.toUpperCase())}
-                    autoFocus
-                  />
-
-                  <select
-                    className={inpStyle(company)}
-                    value={company}
-                    onChange={(e) =>
-                      setCompany(e.target.value as 'GLX' | 'BST' | '')
-                    }
-                  >
-                    <option value="">CHOOSE COMPANY</option>
-                    <option value="GLX">GREENLEAF XPRESS</option>
-                    <option value="BST">BST EXPEDITE INC</option>
-                  </select>
-                </>
+                <input
+                  type="text"
+                  placeholder="TYPE FULL NAME"
+                  className={inpStyle(driverName)}
+                  value={driverName}
+                  onChange={(e) => setDriverName(e.target.value.toUpperCase())}
+                  autoFocus
+                />
               )}
             </div>
           </section>
@@ -1279,7 +1328,7 @@ const App: React.FC = () => {
                   v: `${delCity}, ${delState}`,
                   id: 'destination'
                 },
-                { l: 'COMPANY', v: company, id: 'company' }
+                { l: 'CARRIER', v: company, id: 'company' }
               ].map((item) => (
                 <div
                   key={item.l}
@@ -1448,6 +1497,10 @@ const App: React.FC = () => {
                 <span className="text-white font-bold">{driverName}</span>
               </div>
               <div className="flex justify-between">
+                <span className="text-zinc-500">CARRIER:</span>
+                <span className="text-white font-bold">{company}</span>
+              </div>
+              <div className="flex justify-between">
                 <span className="text-zinc-500">TIMESTAMP:</span>
                 <span className="text-white font-bold">
                   {new Date().toLocaleTimeString()}
@@ -1458,7 +1511,11 @@ const App: React.FC = () => {
             <button
               onClick={() => window.location.reload()}
               className={`w-full py-6 rounded-[2rem] font-black uppercase tracking-[0.5em] text-[10px] ${
-                company === 'GLX' ? 'bg-green-600' : 'bg-blue-600'
+                company === 'Greenleaf Xpress'
+                  ? 'bg-green-600'
+                  : company === 'BST Expedite Inc'
+                    ? 'bg-blue-600'
+                    : 'bg-zinc-700'
               } text-white`}
             >
               Restart Terminal
@@ -1488,7 +1545,7 @@ const App: React.FC = () => {
                   <select
                     className={inpStyle(puState)}
                     value={puState}
-                    onChange={(e) => setPuState(e.target.value)}
+                    onChange={(e) => setPuState(e.target.value.toUpperCase())}
                   >
                     {states.map((s) => (
                       <option key={s} value={s}>
@@ -1511,7 +1568,7 @@ const App: React.FC = () => {
                   <select
                     className={inpStyle(delState)}
                     value={delState}
-                    onChange={(e) => setDelState(e.target.value)}
+                    onChange={(e) => setDelState(e.target.value.toUpperCase())}
                   >
                     {states.map((s) => (
                       <option key={s} value={s}>
@@ -1543,17 +1600,12 @@ const App: React.FC = () => {
               )}
 
               {editingField === 'company' && (
-                <select
+                <input
                   className={inpStyle(company)}
+                  placeholder="CARRIER NAME ASSIGNED TO THIS LOAD"
                   value={company}
-                  onChange={(e) =>
-                    setCompany(e.target.value as 'GLX' | 'BST' | '')
-                  }
-                >
-                  <option value="">CHOOSE COMPANY</option>
-                  <option value="GLX">GREENLEAF XPRESS</option>
-                  <option value="BST">BST EXPEDITE INC</option>
-                </select>
+                  onChange={(e) => setCompany(e.target.value)}
+                />
               )}
             </div>
 
