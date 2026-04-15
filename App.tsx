@@ -31,25 +31,45 @@ const playOpenSound = () => {
     const ctx = new AudioCtx();
     const now = ctx.currentTime;
 
+    // MASTER GAIN (ultra controlled envelope)
     const master = ctx.createGain();
     master.gain.setValueAtTime(0.0001, now);
-    master.gain.exponentialRampToValueAtTime(0.028, now + 0.008);
-    master.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
+    master.gain.exponentialRampToValueAtTime(0.03, now + 0.01);
+    master.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
     master.connect(ctx.destination);
 
+    // NOTE 1 (foundation)
     const n1 = ctx.createOscillator();
     n1.type = 'triangle';
     n1.frequency.setValueAtTime(587, now);
     n1.connect(master);
     n1.start(now);
-    n1.stop(now + 0.07);
+    n1.stop(now + 0.08);
 
+    // NOTE 2 (primary confirmation)
     const n2 = ctx.createOscillator();
     n2.type = 'triangle';
     n2.frequency.setValueAtTime(784, now + 0.05);
     n2.connect(master);
     n2.start(now + 0.05);
-    n2.stop(now + 0.16);
+    n2.stop(now + 0.18);
+
+    // HARMONIC LAYER (THIS is the upgrade)
+    const shimmer = ctx.createOscillator();
+    const shimmerGain = ctx.createGain();
+
+    shimmer.type = 'sine';
+    shimmer.frequency.setValueAtTime(1568, now + 0.05); // octave above
+
+    shimmerGain.gain.setValueAtTime(0.0001, now + 0.05);
+    shimmerGain.gain.exponentialRampToValueAtTime(0.012, now + 0.06);
+    shimmerGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
+
+    shimmer.connect(shimmerGain);
+    shimmerGain.connect(master);
+
+    shimmer.start(now + 0.05);
+    shimmer.stop(now + 0.16);
   } catch (e) {}
 };
 
