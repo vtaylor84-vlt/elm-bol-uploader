@@ -375,16 +375,28 @@ const App: React.FC = () => {
   ];
 
   const selectedCarrierCode = String(
-    selectedLoad?.companyCode || selectedLoad?.company || company || ''
-  )
-    .trim()
-    .toUpperCase();
+  selectedLoad?.companyCode || selectedLoad?.company || ''
+)
+  .trim()
+  .toUpperCase();
 
-  const themeMode = useMemo<'blue' | 'green' | 'neutral'>(() => {
-    if (selectedCarrierCode === 'BST' || company === 'BST Expedite Inc') return 'blue';
-    if (selectedCarrierCode === 'GLX' || company === 'Greenleaf Xpress') return 'green';
-    return 'neutral';
-  }, [selectedCarrierCode, company]);
+const themeMode = useMemo<'blue' | 'green' | 'neutral'>(() => {
+  if (
+    selectedCarrierCode === 'BST' ||
+    effectiveCompany === 'BST Expedite Inc'
+  ) {
+    return 'blue';
+  }
+
+  if (
+    selectedCarrierCode === 'GLX' ||
+    effectiveCompany === 'Greenleaf Xpress'
+  ) {
+    return 'green';
+  }
+
+  return 'neutral';
+}, [selectedCarrierCode, effectiveCompany]);
 
   const themeHex =
     themeMode === 'green'
@@ -426,16 +438,20 @@ const App: React.FC = () => {
 
   const hasBolEvidence = uploadedFiles.some((f) => f.category === 'bol');
 
-  const isReady = !!(
-    company &&
-    driverName &&
-    eventType &&
-    puCity &&
-    puState &&
-    delCity &&
-    delState &&
-    hasBolEvidence
-  );
+  const hasRouteData = !!(
+  (selectedLoad && (puCity || delCity)) ||
+  (puCity && delCity)
+);
+
+const hasCarrierData = !!effectiveCompany;
+
+const isReady = !!(
+  hasCarrierData &&
+  driverName &&
+  eventType &&
+  hasRouteData &&
+  hasBolEvidence
+);
 
   const stageOrder: Stage[] = [
     'EVENT',
@@ -455,11 +471,15 @@ const App: React.FC = () => {
 
   const currentStageIndex = stageOrder.indexOf(currentStage);
 
+  const selectedLoadCarrier = getCarrierDisplayName(
+  selectedLoad?.companyCode || selectedLoad?.company
+);
+
   const effectiveCompany = manualMode
     ? manualCarrier === 'Other Carrier'
       ? 'Other Carrier'
       : manualCarrier
-    : company;
+    : selectedLoadCarrier || company;
 
   const inpStyle = (v: string) =>
     `w-full p-5 rounded-2xl font-mono text-sm border-2 transition-all outline-none ${
@@ -583,31 +603,34 @@ const App: React.FC = () => {
   }, [manualMode, hasManualAssignmentData]);
 
   const handleLoadSelection = (load: AvailableLoad) => {
-    const carrierName = getCarrierDisplayName(load.companyCode || load.company);
-    const puParts = String(load.origin || '')
-      .split(',')
-      .map((p) => p.trim());
-    const delParts = String(load.destination || '')
-      .split(',')
-      .map((p) => p.trim());
+  const carrierName = getCarrierDisplayName(load.companyCode || load.company);
 
-    setSelectedLoad(load);
-    setLoadId(String(load.loadId || '').trim());
-    setLoadNum(String(load.loadNumber || '').trim());
+  const puParts = String(load.origin || '')
+    .split(',')
+    .map((p) => p.trim());
 
-    setPuCity((puParts[0] || '').toUpperCase());
-    setPuState((puParts[1] || '').toUpperCase());
-    setDelCity((delParts[0] || '').toUpperCase());
-    setDelState((delParts[1] || '').toUpperCase());
+  const delParts = String(load.destination || '')
+    .split(',')
+    .map((p) => p.trim());
 
-    setCompany(carrierName || '');
-    setIsConnecting(true);
+  setSelectedLoad(load);
+  setLoadId(String(load.loadId || '').trim());
+  setLoadNum(String(load.loadNumber || '').trim());
 
-    window.setTimeout(() => {
-      setIsConnecting(false);
-      setCurrentStage('EVIDENCE');
-    }, 1200);
-  };
+  setPuCity((puParts[0] || '').toUpperCase());
+  setPuState((puParts[1] || '').toUpperCase());
+  setDelCity((delParts[0] || '').toUpperCase());
+  setDelState((delParts[1] || '').toUpperCase());
+
+  setCompany(carrierName || '');
+  setManualCarrier('');
+  setIsConnecting(true);
+
+  window.setTimeout(() => {
+    setIsConnecting(false);
+    setCurrentStage('EVIDENCE');
+  }, 1200);
+};
 
   const onFileSelect = async (
     e: React.ChangeEvent<HTMLInputElement>,
