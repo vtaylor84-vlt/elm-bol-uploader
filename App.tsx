@@ -1,18 +1,14 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 /**
- * PROJECT: ELMConnect v35.0 - ORACLE FLOW PASS 2
- * - Driver dropdown displays Title Case labels from backend driver list.
- * - Load cards support deterministic identity with loadId when returned by backend.
- * - If loadId is missing, app safely falls back to a synthetic key so UI still works.
- * - Carrier derives from selected load companyCode/company.
- * - Assignment selection now runs a premium "ELM IS CONNECTING" transition.
- * - Mission Flow is now a passive system-state tracker, not a faux button strip.
- * - Theme accents switch by carrier after selection:
- *    BST => blue
- *    GLX => green
- * - Manual override remains supported for outside carriers / off-board scenarios.
- * - Staging backend URL is wired to the working GAS deployment.
+ * ELM CONNECT — ORACLE UI PASS
+ * - Restores auto-carrier from selected load
+ * - Manual entry uses carrier dropdown only
+ * - Removes manual Load # and Load ID entry
+ * - Improves scanning state after driver selection
+ * - Fixes Review Transmission availability
+ * - Keeps duplicate load numbers as selectable legs
+ * - Uses loadId when returned by backend
  */
 
 interface FileWithPreview {
@@ -30,7 +26,7 @@ interface VaultEntry {
 
 interface AvailableLoad {
   loadId?: string;
-  loadNumber: string;
+  loadNumber?: string;
   origin: string;
   destination: string;
   status?: string;
@@ -43,10 +39,16 @@ interface DriverOption {
   label: string;
 }
 
+type EventType = 'PICKUP' | 'DELIVERY' | '';
+type Stage = 'EVENT' | 'OPERATOR' | 'ASSIGNMENT' | 'EVIDENCE' | 'REVIEW';
+type ManualCarrierOption = '' | 'BST Expedite Inc' | 'Greenleaf Xpress' | 'Other Carrier';
+
 const GOOGLE_SCRIPT_URL =
   'https://script.google.com/macros/s/AKfycbxQwhSs6p01gLRgqW0mA-_qtJEFcvEiJebTqSlzNCxgRE8X7Rv_BYm_Th_saL6QQsQj/exec';
 
-// --- [SECTION 00] AUDIO ENGINE ---
+// ----------------------------
+// AUDIO
+// ----------------------------
 const playOpenSound = () => {
   try {
     const AudioCtx =
@@ -118,11 +120,11 @@ const compressImage = (file: File): Promise<Blob> => {
 
         const ctx = canvas.getContext('2d');
         if (ctx) {
-          ctx.filter = 'contrast(1.1) brightness(1.03)';
+          ctx.filter = 'contrast(1.08) brightness(1.03)';
           ctx.drawImage(img, 0, 0, w, h);
         }
 
-        canvas.toBlob((b) => resolve(b || file), 'image/jpeg', 0.8);
+        canvas.toBlob((b) => resolve(b || file), 'image/jpeg', 0.82);
       };
     };
   });
@@ -154,10 +156,8 @@ const normalizeDriverEntry = (entry: any): DriverOption | null => {
       entry.label ||
       entry.value ||
       '';
-
     const trimmed = String(raw).trim();
     if (!trimmed) return null;
-
     return {
       value: trimmed.toUpperCase(),
       label: toTitleCaseName(trimmed)
@@ -169,10 +169,8 @@ const normalizeDriverEntry = (entry: any): DriverOption | null => {
 
 const getCarrierDisplayName = (rawCompany?: string) => {
   const code = String(rawCompany || '').trim().toUpperCase();
-
   if (code === 'BST') return 'BST Expedite Inc';
   if (code === 'GLX') return 'Greenleaf Xpress';
-
   return String(rawCompany || '').trim();
 };
 
@@ -185,13 +183,13 @@ const getLoadIdentity = (load: AvailableLoad) => {
     String(load.origin || '').trim().toUpperCase(),
     String(load.destination || '').trim().toUpperCase(),
     String(load.status || '').trim().toUpperCase(),
-    String(load.companyCode || load.company || '')
-      .trim()
-      .toUpperCase()
+    String(load.companyCode || load.company || '').trim().toUpperCase()
   ].join('|');
 };
 
-// --- LOGOS ---
+// ----------------------------
+// BRANDING
+// ----------------------------
 const GreenleafLogo = () => (
   <div className="flex flex-col items-center justify-center p-4 animate-in fade-in duration-1000">
     <svg
@@ -314,49 +312,48 @@ const BstLogo = () => (
 );
 
 const ConnectingGlyph = ({ accentClass }: { accentClass: string }) => (
-  <div className="relative w-40 h-40 flex items-center justify-center">
-    <div className={`absolute inset-0 rounded-full border ${accentClass} opacity-30 animate-ping`} />
-    <div className={`absolute inset-4 rounded-full border ${accentClass} opacity-50 animate-pulse`} />
-    <div className={`absolute inset-10 rounded-full border ${accentClass} opacity-70`} />
+  <div className="relative w-44 h-44 flex items-center justify-center">
+    <div className={`absolute inset-0 rounded-full border ${accentClass} opacity-20 animate-ping`} />
+    <div className={`absolute inset-5 rounded-full border ${accentClass} opacity-40 animate-pulse`} />
+    <div className={`absolute inset-11 rounded-full border ${accentClass} opacity-80`} />
     <div className={`text-4xl font-black tracking-[0.2em] ${accentClass}`}>ELM</div>
   </div>
 );
 
 const App: React.FC = () => {
-  // --- CORE TERMINAL STATES ---
+  // Core
   const [isLocked, setIsLocked] = useState(true);
   const [solarMode, setSolarMode] = useState(false);
   const [authStage, setAuthStage] = useState(0);
-  const [company, setCompany] = useState('');
+
+  // Flow
+  const [eventType, setEventType] = useState<EventType>('');
+  const [currentStage, setCurrentStage] = useState<Stage>('EVENT');
   const [driverName, setDriverName] = useState('');
   const [manualMode, setManualMode] = useState(false);
+
+  // Driver / carrier
   const [driverList, setDriverList] = useState<DriverOption[]>([]);
+  const [company, setCompany] = useState('');
+  const [manualCarrier, setManualCarrier] = useState<ManualCarrierOption>('');
 
-  // --- ORACLE FLOW STATES ---
-  const [eventType, setEventType] = useState<'PICKUP' | 'DELIVERY' | ''>('');
-  const [currentStage, setCurrentStage] = useState<
-    'EVENT' | 'OPERATOR' | 'ASSIGNMENT' | 'EVIDENCE' | 'REVIEW'
-  >('EVENT');
-  const [selectedLoad, setSelectedLoad] = useState<AvailableLoad | null>(null);
-  const [isConnecting, setIsConnecting] = useState(false);
-
-  // --- SMART-SELECT STATES ---
+  // Loads
   const [availableLoads, setAvailableLoads] = useState<AvailableLoad[]>([]);
+  const [selectedLoad, setSelectedLoad] = useState<AvailableLoad | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
   const [loadSelectionError, setLoadSelectionError] = useState(false);
 
-  // --- LOGISTICS PATH STATES ---
+  // Route fields
   const [loadNum, setLoadNum] = useState('');
   const [loadId, setLoadId] = useState('');
   const [puCity, setPuCity] = useState('');
   const [puState, setPuState] = useState('');
   const [delCity, setDelCity] = useState('');
   const [delState, setDelState] = useState('');
-  const [bolProtocol, setBolProtocol] = useState<'PICKUP' | 'DELIVERY' | ''>(
-    ''
-  );
+  const [bolProtocol, setBolProtocol] = useState<EventType>('');
 
-  // --- TRANSMISSION STATES ---
+  // Evidence / submission
   const [uploadedFiles, setUploadedFiles] = useState<FileWithPreview[]>([]);
   const [showFreightPrompt, setShowFreightPrompt] = useState(false);
   const [showVerification, setShowVerification] = useState(false);
@@ -371,54 +368,10 @@ const App: React.FC = () => {
   const freightFileRef = useRef<HTMLInputElement>(null);
 
   const states = [
-    'AL',
-    'AR',
-    'AZ',
-    'CA',
-    'CO',
-    'CT',
-    'DE',
-    'FL',
-    'GA',
-    'IA',
-    'ID',
-    'IL',
-    'IN',
-    'KS',
-    'KY',
-    'LA',
-    'MA',
-    'MD',
-    'ME',
-    'MI',
-    'MN',
-    'MO',
-    'MS',
-    'MT',
-    'NC',
-    'ND',
-    'NE',
-    'NH',
-    'NJ',
-    'NM',
-    'NV',
-    'NY',
-    'OH',
-    'OK',
-    'OR',
-    'PA',
-    'RI',
-    'SC',
-    'SD',
-    'TN',
-    'TX',
-    'UT',
-    'VA',
-    'VT',
-    'WA',
-    'WI',
-    'WV',
-    'WY'
+    'AL','AR','AZ','CA','CO','CT','DE','FL','GA','IA','ID','IL','IN','KS','KY',
+    'LA','MA','MD','ME','MI','MN','MO','MS','MT','NC','ND','NE','NH','NJ','NM',
+    'NV','NY','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VA','VT','WA',
+    'WI','WV','WY'
   ];
 
   const selectedCarrierCode = String(
@@ -428,10 +381,8 @@ const App: React.FC = () => {
     .toUpperCase();
 
   const themeMode = useMemo<'blue' | 'green' | 'neutral'>(() => {
-    if (selectedCarrierCode === 'BST' || company === 'BST Expedite Inc')
-      return 'blue';
-    if (selectedCarrierCode === 'GLX' || company === 'Greenleaf Xpress')
-      return 'green';
+    if (selectedCarrierCode === 'BST' || company === 'BST Expedite Inc') return 'blue';
+    if (selectedCarrierCode === 'GLX' || company === 'Greenleaf Xpress') return 'green';
     return 'neutral';
   }, [selectedCarrierCode, company]);
 
@@ -464,35 +415,37 @@ const App: React.FC = () => {
         : 'text-zinc-300';
 
   const hasManualAssignmentData = !!(
-    loadNum &&
-    puCity &&
-    puState &&
-    delCity &&
-    delState
-  );
-
-  const hasAssignment = !!(selectedLoad || hasManualAssignmentData);
-
-  const isReady = !!(
-    company &&
-    driverName &&
-    loadNum &&
     puCity &&
     puState &&
     delCity &&
     delState &&
-    eventType &&
-    uploadedFiles.some((f) => f.category === 'bol')
+    company
   );
 
-  const stageOrder: Array<
-    'EVENT' | 'OPERATOR' | 'ASSIGNMENT' | 'EVIDENCE' | 'REVIEW'
-  > = ['EVENT', 'OPERATOR', 'ASSIGNMENT', 'EVIDENCE', 'REVIEW'];
+  const hasAssignment = !!(selectedLoad || hasManualAssignmentData);
 
-  const stageLabels: Record<
-    'EVENT' | 'OPERATOR' | 'ASSIGNMENT' | 'EVIDENCE' | 'REVIEW',
-    string
-  > = {
+  const hasBolEvidence = uploadedFiles.some((f) => f.category === 'bol');
+
+  const isReady = !!(
+    company &&
+    driverName &&
+    eventType &&
+    puCity &&
+    puState &&
+    delCity &&
+    delState &&
+    hasBolEvidence
+  );
+
+  const stageOrder: Stage[] = [
+    'EVENT',
+    'OPERATOR',
+    'ASSIGNMENT',
+    'EVIDENCE',
+    'REVIEW'
+  ];
+
+  const stageLabels: Record<Stage, string> = {
     EVENT: 'EVENT SELECTED',
     OPERATOR: 'OPERATOR IDENTIFIED',
     ASSIGNMENT: 'LOAD LINKED',
@@ -502,23 +455,46 @@ const App: React.FC = () => {
 
   const currentStageIndex = stageOrder.indexOf(currentStage);
 
-  const resetFlowFromEvent = (nextEvent: 'PICKUP' | 'DELIVERY') => {
+  const effectiveCompany = manualMode
+    ? manualCarrier === 'Other Carrier'
+      ? 'Other Carrier'
+      : manualCarrier
+    : company;
+
+  const inpStyle = (v: string) =>
+    `w-full p-5 rounded-2xl font-mono text-sm border-2 transition-all outline-none ${
+      solarMode
+        ? v
+          ? 'bg-zinc-50 border-zinc-900 text-black'
+          : 'bg-white border-zinc-200 text-zinc-400'
+        : v
+          ? 'bg-black border-zinc-600 text-white shadow-lg'
+          : 'bg-zinc-900 border-zinc-800 text-zinc-500'
+    }`;
+
+  const resetFlowFromEvent = (nextEvent: EventType) => {
     setEventType(nextEvent);
     setBolProtocol(nextEvent);
     setCurrentStage('OPERATOR');
+
     setDriverName('');
     setManualMode(false);
+
     setAvailableLoads([]);
     setSelectedLoad(null);
+    setIsScanning(false);
     setIsConnecting(false);
     setLoadSelectionError(false);
+
+    setCompany('');
+    setManualCarrier('');
     setLoadNum('');
     setLoadId('');
     setPuCity('');
     setPuState('');
     setDelCity('');
     setDelState('');
-    setCompany('');
+
     setUploadedFiles([]);
     setShowFreightPrompt(false);
     setShowVerification(false);
@@ -541,7 +517,6 @@ const App: React.FC = () => {
     setCurrentStage('ASSIGNMENT');
   };
 
-  // FETCH DRIVER LIST
   useEffect(() => {
     const fetchDrivers = async () => {
       try {
@@ -552,7 +527,6 @@ const App: React.FC = () => {
           const normalized = data
             .map(normalizeDriverEntry)
             .filter(Boolean) as DriverOption[];
-
           setDriverList(normalized);
         } else {
           setDriverList([]);
@@ -566,12 +540,12 @@ const App: React.FC = () => {
     fetchDrivers();
   }, []);
 
-  // SMART-SELECT RADAR EFFECT
   useEffect(() => {
     const scanForLoads = async () => {
       if (driverName && eventType && !manualMode) {
         setIsScanning(true);
         setLoadSelectionError(false);
+        setAvailableLoads([]);
         setCurrentStage('ASSIGNMENT');
 
         try {
@@ -608,6 +582,33 @@ const App: React.FC = () => {
     }
   }, [manualMode, hasManualAssignmentData]);
 
+  const handleLoadSelection = (load: AvailableLoad) => {
+    const carrierName = getCarrierDisplayName(load.companyCode || load.company);
+    const puParts = String(load.origin || '')
+      .split(',')
+      .map((p) => p.trim());
+    const delParts = String(load.destination || '')
+      .split(',')
+      .map((p) => p.trim());
+
+    setSelectedLoad(load);
+    setLoadId(String(load.loadId || '').trim());
+    setLoadNum(String(load.loadNumber || '').trim());
+
+    setPuCity((puParts[0] || '').toUpperCase());
+    setPuState((puParts[1] || '').toUpperCase());
+    setDelCity((delParts[0] || '').toUpperCase());
+    setDelState((delParts[1] || '').toUpperCase());
+
+    setCompany(carrierName || '');
+    setIsConnecting(true);
+
+    window.setTimeout(() => {
+      setIsConnecting(false);
+      setCurrentStage('EVIDENCE');
+    }, 1200);
+  };
+
   const onFileSelect = async (
     e: React.ChangeEvent<HTMLInputElement>,
     cat: 'bol' | 'freight'
@@ -633,53 +634,14 @@ const App: React.FC = () => {
         eventType === 'PICKUP' &&
         !uploadedFiles.some((f) => f.category === 'freight')
       ) {
-        setTimeout(() => setShowFreightPrompt(true), 600);
+        setTimeout(() => setShowFreightPrompt(true), 500);
       }
     }
 
     e.target.value = '';
   };
 
-  const inpStyle = (v: string) =>
-    `w-full p-5 rounded-2xl font-mono text-sm border-2 transition-all outline-none ${
-      solarMode
-        ? v
-          ? 'bg-zinc-50 border-zinc-900 text-black'
-          : 'bg-white border-zinc-200 text-zinc-400'
-        : v
-          ? 'bg-black border-zinc-600 text-white shadow-lg'
-          : 'bg-zinc-900 border-zinc-800 text-zinc-500'
-    }`;
-
-  const handleLoadSelection = (load: AvailableLoad) => {
-    const carrierName = getCarrierDisplayName(load.companyCode || load.company);
-    const puParts = String(load.origin || '').split(',').map((p) => p.trim());
-    const delParts = String(load.destination || '')
-      .split(',')
-      .map((p) => p.trim());
-
-    setSelectedLoad(load);
-    setLoadId(String(load.loadId || '').trim());
-    setLoadNum(String(load.loadNumber || '').trim());
-
-    setPuCity((puParts[0] || '').toUpperCase());
-    setPuState((puParts[1] || '').toUpperCase());
-    setDelCity((delParts[0] || '').toUpperCase());
-    setDelState((delParts[1] || '').toUpperCase());
-
-    setCompany(carrierName || '');
-    setIsConnecting(true);
-
-    window.setTimeout(() => {
-      setIsConnecting(false);
-      setCurrentStage('EVIDENCE');
-    }, 1200);
-  };
-
-  const renderStagePill = (
-    stage: 'EVENT' | 'OPERATOR' | 'ASSIGNMENT' | 'EVIDENCE' | 'REVIEW',
-    idx: number
-  ) => {
+  const renderStagePill = (stage: Stage, idx: number) => {
     const isActive = currentStage === stage;
     const isComplete = currentStageIndex > idx;
 
@@ -722,20 +684,44 @@ const App: React.FC = () => {
           </h3>
 
           {isScanning && (
-            <div className="flex items-center gap-2 animate-pulse shrink-0">
-              <div className={`w-1.5 h-1.5 rounded-full ${themeMode === 'green' ? 'bg-green-500' : 'bg-blue-500'}`} />
+            <div className="flex items-center gap-2 shrink-0">
+              <div
+                className={`w-1.5 h-1.5 rounded-full animate-pulse ${
+                  themeMode === 'green' ? 'bg-green-500' : 'bg-blue-500'
+                }`}
+              />
               <span
                 className={`text-[8px] font-black uppercase ${
                   themeMode === 'green' ? 'text-green-500' : 'text-blue-500'
                 }`}
               >
-                Scanning Load Board...
+                Loading Assignment Data...
               </span>
             </div>
           )}
         </div>
 
-        {isConnecting ? (
+        {isScanning ? (
+          <div className="min-h-[340px] rounded-[2rem] border-2 border-dashed border-zinc-800 bg-black/30 flex flex-col items-center justify-center text-center px-8 animate-in fade-in duration-500">
+            <ConnectingGlyph
+              accentClass={
+                themeMode === 'green'
+                  ? 'border-green-500 text-green-400'
+                  : 'border-blue-500 text-blue-400'
+              }
+            />
+            <div
+              className={`mt-6 text-xl font-black uppercase tracking-[0.35em] ${
+                themeMode === 'green' ? 'text-green-400' : 'text-blue-400'
+              }`}
+            >
+              ELM IS CONNECTING
+            </div>
+            <div className="mt-3 text-[10px] font-black uppercase tracking-[0.25em] text-zinc-500 max-w-md leading-relaxed">
+              Scanning the load board and matching your active assignment data
+            </div>
+          </div>
+        ) : isConnecting ? (
           <div className="min-h-[340px] rounded-[2rem] border-2 border-dashed border-zinc-800 bg-black/30 flex flex-col items-center justify-center text-center px-8 animate-in fade-in duration-500">
             <ConnectingGlyph
               accentClass={
@@ -796,7 +782,7 @@ const App: React.FC = () => {
                             : 'text-white'
                         }`}
                       >
-                        LOAD #{load.loadNumber}
+                        {load.loadNumber ? `LOAD #${load.loadNumber}` : 'SELECT LOAD LEG'}
                       </div>
 
                       {String(load.loadId || '').trim() ? (
@@ -816,9 +802,7 @@ const App: React.FC = () => {
                           className={`px-3 py-1 rounded-full border text-[8px] font-black uppercase tracking-widest ${
                             themeMode === 'green'
                               ? 'border-green-500/30 bg-green-500/10 text-green-400'
-                              : themeMode === 'blue'
-                                ? 'border-blue-500/30 bg-blue-500/10 text-blue-400'
-                                : 'border-cyan-500/30 bg-cyan-500/10 text-cyan-400'
+                              : 'border-blue-500/30 bg-blue-500/10 text-blue-400'
                           }`}
                         >
                           {load.status}
@@ -839,9 +823,7 @@ const App: React.FC = () => {
                       className={
                         themeMode === 'green'
                           ? 'text-green-500'
-                          : themeMode === 'blue'
-                            ? 'text-blue-500'
-                            : 'text-cyan-500'
+                          : 'text-blue-500'
                       }
                     >
                       ➔
@@ -863,6 +845,7 @@ const App: React.FC = () => {
                 setDelCity('');
                 setDelState('');
                 setCompany('');
+                setManualCarrier('');
                 setCurrentStage('ASSIGNMENT');
               }}
               className="w-full py-4 text-[9px] font-black text-zinc-600 uppercase tracking-[0.3em]"
@@ -920,26 +903,20 @@ const App: React.FC = () => {
               </select>
             </div>
 
-            <input
-              className={inpStyle(loadNum)}
-              placeholder="LOAD #"
-              value={loadNum}
-              onChange={(e) => setLoadNum(e.target.value.toUpperCase())}
-            />
-
-            <input
-              className={inpStyle(loadId)}
-              placeholder="LOAD ID"
-              value={loadId}
-              onChange={(e) => setLoadId(e.target.value.toUpperCase())}
-            />
-
-            <input
-              className={inpStyle(company)}
-              placeholder="CARRIER NAME ASSIGNED TO THIS LOAD"
-              value={company}
-              onChange={(e) => setCompany(e.target.value)}
-            />
+            <select
+              className={inpStyle(manualCarrier)}
+              value={manualCarrier}
+              onChange={(e) => {
+                const val = e.target.value as ManualCarrierOption;
+                setManualCarrier(val);
+                setCompany(val);
+              }}
+            >
+              <option value="">CARRIER NAME ASSIGNED TO THIS LOAD</option>
+              <option value="BST Expedite Inc">BST Expedite Inc</option>
+              <option value="Greenleaf Xpress">Greenleaf Xpress</option>
+              <option value="Other Carrier">Other Carrier</option>
+            </select>
 
             {manualMode && (
               <button
@@ -966,7 +943,7 @@ const App: React.FC = () => {
         <div className="absolute top-12 flex flex-col items-center opacity-40">
           <div className="w-1 h-12 bg-blue-500 animate-pulse"></div>
           <div className="text-[10px] font-black tracking-[0.5em] mt-4">
-            ELMCONNECT v35.0
+            ELMCONNECT
           </div>
         </div>
 
@@ -989,7 +966,7 @@ const App: React.FC = () => {
             className={`absolute inset-0 border-t-4 border-blue-500 rounded-full ${
               authStage > 0 ? 'animate-spin' : ''
             }`}
-          ></div>
+          />
           <span className="text-8xl mb-4 group-active:scale-110 transition-transform italic font-black text-white">
             GO
           </span>
@@ -1040,22 +1017,16 @@ const App: React.FC = () => {
 
         <div className="flex items-center gap-3">
           {eventType ? (
-            <span
-              className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.25em] border ${
-                eventType === 'PICKUP'
-                  ? 'border-zinc-600 bg-zinc-900/60 text-zinc-200'
-                  : 'border-zinc-600 bg-zinc-900/60 text-zinc-200'
-              }`}
-            >
+            <span className="px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.25em] border border-zinc-600 bg-zinc-900/60 text-zinc-200">
               {eventType}
             </span>
           ) : null}
 
-          {company ? (
+          {effectiveCompany ? (
             <span
               className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.25em] border ${themeBorderClass} ${themeBgClass} ${themeTextClass}`}
             >
-              {company}
+              {effectiveCompany}
             </span>
           ) : null}
 
@@ -1076,7 +1047,7 @@ const App: React.FC = () => {
               : `bg-zinc-950 shadow-2xl ${themeBorderClass === 'border-zinc-700' ? 'border-zinc-900' : themeBorderClass}`
           }`}
         >
-          {!company ? (
+          {!effectiveCompany ? (
             <div className="text-center px-6">
               <h1 className="text-5xl font-black italic text-zinc-800 uppercase tracking-tighter">
                 ELM<span className="text-zinc-500">CONNECT</span>
@@ -1113,9 +1084,9 @@ const App: React.FC = () => {
                 </div>
               ) : null}
             </div>
-          ) : company === 'Greenleaf Xpress' ? (
+          ) : effectiveCompany === 'Greenleaf Xpress' ? (
             <GreenleafLogo />
-          ) : company === 'BST Expedite Inc' ? (
+          ) : effectiveCompany === 'BST Expedite Inc' ? (
             <BstLogo />
           ) : (
             <div className="text-center px-6">
@@ -1123,7 +1094,7 @@ const App: React.FC = () => {
                 ELM<span className="text-zinc-500">CONNECT</span>
               </h1>
               <div className="mt-3 text-[11px] font-black uppercase tracking-[0.35em] text-zinc-600">
-                {company}
+                {effectiveCompany}
               </div>
             </div>
           )}
@@ -1148,7 +1119,6 @@ const App: React.FC = () => {
       </div>
 
       <div className="max-w-4xl mx-auto space-y-8 px-6">
-        {/* [ 00 ] EVENT */}
         <section
           className={`p-8 rounded-[2.5rem] border-2 transition-all ${
             solarMode
@@ -1188,7 +1158,6 @@ const App: React.FC = () => {
           </div>
         </section>
 
-        {/* [ 01 ] OPERATOR */}
         {eventType && (
           <section
             className={`p-8 rounded-[2.5rem] border-2 transition-all ${
@@ -1221,6 +1190,7 @@ const App: React.FC = () => {
                       setDelCity('');
                       setDelState('');
                       setCompany('');
+                      setManualCarrier('');
                       setCurrentStage('ASSIGNMENT');
                     }
                   }}
@@ -1247,10 +1217,8 @@ const App: React.FC = () => {
           </section>
         )}
 
-        {/* [ 02 ] ASSIGNMENT */}
         {driverName && renderAssignmentPanel()}
 
-        {/* [ 03 ] EVIDENCE */}
         {hasAssignment && currentStage !== 'ASSIGNMENT' && !isConnecting && (
           <section
             className={`p-8 rounded-[2.5rem] border-2 transition-all ${
@@ -1286,19 +1254,25 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <button
                 onClick={() => cameraInputRef.current?.click()}
-                className="flex-1 py-14 bg-zinc-800/30 rounded-[2rem] border-2 border-dashed border-zinc-700 text-4xl active:scale-95"
+                className="flex flex-col items-center justify-center py-12 bg-zinc-800/30 rounded-[2rem] border-2 border-dashed border-zinc-700 active:scale-95 text-center"
               >
-                📸
+                <div className="text-4xl">📸</div>
+                <div className="mt-4 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-300">
+                  Tap or click to capture photo of the BOL
+                </div>
               </button>
 
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="flex-1 py-14 bg-zinc-800/30 rounded-[2rem] border-2 border-dashed border-zinc-700 text-4xl active:scale-95"
+                className="flex flex-col items-center justify-center py-12 bg-zinc-800/30 rounded-[2rem] border-2 border-dashed border-zinc-700 active:scale-95 text-center"
               >
-                📂
+                <div className="text-4xl">🖼️</div>
+                <div className="mt-4 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-300 px-4">
+                  Tap or click to add a picture you have already taken or saved
+                </div>
               </button>
             </div>
 
@@ -1350,7 +1324,6 @@ const App: React.FC = () => {
           </section>
         )}
 
-        {/* [ 04 ] CAPACITY VERIFICATION */}
         {hasAssignment &&
           currentStage !== 'ASSIGNMENT' &&
           !isConnecting &&
@@ -1366,19 +1339,25 @@ const App: React.FC = () => {
                 [ 04 ] Capacity Verification
               </h3>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <button
                   onClick={() => freightCamRef.current?.click()}
-                  className="w-full py-12 bg-orange-500/10 border-2 border-dashed border-orange-500/30 rounded-3xl text-sm font-black active:scale-95 text-orange-500 uppercase tracking-widest"
+                  className="flex flex-col items-center justify-center py-12 bg-orange-500/10 border-2 border-dashed border-orange-500/30 rounded-3xl active:scale-95 text-center"
                 >
-                  📸 Freight Picture
+                  <div className="text-4xl">📸</div>
+                  <div className="mt-4 text-[10px] font-black uppercase tracking-[0.2em] text-orange-500">
+                    Capture freight photo
+                  </div>
                 </button>
 
                 <button
                   onClick={() => freightFileRef.current?.click()}
-                  className="w-full py-12 bg-orange-500/10 border-2 border-dashed border-orange-500/30 rounded-3xl text-sm font-black active:scale-95 text-orange-500 uppercase tracking-widest"
+                  className="flex flex-col items-center justify-center py-12 bg-orange-500/10 border-2 border-dashed border-orange-500/30 rounded-3xl active:scale-95 text-center"
                 >
-                  🖼️ Select Files
+                  <div className="text-4xl">🖼️</div>
+                  <div className="mt-4 text-[10px] font-black uppercase tracking-[0.2em] text-orange-500 px-4">
+                    Add freight photo already taken or saved
+                  </div>
                 </button>
               </div>
 
@@ -1396,9 +1375,7 @@ const App: React.FC = () => {
                       />
                       <button
                         onClick={() =>
-                          setUploadedFiles((p) =>
-                            p.filter((i) => i.id !== f.id)
-                          )
+                          setUploadedFiles((p) => p.filter((i) => i.id !== f.id))
                         }
                         className="absolute top-1 right-1 bg-red-600 w-5 h-5 rounded-full text-[10px]"
                       >
@@ -1417,6 +1394,7 @@ const App: React.FC = () => {
               setShowVerification(true);
             }
           }}
+          disabled={!isReady}
           className={`w-full py-10 rounded-[3rem] font-black uppercase tracking-[1em] text-sm shadow-2xl transition-all ${
             isReady
               ? themeMode === 'green'
@@ -1424,14 +1402,13 @@ const App: React.FC = () => {
                 : themeMode === 'blue'
                   ? 'bg-blue-600 text-white animate-pulse'
                   : 'bg-zinc-200 text-black animate-pulse'
-              : 'bg-zinc-900 text-zinc-700'
+              : 'bg-zinc-900 text-zinc-700 cursor-not-allowed'
           }`}
         >
           Review Transmission
         </button>
       </div>
 
-      {/* FREIGHT PROMPT */}
       {showFreightPrompt && (
         <div className="fixed inset-0 z-[500] bg-black/95 backdrop-blur-2xl flex items-center justify-center p-6 animate-in fade-in">
           <div className="bg-zinc-950 border-4 border-orange-500/40 rounded-[3.5rem] p-12 text-center max-w-sm">
@@ -1474,7 +1451,6 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* VERIFICATION MODAL */}
       {showVerification && (
         <div className="fixed inset-0 z-[600] bg-zinc-950 overflow-y-auto animate-in slide-in-from-right">
           <div className="max-w-xl mx-auto p-10 pb-56 space-y-12">
@@ -1498,21 +1474,18 @@ const App: React.FC = () => {
               {[
                 { l: 'EVENT', v: eventType, id: 'eventType' },
                 { l: 'OPERATOR', v: driverName, id: 'driverName' },
-                { l: 'REFERENCE', v: loadNum, id: 'reference' },
+                { l: 'REFERENCE', v: loadNum || 'N/A', id: 'reference' },
                 { l: 'LOAD ID', v: loadId || 'N/A', id: 'loadId' },
                 { l: 'PICKUP', v: `${puCity}, ${puState}`, id: 'origin' },
-                {
-                  l: 'DESTINATION',
-                  v: `${delCity}, ${delState}`,
-                  id: 'destination'
-                },
-                { l: 'CARRIER', v: company, id: 'company' }
+                { l: 'DESTINATION', v: `${delCity}, ${delState}`, id: 'destination' },
+                { l: 'CARRIER', v: effectiveCompany || 'N/A', id: 'company' }
               ].map((item) => (
                 <div
                   key={item.l}
                   onClick={() => {
-                    if (item.id !== 'eventType' && item.id !== 'loadId')
+                    if (!['eventType', 'loadId', 'reference'].includes(item.id)) {
                       setEditingField(item.id);
+                    }
                   }}
                   className="bg-zinc-900/50 p-7 rounded-[2.5rem] border-2 border-zinc-800 active:scale-95 transition-all group"
                 >
@@ -1521,7 +1494,7 @@ const App: React.FC = () => {
                       {item.l}
                     </span>
 
-                    {item.id !== 'eventType' && item.id !== 'loadId' ? (
+                    {!['eventType', 'loadId', 'reference'].includes(item.id) ? (
                       <span className="text-[7px] font-black text-white/30 uppercase border border-white/10 px-2 py-0.5 rounded">
                         Tap to Edit
                       </span>
@@ -1568,7 +1541,7 @@ const App: React.FC = () => {
                 );
 
                 const payload = {
-                  company,
+                  company: effectiveCompany,
                   driverName,
                   loadNum,
                   loadId,
@@ -1635,7 +1608,6 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* UPLINK SCREEN */}
       {isSubmitting && !showSuccess && (
         <div className="fixed inset-0 z-[700] bg-black flex flex-col items-center justify-center p-8 animate-in zoom-in">
           <div className="relative w-64 h-64 mb-12">
@@ -1655,7 +1627,6 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* SUCCESS SCREEN */}
       {showSuccess && (
         <div className="fixed inset-0 z-[800] bg-black flex flex-col items-center justify-center p-6 animate-in slide-in-from-bottom">
           <div
@@ -1680,7 +1651,7 @@ const App: React.FC = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-500">REF ID:</span>
-                <span className="text-white font-bold">{loadNum}</span>
+                <span className="text-white font-bold">{loadNum || 'N/A'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-500">LOAD ID:</span>
@@ -1692,7 +1663,7 @@ const App: React.FC = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-500">CARRIER:</span>
-                <span className="text-white font-bold">{company}</span>
+                <span className="text-white font-bold">{effectiveCompany || 'N/A'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-500">TIMESTAMP:</span>
@@ -1718,7 +1689,6 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* EDIT MODAL */}
       {editingField && (
         <div className="fixed inset-0 z-[800] bg-black/98 flex items-center justify-center p-6">
           <div className="w-full max-w-sm bg-zinc-900 border-2 border-zinc-800 rounded-[3.5rem] p-10 shadow-2xl">
@@ -1773,16 +1743,6 @@ const App: React.FC = () => {
                 </>
               )}
 
-              {editingField === 'reference' && (
-                <input
-                  type="text"
-                  placeholder="LOAD #"
-                  className={inpStyle(loadNum)}
-                  value={loadNum}
-                  onChange={(e) => setLoadNum(e.target.value.toUpperCase())}
-                />
-              )}
-
               {editingField === 'driverName' && (
                 <input
                   type="text"
@@ -1794,12 +1754,20 @@ const App: React.FC = () => {
               )}
 
               {editingField === 'company' && (
-                <input
-                  className={inpStyle(company)}
-                  placeholder="CARRIER NAME ASSIGNED TO THIS LOAD"
-                  value={company}
-                  onChange={(e) => setCompany(e.target.value)}
-                />
+                <select
+                  className={inpStyle(manualCarrier)}
+                  value={manualCarrier}
+                  onChange={(e) => {
+                    const val = e.target.value as ManualCarrierOption;
+                    setManualCarrier(val);
+                    setCompany(val);
+                  }}
+                >
+                  <option value="">CARRIER NAME ASSIGNED TO THIS LOAD</option>
+                  <option value="BST Expedite Inc">BST Expedite Inc</option>
+                  <option value="Greenleaf Xpress">Greenleaf Xpress</option>
+                  <option value="Other Carrier">Other Carrier</option>
+                </select>
               )}
             </div>
 
@@ -1813,7 +1781,6 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* FULL IMAGE INSPECTOR */}
       {fullImage && (
         <div
           className="fixed inset-0 z-[900] bg-black flex flex-col items-center justify-center p-4 animate-in zoom-in"
@@ -1829,7 +1796,6 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* INPUTS FOR CAMERA TRIGGER */}
       <input
         type="file"
         ref={cameraInputRef}
