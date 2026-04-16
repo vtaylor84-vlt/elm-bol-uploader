@@ -6,7 +6,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
  * - Manual entry uses carrier dropdown only
  * - Removes manual Load # and Load ID entry
  * - Improves scanning state after driver selection
- * - Fixes Review Transmission availability
+ * - Fixes Review Transmission availability 
  * - Keeps duplicate load numbers as selectable legs
  * - Uses loadId when returned by backend
  */
