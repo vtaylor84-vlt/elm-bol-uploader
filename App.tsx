@@ -374,29 +374,39 @@ const App: React.FC = () => {
     'WI','WV','WY'
   ];
 
+    const selectedLoadCarrier = getCarrierDisplayName(
+    selectedLoad?.companyCode || selectedLoad?.company
+  );
+
+  const effectiveCompany = manualMode
+    ? manualCarrier === 'Other Carrier'
+      ? 'Other Carrier'
+      : manualCarrier
+    : selectedLoadCarrier || company;
+
   const selectedCarrierCode = String(
-  selectedLoad?.companyCode || selectedLoad?.company || ''
-)
-  .trim()
-  .toUpperCase();
+    selectedLoad?.companyCode || selectedLoad?.company || ''
+  )
+    .trim()
+    .toUpperCase();
 
-const themeMode = useMemo<'blue' | 'green' | 'neutral'>(() => {
-  if (
-    selectedCarrierCode === 'BST' ||
-    effectiveCompany === 'BST Expedite Inc'
-  ) {
-    return 'blue';
-  }
+  const themeMode = useMemo<'blue' | 'green' | 'neutral'>(() => {
+    if (
+      selectedCarrierCode === 'BST' ||
+      effectiveCompany === 'BST Expedite Inc'
+    ) {
+      return 'blue';
+    }
 
-  if (
-    selectedCarrierCode === 'GLX' ||
-    effectiveCompany === 'Greenleaf Xpress'
-  ) {
-    return 'green';
-  }
+    if (
+      selectedCarrierCode === 'GLX' ||
+      effectiveCompany === 'Greenleaf Xpress'
+    ) {
+      return 'green';
+    }
 
-  return 'neutral';
-}, [selectedCarrierCode, effectiveCompany]);
+    return 'neutral';
+  }, [selectedCarrierCode, effectiveCompany]);
 
   const themeHex =
     themeMode === 'green'
@@ -431,7 +441,7 @@ const themeMode = useMemo<'blue' | 'green' | 'neutral'>(() => {
     puState &&
     delCity &&
     delState &&
-    company
+    effectiveCompany
   );
 
   const hasAssignment = !!(selectedLoad || hasManualAssignmentData);
@@ -439,47 +449,19 @@ const themeMode = useMemo<'blue' | 'green' | 'neutral'>(() => {
   const hasBolEvidence = uploadedFiles.some((f) => f.category === 'bol');
 
   const hasRouteData = !!(
-  (selectedLoad && (puCity || delCity)) ||
-  (puCity && delCity)
-);
+    (selectedLoad && (puCity || delCity)) ||
+    (puCity && delCity)
+  );
 
-const hasCarrierData = !!effectiveCompany;
+  const hasCarrierData = !!effectiveCompany;
 
-const isReady = !!(
-  hasCarrierData &&
-  driverName &&
-  eventType &&
-  hasRouteData &&
-  hasBolEvidence
-);
-
-  const stageOrder: Stage[] = [
-    'EVENT',
-    'OPERATOR',
-    'ASSIGNMENT',
-    'EVIDENCE',
-    'REVIEW'
-  ];
-
-  const stageLabels: Record<Stage, string> = {
-    EVENT: 'EVENT SELECTED',
-    OPERATOR: 'OPERATOR IDENTIFIED',
-    ASSIGNMENT: 'LOAD LINKED',
-    EVIDENCE: 'DOCUMENT CAPTURE',
-    REVIEW: 'VALIDATION'
-  };
-
-  const currentStageIndex = stageOrder.indexOf(currentStage);
-
-  const selectedLoadCarrier = getCarrierDisplayName(
-  selectedLoad?.companyCode || selectedLoad?.company
-);
-
-  const effectiveCompany = manualMode
-    ? manualCarrier === 'Other Carrier'
-      ? 'Other Carrier'
-      : manualCarrier
-    : selectedLoadCarrier || company;
+  const isReady = !!(
+    hasCarrierData &&
+    driverName &&
+    eventType &&
+    hasRouteData &&
+    hasBolEvidence
+  );
 
   const inpStyle = (v: string) =>
     `w-full p-5 rounded-2xl font-mono text-sm border-2 transition-all outline-none ${
