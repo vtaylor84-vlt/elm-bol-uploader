@@ -374,17 +374,39 @@ const App: React.FC = () => {
     'WI','WV','WY'
   ];
 
+    const selectedLoadCarrier = getCarrierDisplayName(
+    selectedLoad?.companyCode || selectedLoad?.company
+  );
+
+  const effectiveCompany = manualMode
+    ? manualCarrier === 'Other Carrier'
+      ? 'Other Carrier'
+      : manualCarrier
+    : selectedLoadCarrier || company;
+
   const selectedCarrierCode = String(
-    selectedLoad?.companyCode || selectedLoad?.company || company || ''
+    selectedLoad?.companyCode || selectedLoad?.company || effectiveCompany || ''
   )
     .trim()
     .toUpperCase();
 
   const themeMode = useMemo<'blue' | 'green' | 'neutral'>(() => {
-    if (selectedCarrierCode === 'BST' || company === 'BST Expedite Inc') return 'blue';
-    if (selectedCarrierCode === 'GLX' || company === 'Greenleaf Xpress') return 'green';
+    if (
+      selectedCarrierCode === 'BST' ||
+      effectiveCompany === 'BST Expedite Inc'
+    ) {
+      return 'blue';
+    }
+
+    if (
+      selectedCarrierCode === 'GLX' ||
+      effectiveCompany === 'Greenleaf Xpress'
+    ) {
+      return 'green';
+    }
+
     return 'neutral';
-  }, [selectedCarrierCode, company]);
+  }, [selectedCarrierCode, effectiveCompany]);
 
   const themeHex =
     themeMode === 'green'
@@ -419,21 +441,23 @@ const App: React.FC = () => {
     puState &&
     delCity &&
     delState &&
-    company
+    effectiveCompany
   );
 
   const hasAssignment = !!(selectedLoad || hasManualAssignmentData);
 
   const hasBolEvidence = uploadedFiles.some((f) => f.category === 'bol');
 
+  const hasRouteData = !!(
+    (selectedLoad && (puCity || puState || delCity || delState)) ||
+    (puCity && puState && delCity && delState)
+  );
+
   const isReady = !!(
-    company &&
+    effectiveCompany &&
     driverName &&
     eventType &&
-    puCity &&
-    puState &&
-    delCity &&
-    delState &&
+    hasRouteData &&
     hasBolEvidence
   );
 
@@ -454,12 +478,6 @@ const App: React.FC = () => {
   };
 
   const currentStageIndex = stageOrder.indexOf(currentStage);
-
-  const effectiveCompany = manualMode
-    ? manualCarrier === 'Other Carrier'
-      ? 'Other Carrier'
-      : manualCarrier
-    : company;
 
   const inpStyle = (v: string) =>
     `w-full p-5 rounded-2xl font-mono text-sm border-2 transition-all outline-none ${
