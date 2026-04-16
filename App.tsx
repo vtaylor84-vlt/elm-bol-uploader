@@ -367,14 +367,14 @@ const App: React.FC = () => {
   const freightCamRef = useRef<HTMLInputElement>(null);
   const freightFileRef = useRef<HTMLInputElement>(null);
 
-  const states = [
+    const states = [
     'AL','AR','AZ','CA','CO','CT','DE','FL','GA','IA','ID','IL','IN','KS','KY',
     'LA','MA','MD','ME','MI','MN','MO','MS','MT','NC','ND','NE','NH','NJ','NM',
     'NV','NY','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VA','VT','WA',
     'WI','WV','WY'
   ];
 
-    const selectedLoadCarrier = getCarrierDisplayName(
+  const selectedLoadCarrier = getCarrierDisplayName(
     selectedLoad?.companyCode || selectedLoad?.company
   );
 
@@ -390,23 +390,12 @@ const App: React.FC = () => {
     .trim()
     .toUpperCase();
 
-  const themeMode = useMemo<'blue' | 'green' | 'neutral'>(() => {
-    if (
-      selectedCarrierCode === 'BST' ||
-      effectiveCompany === 'BST Expedite Inc'
-    ) {
-      return 'blue';
-    }
-
-    if (
-      selectedCarrierCode === 'GLX' ||
-      effectiveCompany === 'Greenleaf Xpress'
-    ) {
-      return 'green';
-    }
-
-    return 'neutral';
-  }, [selectedCarrierCode, effectiveCompany]);
+  const themeMode: 'blue' | 'green' | 'neutral' =
+    selectedCarrierCode === 'BST' || effectiveCompany === 'BST Expedite Inc'
+      ? 'blue'
+      : selectedCarrierCode === 'GLX' || effectiveCompany === 'Greenleaf Xpress'
+        ? 'green'
+        : 'neutral';
 
   const themeHex =
     themeMode === 'green'
@@ -461,7 +450,25 @@ const App: React.FC = () => {
     eventType &&
     hasRouteData &&
     hasBolEvidence
-  );  
+  );
+
+  const stageOrder: Stage[] = [
+    'EVENT',
+    'OPERATOR',
+    'ASSIGNMENT',
+    'EVIDENCE',
+    'REVIEW'
+  ];
+
+  const stageLabels: Record<Stage, string> = {
+    EVENT: 'EVENT SELECTED',
+    OPERATOR: 'OPERATOR IDENTIFIED',
+    ASSIGNMENT: 'LOAD LINKED',
+    EVIDENCE: 'DOCUMENT CAPTURE',
+    REVIEW: 'VALIDATION'
+  };
+
+  const currentStageIndex = stageOrder.indexOf(currentStage);  
 
   const inpStyle = (v: string) =>
     `w-full p-5 rounded-2xl font-mono text-sm border-2 transition-all outline-none ${
