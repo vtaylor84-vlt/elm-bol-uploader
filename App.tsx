@@ -385,7 +385,7 @@ const App: React.FC = () => {
     : selectedLoadCarrier || company;
 
   const selectedCarrierCode = String(
-    selectedLoad?.companyCode || selectedLoad?.company || ''
+    selectedLoad?.companyCode || selectedLoad?.company || effectiveCompany || ''
   )
     .trim()
     .toUpperCase();
@@ -449,8 +449,8 @@ const App: React.FC = () => {
   const hasBolEvidence = uploadedFiles.some((f) => f.category === 'bol');
 
   const hasRouteData = !!(
-    (selectedLoad && (puCity || delCity)) ||
-    (puCity && delCity)
+    (selectedLoad && (puCity || puState || delCity || delState)) ||
+    (puCity && puState && delCity && delState)
   );
 
   const hasCarrierData = !!effectiveCompany;
@@ -461,7 +461,7 @@ const App: React.FC = () => {
     eventType &&
     hasRouteData &&
     hasBolEvidence
-  );
+  );  
 
   const inpStyle = (v: string) =>
     `w-full p-5 rounded-2xl font-mono text-sm border-2 transition-all outline-none ${
