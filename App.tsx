@@ -96,7 +96,7 @@ const playOpenSound = () => {
 
     shimmer.start(now + 0.05);
     shimmer.stop(now + 0.16);
-  } catch (e) {}
+  } catch (e) { }
 };
 
 const compressImage = (file: File): Promise<Blob> => {
@@ -514,9 +514,9 @@ const App: React.FC = () => {
 
   const selectedCarrierCode = String(
     selectedLoad?.companyCode ||
-      selectedLoad?.company ||
-      effectiveCompany ||
-      ''
+    selectedLoad?.company ||
+    effectiveCompany ||
+    ''
   )
     .trim()
     .toUpperCase();
@@ -625,14 +625,13 @@ const App: React.FC = () => {
     stageOrder.indexOf(currentStage);
 
   const inpStyle = (v: string) =>
-    `w-full p-5 rounded-2xl font-mono text-sm border-2 transition-all outline-none ${
-      solarMode
-        ? v
-          ? 'bg-zinc-50 border-zinc-900 text-black'
-          : 'bg-white border-zinc-200 text-zinc-400'
-        : v
-          ? 'bg-black border-zinc-600 text-white shadow-lg'
-          : 'bg-zinc-900 border-zinc-800 text-zinc-500'
+    `w-full p-5 rounded-2xl font-mono text-sm border-2 transition-all outline-none ${solarMode
+      ? v
+        ? 'bg-zinc-50 border-zinc-900 text-black'
+        : 'bg-white border-zinc-200 text-zinc-400'
+      : v
+        ? 'bg-black border-zinc-600 text-white shadow-lg'
+        : 'bg-zinc-900 border-zinc-800 text-zinc-500'
     }`;
 
   const resetFlowFromEvent = (
@@ -895,17 +894,16 @@ const App: React.FC = () => {
     return (
       <div
         key={stage}
-        className={`flex-1 min-w-0 rounded-2xl border px-3 py-3 text-center transition-all ${
-          isActive
-            ? `${themeBorderClass} ${themeBgClass} ${themeTextClass}`
-            : isComplete
-              ? solarMode
-                ? 'border-zinc-300 bg-zinc-100 text-zinc-700'
-                : 'border-zinc-700 bg-zinc-900/50 text-zinc-300'
-              : solarMode
-                ? 'border-zinc-200 bg-white text-zinc-400'
-                : 'border-zinc-900 bg-black/30 text-zinc-600'
-        }`}
+        className={`flex-1 min-w-0 rounded-2xl border px-3 py-3 text-center transition-all ${isActive
+          ? `${themeBorderClass} ${themeBgClass} ${themeTextClass}`
+          : isComplete
+            ? solarMode
+              ? 'border-zinc-300 bg-zinc-100 text-zinc-700'
+              : 'border-zinc-700 bg-zinc-900/50 text-zinc-300'
+            : solarMode
+              ? 'border-zinc-200 bg-white text-zinc-400'
+              : 'border-zinc-900 bg-black/30 text-zinc-600'
+          }`}
       >
         <div className="text-[8px] font-black uppercase tracking-[0.25em]">
           {stageLabels[stage]}
@@ -915,11 +913,10 @@ const App: React.FC = () => {
   };
 
   const renderAssignmentPanel = () => {
-    const panelBase = `p-8 rounded-[2.5rem] border-2 transition-all ${
-      solarMode
-        ? 'bg-white border-zinc-300'
-        : 'bg-zinc-900/30 border-zinc-800'
-    }`;
+    const panelBase = `p-8 rounded-[2.5rem] border-2 transition-all ${solarMode
+      ? 'bg-white border-zinc-300'
+      : 'bg-zinc-900/30 border-zinc-800'
+      }`;
 
     if (!eventType || !driverName) {
       return null;
@@ -935,19 +932,17 @@ const App: React.FC = () => {
           {isScanning && (
             <div className="flex items-center gap-2 shrink-0">
               <div
-                className={`w-1.5 h-1.5 rounded-full animate-pulse ${
-                  themeMode === 'green'
-                    ? 'bg-green-500'
-                    : 'bg-blue-500'
-                }`}
+                className={`w-1.5 h-1.5 rounded-full animate-pulse ${themeMode === 'green'
+                  ? 'bg-green-500'
+                  : 'bg-blue-500'
+                  }`}
               />
 
               <span
-                className={`text-[8px] font-black uppercase ${
-                  themeMode === 'green'
-                    ? 'text-green-500'
-                    : 'text-blue-500'
-                }`}
+                className={`text-[8px] font-black uppercase ${themeMode === 'green'
+                  ? 'text-green-500'
+                  : 'text-blue-500'
+                  }`}
               >
                 Loading Assignment Data...
               </span>
@@ -966,11 +961,10 @@ const App: React.FC = () => {
             />
 
             <div
-              className={`mt-6 text-xl font-black uppercase tracking-[0.35em] ${
-                themeMode === 'green'
-                  ? 'text-green-400'
-                  : 'text-blue-400'
-              }`}
+              className={`mt-6 text-xl font-black uppercase tracking-[0.35em] ${themeMode === 'green'
+                ? 'text-green-400'
+                : 'text-blue-400'
+                }`}
             >
               ELM IS CONNECTING
             </div>
@@ -992,13 +986,12 @@ const App: React.FC = () => {
             />
 
             <div
-              className={`mt-6 text-xl font-black uppercase tracking-[0.35em] ${
-                themeMode === 'green'
-                  ? 'text-green-400'
-                  : themeMode === 'blue'
-                    ? 'text-blue-400'
-                    : 'text-cyan-400'
-              }`}
+              className={`mt-6 text-xl font-black uppercase tracking-[0.35em] ${themeMode === 'green'
+                ? 'text-green-400'
+                : themeMode === 'blue'
+                  ? 'text-blue-400'
+                  : 'text-cyan-400'
+                }`}
             >
               ELM IS CONNECTING
             </div>
@@ -1023,7 +1016,7 @@ const App: React.FC = () => {
               const carrierName =
                 getCarrierDisplayName(
                   load.companyCode ||
-                    load.company
+                  load.company
                 );
 
               return (
@@ -1032,28 +1025,26 @@ const App: React.FC = () => {
                   onClick={() =>
                     handleLoadSelection(load)
                   }
-                  className={`w-full p-6 rounded-[2rem] border-2 text-left transition-all ${
-                    isSelected
-                      ? `${themeBorderClass} ${themeBgClass}`
-                      : solarMode
-                        ? 'border-zinc-300 bg-zinc-50'
-                        : 'border-zinc-800 bg-black/40'
-                  }`}
+                  className={`w-full p-6 rounded-[2rem] border-2 text-left transition-all ${isSelected
+                    ? `${themeBorderClass} ${themeBgClass}`
+                    : solarMode
+                      ? 'border-zinc-300 bg-zinc-50'
+                      : 'border-zinc-800 bg-black/40'
+                    }`}
                 >
                   <div className="flex justify-between items-start gap-4 mb-3">
                     <div>
                       <div
-                        className={`text-lg font-black tracking-tight ${
-                          isSelected
-                            ? themeMode ===
-                              'green'
-                              ? 'text-green-400'
-                              : themeMode ===
-                                  'blue'
-                                ? 'text-blue-400'
-                                : 'text-cyan-400'
-                            : 'text-white'
-                        }`}
+                        className={`text-lg font-black tracking-tight ${isSelected
+                          ? themeMode ===
+                            'green'
+                            ? 'text-green-400'
+                            : themeMode ===
+                              'blue'
+                              ? 'text-blue-400'
+                              : 'text-cyan-400'
+                          : 'text-white'
+                          }`}
                       >
                         {load.loadNumber
                           ? `LOAD #${load.loadNumber}`
@@ -1077,12 +1068,11 @@ const App: React.FC = () => {
                     <div className="flex flex-col items-end gap-2">
                       {load.status ? (
                         <span
-                          className={`px-3 py-1 rounded-full border text-[8px] font-black uppercase tracking-widest ${
-                            themeMode ===
+                          className={`px-3 py-1 rounded-full border text-[8px] font-black uppercase tracking-widest ${themeMode ===
                             'green'
-                              ? 'border-green-500/30 bg-green-500/10 text-green-400'
-                              : 'border-blue-500/30 bg-blue-500/10 text-blue-400'
-                          }`}
+                            ? 'border-green-500/30 bg-green-500/10 text-green-400'
+                            : 'border-blue-500/30 bg-blue-500/10 text-blue-400'
+                            }`}
                         >
                           {load.status}
                         </span>
@@ -1102,7 +1092,7 @@ const App: React.FC = () => {
                     <span
                       className={
                         themeMode ===
-                        'green'
+                          'green'
                           ? 'text-green-500'
                           : 'text-blue-500'
                       }
@@ -1329,11 +1319,10 @@ const App: React.FC = () => {
           className="w-64 h-64 border-4 border-blue-500/10 rounded-full flex flex-col items-center justify-center bg-zinc-950 shadow-[0_0_120px_rgba(59,130,246,0.2)] active:scale-95 transition-all z-10 group"
         >
           <div
-            className={`absolute inset-0 border-t-4 border-blue-500 rounded-full ${
-              authStage > 0
-                ? 'animate-spin'
-                : ''
-            }`}
+            className={`absolute inset-0 border-t-4 border-blue-500 rounded-full ${authStage > 0
+              ? 'animate-spin'
+              : ''
+              }`}
           />
 
           <span className="text-8xl mb-4 group-active:scale-110 transition-transform italic font-black text-white">
@@ -1355,11 +1344,10 @@ const App: React.FC = () => {
           ].map((l, i) => (
             <div
               key={i}
-              className={`flex items-center gap-3 ${
-                authStage > i
-                  ? 'text-green-500'
-                  : ''
-              }`}
+              className={`flex items-center gap-3 ${authStage > i
+                ? 'text-green-500'
+                : ''
+                }`}
             >
               <span>
                 [
@@ -1378,18 +1366,16 @@ const App: React.FC = () => {
 
   return (
     <div
-      className={`min-h-screen transition-all duration-700 ${
-        solarMode
-          ? 'bg-zinc-100 text-black'
-          : 'bg-[#020202] text-zinc-100'
-      } pb-32`}
+      className={`min-h-screen transition-all duration-700 ${solarMode
+        ? 'bg-zinc-100 text-black'
+        : 'bg-[#020202] text-zinc-100'
+        } pb-32`}
     >
       <div
-        className={`fixed top-0 w-full z-[100] px-6 py-4 flex justify-between items-center text-[10px] font-black border-b ${
-          solarMode
-            ? 'bg-white/90 border-zinc-200 shadow-sm'
-            : 'bg-black/90 border-zinc-900'
-        } backdrop-blur-md`}
+        className={`fixed top-0 w-full z-[100] px-6 py-4 flex justify-between items-center text-[10px] font-black border-b ${solarMode
+          ? 'bg-white/90 border-zinc-200 shadow-sm'
+          : 'bg-black/90 border-zinc-900'
+          } backdrop-blur-md`}
       >
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_#22c55e]" />
@@ -1429,16 +1415,14 @@ const App: React.FC = () => {
 
       <header className="max-w-4xl mx-auto pt-24 px-6 mb-8">
         <div
-          className={`w-full min-h-[180px] rounded-[3.5rem] border-2 flex items-center justify-center transition-all ${
-            solarMode
-              ? 'bg-white border-zinc-300 shadow-xl'
-              : `bg-zinc-950 shadow-2xl ${
-                  themeBorderClass ===
-                  'border-zinc-700'
-                    ? 'border-zinc-900'
-                    : themeBorderClass
-                }`
-          }`}
+          className={`w-full min-h-[180px] rounded-[3.5rem] border-2 flex items-center justify-center transition-all ${solarMode
+            ? 'bg-white border-zinc-300 shadow-xl'
+            : `bg-zinc-950 shadow-2xl ${themeBorderClass ===
+              'border-zinc-700'
+              ? 'border-zinc-900'
+              : themeBorderClass
+            }`
+            }`}
         >
           {!effectiveCompany ? (
             <div className="text-center px-6">
@@ -1454,8 +1438,8 @@ const App: React.FC = () => {
               </div>
 
               {eventType ||
-              driverName ||
-              loadNum ? (
+                driverName ||
+                loadNum ? (
                 <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
                   {eventType ? (
                     <span className="px-3 py-1 rounded-full border border-zinc-700 bg-zinc-900 text-[8px] font-black uppercase tracking-[0.25em] text-zinc-300">
@@ -1518,11 +1502,10 @@ const App: React.FC = () => {
 
       <div className="max-w-4xl mx-auto px-6 mb-8">
         <section
-          className={`p-5 rounded-[2.5rem] border-2 transition-all ${
-            solarMode
-              ? 'bg-white border-zinc-300'
-              : 'bg-zinc-900/30 border-zinc-800'
-          }`}
+          className={`p-5 rounded-[2.5rem] border-2 transition-all ${solarMode
+            ? 'bg-white border-zinc-300'
+            : 'bg-zinc-900/30 border-zinc-800'
+            }`}
         >
           <div className="text-[10px] font-black uppercase tracking-[0.5em] mb-4 text-zinc-600">
             System State
@@ -1538,11 +1521,10 @@ const App: React.FC = () => {
 
       <div className="max-w-4xl mx-auto space-y-8 px-6">
         <section
-          className={`p-8 rounded-[2.5rem] border-2 transition-all ${
-            solarMode
-              ? 'bg-white border-zinc-300'
-              : 'bg-zinc-900/30 border-zinc-800'
-          }`}
+          className={`p-8 rounded-[2.5rem] border-2 transition-all ${solarMode
+            ? 'bg-white border-zinc-300'
+            : 'bg-zinc-900/30 border-zinc-800'
+            }`}
         >
           <h3 className="text-[10px] font-black uppercase tracking-[0.5em] mb-3 text-zinc-600">
             [ 00 ] Event
@@ -1559,12 +1541,11 @@ const App: React.FC = () => {
                   'PICKUP'
                 )
               }
-              className={`py-10 rounded-[2rem] border-2 font-black uppercase tracking-widest transition-all ${
-                eventType ===
+              className={`py-10 rounded-[2rem] border-2 font-black uppercase tracking-widest transition-all ${eventType ===
                 'PICKUP'
-                  ? 'bg-zinc-200 text-black border-zinc-100 shadow-[0_0_25px_rgba(255,255,255,0.08)]'
-                  : 'bg-black/40 border-zinc-700 text-zinc-400'
-              }`}
+                ? 'bg-zinc-200 text-black border-zinc-100 shadow-[0_0_25px_rgba(255,255,255,0.08)]'
+                : 'bg-black/40 border-zinc-700 text-zinc-400'
+                }`}
             >
               PICKUP
             </button>
@@ -1575,12 +1556,11 @@ const App: React.FC = () => {
                   'DELIVERY'
                 )
               }
-              className={`py-10 rounded-[2rem] border-2 font-black uppercase tracking-widest transition-all ${
-                eventType ===
+              className={`py-10 rounded-[2rem] border-2 font-black uppercase tracking-widest transition-all ${eventType ===
                 'DELIVERY'
-                  ? 'bg-zinc-200 text-black border-zinc-100 shadow-[0_0_25px_rgba(255,255,255,0.08)]'
-                  : 'bg-black/40 border-zinc-700 text-zinc-400'
-              }`}
+                ? 'bg-zinc-200 text-black border-zinc-100 shadow-[0_0_25px_rgba(255,255,255,0.08)]'
+                : 'bg-black/40 border-zinc-700 text-zinc-400'
+                }`}
             >
               DELIVERY
             </button>
@@ -1589,11 +1569,10 @@ const App: React.FC = () => {
 
         {eventType && (
           <section
-            className={`p-8 rounded-[2.5rem] border-2 transition-all ${
-              solarMode
-                ? 'bg-white border-zinc-300'
-                : 'bg-zinc-900/30 border-zinc-800'
-            }`}
+            className={`p-8 rounded-[2.5rem] border-2 transition-all ${solarMode
+              ? 'bg-white border-zinc-300'
+              : 'bg-zinc-900/30 border-zinc-800'
+              }`}
           >
             <h3 className="text-[10px] font-black uppercase tracking-[0.5em] mb-8 text-zinc-600">
               [ 01 ] Operator
@@ -1689,19 +1668,17 @@ const App: React.FC = () => {
 
         {hasAssignment &&
           currentStage !==
-            'ASSIGNMENT' &&
+          'ASSIGNMENT' &&
           !isConnecting && (
             <section
-              className={`p-8 rounded-[2.5rem] border-2 transition-all ${
-                solarMode
-                  ? 'bg-white border-zinc-300'
-                  : `bg-zinc-900/30 ${
-                      themeBorderClass ===
-                      'border-zinc-700'
-                        ? 'border-zinc-800'
-                        : themeBorderClass
-                    }`
-              }`}
+              className={`p-8 rounded-[2.5rem] border-2 transition-all ${solarMode
+                ? 'bg-white border-zinc-300'
+                : `bg-zinc-900/30 ${themeBorderClass ===
+                  'border-zinc-700'
+                  ? 'border-zinc-800'
+                  : themeBorderClass
+                }`
+                }`}
             >
               <div className="flex justify-between items-center mb-8 gap-4">
                 <div>
@@ -1711,7 +1688,7 @@ const App: React.FC = () => {
 
                   <div className="mt-2 text-[9px] font-black uppercase tracking-[0.25em] text-zinc-500">
                     {eventType ===
-                    'PICKUP'
+                      'PICKUP'
                       ? 'Capture Bill Of Lading'
                       : 'Capture Delivery Document'}
                   </div>
@@ -1719,15 +1696,14 @@ const App: React.FC = () => {
 
                 <div className="flex items-center gap-2">
                   <span
-                    className={`px-3 py-2 rounded-xl text-[10px] font-black border-2 ${
-                      themeMode ===
+                    className={`px-3 py-2 rounded-xl text-[10px] font-black border-2 ${themeMode ===
                       'green'
-                        ? 'bg-green-600 text-white border-green-500'
-                        : themeMode ===
-                            'blue'
-                          ? 'bg-blue-600 text-white border-blue-500'
-                          : 'bg-zinc-700 text-white border-zinc-500'
-                    }`}
+                      ? 'bg-green-600 text-white border-green-500'
+                      : themeMode ===
+                        'blue'
+                        ? 'bg-blue-600 text-white border-blue-500'
+                        : 'bg-zinc-700 text-white border-zinc-500'
+                      }`}
                   >
                     {eventType}
                   </span>
@@ -1837,16 +1813,15 @@ const App: React.FC = () => {
 
         {hasAssignment &&
           currentStage !==
-            'ASSIGNMENT' &&
+          'ASSIGNMENT' &&
           !isConnecting &&
           eventType ===
-            'PICKUP' && (
+          'PICKUP' && (
             <section
-              className={`p-8 rounded-[2.5rem] border-2 animate-in slide-in-from-bottom ${
-                solarMode
-                  ? 'bg-white border-zinc-300'
-                  : 'bg-zinc-900/30 border-orange-500/20'
-              }`}
+              className={`p-8 rounded-[2.5rem] border-2 animate-in slide-in-from-bottom ${solarMode
+                ? 'bg-white border-zinc-300'
+                : 'bg-zinc-900/30 border-orange-500/20'
+                }`}
             >
               <h3 className="text-[10px] font-black uppercase tracking-[0.5em] mb-8 text-orange-500">
                 [ 04 ] Capacity
@@ -1939,17 +1914,16 @@ const App: React.FC = () => {
             }
           }}
           disabled={!isReady}
-          className={`w-full py-10 rounded-[3rem] font-black uppercase tracking-[1em] text-sm shadow-2xl transition-all ${
-            isReady
-              ? themeMode ===
-                'green'
-                ? 'bg-green-600 text-white animate-pulse'
-                : themeMode ===
-                    'blue'
-                  ? 'bg-blue-600 text-white animate-pulse'
-                  : 'bg-zinc-200 text-black animate-pulse'
-              : 'bg-zinc-900 text-zinc-700 cursor-not-allowed'
-          }`}
+          className={`w-full py-10 rounded-[3rem] font-black uppercase tracking-[1em] text-sm shadow-2xl transition-all ${isReady
+            ? themeMode ===
+              'green'
+              ? 'bg-green-600 text-white animate-pulse'
+              : themeMode ===
+                'blue'
+                ? 'bg-blue-600 text-white animate-pulse'
+                : 'bg-zinc-200 text-black animate-pulse'
+            : 'bg-zinc-900 text-zinc-700 cursor-not-allowed'
+            }`}
         >
           Review Transmission
         </button>
@@ -2240,15 +2214,14 @@ const App: React.FC = () => {
                   );
                 }
               }}
-              className={`w-full py-8 rounded-[2.5rem] font-black uppercase tracking-[1.2em] shadow-xl text-white ${
-                themeMode ===
+              className={`w-full py-8 rounded-[2.5rem] font-black uppercase tracking-[1.2em] shadow-xl text-white ${themeMode ===
                 'green'
-                  ? 'bg-green-600'
-                  : themeMode ===
-                      'blue'
-                    ? 'bg-blue-600'
-                    : 'bg-zinc-700'
-              }`}
+                ? 'bg-green-600'
+                : themeMode ===
+                  'blue'
+                  ? 'bg-blue-600'
+                  : 'bg-zinc-700'
+                }`}
             >
               Authorize Uplink
             </button>
@@ -2384,15 +2357,14 @@ const App: React.FC = () => {
               onClick={() =>
                 window.location.reload()
               }
-              className={`w-full py-6 rounded-[2rem] font-black uppercase tracking-[0.5em] text-[10px] ${
-                themeMode ===
+              className={`w-full py-6 rounded-[2rem] font-black uppercase tracking-[0.5em] text-[10px] ${themeMode ===
                 'green'
-                  ? 'bg-green-600'
-                  : themeMode ===
-                      'blue'
-                    ? 'bg-blue-600'
-                    : 'bg-zinc-700'
-              } text-white`}
+                ? 'bg-green-600'
+                : themeMode ===
+                  'blue'
+                  ? 'bg-blue-600'
+                  : 'bg-zinc-700'
+                } text-white`}
             >
               Restart Terminal
             </button>
@@ -2410,143 +2382,143 @@ const App: React.FC = () => {
             <div className="space-y-4">
               {editingField ===
                 'origin' && (
-                <>
-                  <input
-                    type="text"
-                    placeholder="CITY"
-                    className={inpStyle(
-                      puCity
-                    )}
-                    value={puCity}
-                    onChange={(e) =>
-                      setPuCity(
-                        e.target.value.toUpperCase()
-                      )
-                    }
-                  />
+                  <>
+                    <input
+                      type="text"
+                      placeholder="CITY"
+                      className={inpStyle(
+                        puCity
+                      )}
+                      value={puCity}
+                      onChange={(e) =>
+                        setPuCity(
+                          e.target.value.toUpperCase()
+                        )
+                      }
+                    />
 
-                  <select
-                    className={inpStyle(
-                      puState
-                    )}
-                    value={puState}
-                    onChange={(e) =>
-                      setPuState(
-                        e.target.value.toUpperCase()
-                      )
-                    }
-                  >
-                    {states.map(
-                      (s) => (
-                        <option
-                          key={s}
-                          value={s}
-                        >
-                          {s}
-                        </option>
-                      )
-                    )}
-                  </select>
-                </>
-              )}
+                    <select
+                      className={inpStyle(
+                        puState
+                      )}
+                      value={puState}
+                      onChange={(e) =>
+                        setPuState(
+                          e.target.value.toUpperCase()
+                        )
+                      }
+                    >
+                      {states.map(
+                        (s) => (
+                          <option
+                            key={s}
+                            value={s}
+                          >
+                            {s}
+                          </option>
+                        )
+                      )}
+                    </select>
+                  </>
+                )}
 
               {editingField ===
                 'destination' && (
-                <>
+                  <>
+                    <input
+                      type="text"
+                      placeholder="CITY"
+                      className={inpStyle(
+                        delCity
+                      )}
+                      value={delCity}
+                      onChange={(e) =>
+                        setDelCity(
+                          e.target.value.toUpperCase()
+                        )
+                      }
+                    />
+
+                    <select
+                      className={inpStyle(
+                        delState
+                      )}
+                      value={delState}
+                      onChange={(e) =>
+                        setDelState(
+                          e.target.value.toUpperCase()
+                        )
+                      }
+                    >
+                      {states.map(
+                        (s) => (
+                          <option
+                            key={s}
+                            value={s}
+                          >
+                            {s}
+                          </option>
+                        )
+                      )}
+                    </select>
+                  </>
+                )}
+
+              {editingField ===
+                'driverName' && (
                   <input
                     type="text"
-                    placeholder="CITY"
+                    placeholder="OPERATOR NAME"
                     className={inpStyle(
-                      delCity
+                      driverName
                     )}
-                    value={delCity}
+                    value={driverName}
                     onChange={(e) =>
-                      setDelCity(
+                      setDriverName(
                         e.target.value.toUpperCase()
                       )
                     }
                   />
-
-                  <select
-                    className={inpStyle(
-                      delState
-                    )}
-                    value={delState}
-                    onChange={(e) =>
-                      setDelState(
-                        e.target.value.toUpperCase()
-                      )
-                    }
-                  >
-                    {states.map(
-                      (s) => (
-                        <option
-                          key={s}
-                          value={s}
-                        >
-                          {s}
-                        </option>
-                      )
-                    )}
-                  </select>
-                </>
-              )}
-
-              {editingField ===
-                'driverName' && (
-                <input
-                  type="text"
-                  placeholder="OPERATOR NAME"
-                  className={inpStyle(
-                    driverName
-                  )}
-                  value={driverName}
-                  onChange={(e) =>
-                    setDriverName(
-                      e.target.value.toUpperCase()
-                    )
-                  }
-                />
-              )}
+                )}
 
               {editingField ===
                 'company' && (
-                <select
-                  className={inpStyle(
-                    manualCarrier
-                  )}
-                  value={manualCarrier}
-                  onChange={(e) => {
-                    const val =
-                      e.target
-                        .value as ManualCarrierOption;
+                  <select
+                    className={inpStyle(
+                      manualCarrier
+                    )}
+                    value={manualCarrier}
+                    onChange={(e) => {
+                      const val =
+                        e.target
+                          .value as ManualCarrierOption;
 
-                    setManualCarrier(
-                      val
-                    );
+                      setManualCarrier(
+                        val
+                      );
 
-                    setCompany(val);
-                  }}
-                >
-                  <option value="">
-                    CARRIER NAME
-                    ASSIGNED TO THIS
-                    LOAD
-                  </option>
+                      setCompany(val);
+                    }}
+                  >
+                    <option value="">
+                      CARRIER NAME
+                      ASSIGNED TO THIS
+                      LOAD
+                    </option>
 
-                  <option value="BST Expedite Inc">
-                    BST Expedite Inc
-                  </option>
+                    <option value="BST Expedite Inc">
+                      BST Expedite Inc
+                    </option>
 
-                  <option value="Greenleaf Xpress">
-                    Greenleaf Xpress
-                  </option>
+                    <option value="Greenleaf Xpress">
+                      Greenleaf Xpress
+                    </option>
 
-                  <option value="Other Carrier">
-                    Other Carrier
-                  </option>
-                </select>
-              )}
+                    <option value="Other Carrier">
+                      Other Carrier
+                    </option>
+                  </select>
+                )}
             </div>
 
             <button
