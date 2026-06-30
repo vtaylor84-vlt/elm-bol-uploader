@@ -6,6 +6,7 @@ import type { FormState, FileState, UploadedFile, Status, ToastState } from '../
 import { generateDescription as callGeminiService } from '../services/geminiService'; 
 import { THEMES, defaultTheme } from '../themes'; 
 import { useQueue, QueuedJob } from './useQueue'; 
+import { getFileRejectionReason } from '../utils/uploadFileRules';
 
 // Import logos (you must ensure these paths are correct in your project structure)
 import GREENLEAF_LOGO from '../assets/Greenleaf Xpress logo.png'; 
@@ -48,15 +49,9 @@ export const useUploader = () => {
 
   // --- Load Identifier Logic ---
   const loadIdentifierValue = useMemo(() => {
-      if (formState.loadNumber) return `Load #: ${formState.loadNumber}`;
-      if (formState.bolNumber) return `BOL #: ${formState.bolNumber}`;
-      if (formState.puCity && formState.delCity) {
-          const puCity = formState.puCity.toUpperCase();
-          const delCity = formState.delCity.toUpperCase();
-          return `Trip: ${puCity} -> ${delCity}`;
-      }
+      if (formState.bolNumber.trim()) return `BOL #: ${formState.bolNumber.trim()}`;
       return '';
-  }, [formState.loadNumber, formState.bolNumber, formState.puCity, formState.delCity]);
+  }, [formState.bolNumber]);
 
 
   // --- Dynamic Header Logic (unchanged) ---
@@ -91,11 +86,11 @@ export const useUploader = () => {
     return (
       formState.company !== '' &&
       formState.driverName !== '' &&
+      formState.bolNumber.trim() !== '' &&
       formState.bolDocType !== '' &&
-      loadIdentifierValue !== '' && 
       (fileState.bolFiles.length > 0 || fileState.freightFiles.length > 0)
     );
-  }, [formState, fileState, loadIdentifierValue]);
+  }, [formState, fileState]);
 
 
   // Effect to clean up object URLs
@@ -125,6 +120,12 @@ export const useUploader = () => {
 
       const newFiles: UploadedFile[] = [];
       for (const file of files as File[]) {
+        const rejection = getFileRejectionReason(file);
+        if (rejection) {
+          showToast(rejection, 'warning');
+          continue;
+        }
+
         const signature = `${file.name}-${file.size}-${file.lastModified}`;
         if (existingFileSignatures.has(signature)) {
           showToast(`File already added: ${file.name}`, 'warning');
@@ -173,8 +174,8 @@ export const useUploader = () => {
   const validateForm = () => {
     if (!formState.company) return "Please select a company.";
     if (!formState.driverName) return "Please enter the driver's name.";
+    if (!formState.bolNumber.trim()) return "Please enter the BOL #.";
     if (!formState.bolDocType) return "Please select a BOL Type (Pickup or Delivery)."; 
-    if (!loadIdentifierValue) return "Please enter a Load #, BOL #, or both Pickup and Delivery Cities/States."; 
     if (fileState.bolFiles.length === 0 && fileState.freightFiles.length === 0) return "Please upload at least one file.";
     return "";
   };
@@ -198,15 +199,20 @@ export const useUploader = () => {
     setStatus('submitting'); 
     
     try {
-      const allFiles = [...fileState.bolFiles, ...fileState.freightFiles];
-      
-      // FIX: Ensure jobFiles is an array, even if allFiles is empty, 
-      // though allFiles shouldn't be empty due to validation.
-      const jobFiles = allFiles.map(f => ({
-        name: f.file.name,
-        blob: f.file, 
-        type: f.file.type,
-      }));
+      const jobFiles = [
+        ...fileState.bolFiles.map(f => ({
+          name: f.file.name,
+          blob: f.file,
+          type: f.file.type,
+          category: 'bol' as const,
+        })),
+        ...fileState.freightFiles.map(f => ({
+          name: f.file.name,
+          blob: f.file,
+          type: f.file.type,
+          category: 'freight' as const,
+        })),
+      ];
       
       const jobData = {
           data: formState,
@@ -217,9 +223,7 @@ export const useUploader = () => {
 
       await saveJob(jobData);
       
-      const loadId = loadIdentifierValue.split(': ')[1] || 'Submission';
-
-      showToast(`Load ${loadId} queued for sync!`, 'success');
+      showToast(`BOL ${formState.bolNumber.trim()} queued for sync!`, 'success');
       
       setStatus('success');
       resetForm(); 

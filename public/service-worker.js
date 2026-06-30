@@ -47,11 +47,14 @@ async function syncQueue() {
             formData.append(field, String(value));
         }
         
-        // Append files (Blobs)
-        // NOTE: Use the correct field name 'files' to match the Node.js busboy parser
+        // Append files (Blobs) and parallel category metadata for server-side validation
         job.files.forEach(f => {
-            formData.append('files', f.blob, f.name); 
+            formData.append('files', f.blob, f.name);
         });
+        formData.append(
+            'fileCategories',
+            JSON.stringify(job.files.map(f => f.category || 'bol'))
+        );
 
         try {
             // Use the Netlify function endpoint

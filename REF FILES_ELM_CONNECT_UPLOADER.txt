@@ -1,0 +1,390 @@
+00_App_Config.gs
+
+/** * ELM MASTER CORE v6 - FULL POWER
+ * Handles: Auto-Email, SMS, File Saving, and Document Verification
+ */
+
+const SETTINGS = {
+  SPREADSHEET_ID: '1QHw1tFqvx_vRz0biAkqRdOriA3zVpDzF3MHI6RqllPg',
+  FOLDERS: {
+    'BST': { 
+      bol: '1bZpcJcgUAyFxQZ2H5iMhN-LuNljQDd2d', 
+      pod: '1QL7H9jxnI6F_WAFCc10SQnY2YsXXhU3Y', 
+      freight: '1y6LMBDJr5N_V8dZxMB15uSNtEJcIi9RJ' 
+    },
+    'GLX': { 
+      bol: '1wpW0-UY7QvDI8g080Pu9DSt44vy4wtNr', 
+      pod: '1Xx2-qKf66tkL7NBUy9xtAhkpEQN33TlL', 
+      freight: '1w-5JjgUvuScRfFyy8t2RWSbBkvuBVX7-' 
+    }
+  },
+  EMAILS: {
+    'BST': "Leroy@bstexpediteinc.com, nick@bstexpediteinc.com",
+    'GLX': "maintenance@greenleafxpressllc.com, operations@greenleafxpressllc.com"
+  },
+  SMS_GATEWAY: "9452107105@vtext.com, 3194868576@vtext.com"
+};
+
+01_App_Routes.gs
+
+function doGet(e) {
+  const action = (e && e.parameter && e.parameter.action) ? String(e.parameter.action) : "";
+
+  if (action === "ping") {
+    return ContentService
+      .createTextOutput(JSON.stringify({ ok: true, app: "ELM_UPLOADER", ts: new Date().toISOString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  if (action === "getDrivers") {
+    return getDriversData(); // Logic moved to 03_App_DriverLookup.gs
+  }
+
+  return ContentService
+    .createTextOutput(JSON.stringify({ status: "ELM_UPLOADER Active" }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  return handleUploadProcess(e); // Logic moved to 02_App_UploadHandler.gs
+}
+
+02_App_UploadHandler.gs
+
+function handleUploadProcess(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+
+    if (!isUploadAuthorized_(data.uploadToken)) {
+      return ContentService
+        .createTextOutput(JSON.stringify({ status: "error", message: "Unauthorized" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    const {
+      company,
+      driverName,
+      loadNum,
+      bolNum,
+      bolProtocol,
+      files
+    } = data;
+
+    if (!isAllowedUploadCompany_(company)) {
+      return ContentService
+        .createTextOutput(JSON.stringify({ status: "error", message: "Invalid company" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    const cleanLoad = loadNum || bolNum || "NA";
+
+    const originRaw =
+      (data.puCity && data.puState) ? `${data.puCity} ${data.puState}` :
+      (data.origin ? String(data.origin) : "");
+
+    const destRaw =
+      (data.delCity && data.delState) ? `${data.delCity} ${data.delState}` :
+      (data.destination ? String(data.destination) : "");
+
+    const originFormatted = toCityState_(originRaw);
+    const destFormatted = toCityState_(destRaw);
+
+    const isDelivery = (bolProtocol === "DELIVERY");
+    const docTypeForFile = isDelivery ? "POD" : "BOL";
+
+    const formattedName =
+      `${docTypeForFile} - Load: ${cleanLoad} - ${originFormatted.replace(",", "")} - ${destFormatted.replace(",", "")}`;
+
+    const config = SETTINGS.FOLDERS[company];
+    let html = "<html><body>";
+
+    (files || []).forEach((f, idx) => {
+      const decoded = Utilities.base64Decode(f.base64.split(",")[1]);
+      const blob = Utilities.newBlob(decoded, "image/jpeg");
+
+      const folderId = (f.category === "bol")
+        ? (isDelivery ? config.pod : config.bol)
+        : config.freight;
+
+      const imgName = `${company}_${docTypeForFile}_${cleanLoad}_p${idx + 1}.jpg`;
+      DriveApp.getFolderById(folderId).createFile(blob.setName(imgName));
+
+      html += `<img src="${f.base64}" style="width:100%;"><br>`;
+    });
+
+    const pdfBlob = Utilities.newBlob(html + "</body></html>", "text/html")
+      .getAs("application/pdf")
+      .setName(`${formattedName}.pdf`);
+
+    const pdfFolderId = isDelivery ? config.pod : config.bol;
+    const pdfFile = DriveApp.getFolderById(pdfFolderId).createFile(pdfBlob);
+    const pdfUrl = pdfFile.getUrl();
+
+    // Sends Emails and SMS
+    sendNotifications(company, driverName, cleanLoad, bolProtocol, originFormatted, destFormatted, pdfUrl, pdfBlob, formattedName, docTypeForFile);
+
+    // DB_Docs LOGGING via Header Map
+    const payload = {
+      company: company,
+      driver: driverName,
+      loadNumber: cleanLoad,
+      phase: docTypeForFile, // BOL or POD
+      origin: originFormatted,
+      destination: destFormatted,
+      url: pdfUrl
+    };
+
+    writeDocToDB_(payload);
+
+    return ContentService
+      .createTextOutput(JSON.stringify({ status: "success", url: pdfUrl }))
+      .setMimeType(ContentService.MimeType.JSON);
+
+  } catch (err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ status: "error", message: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+03_App_DriverLookup.gs
+
+function getDriversData() {
+  const ss = SpreadsheetApp.openById("1QHw1tFqvx_vRz0biAkqRdOriA3zVpDzF3MHI6RqllPg");
+  const sh = ss.getSheetByName("Driver_Master");
+
+  if (!sh) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ error: "Missing sheet: Driver_Master" }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  const lastRow = sh.getLastRow();
+  if (lastRow < 2) {
+    return ContentService
+      .createTextOutput(JSON.stringify([]))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // Driver_Master:
+  // A = driverId
+  // B = driverName
+  // Y = ShowInUploader
+  // AB = IsActive
+  const values = sh.getRange(2, 1, lastRow - 1, 28).getValues();
+
+  const seen = new Set();
+  const drivers = [];
+
+  for (let i = 0; i < values.length; i++) {
+    const driverName = String(values[i][1] || "").trim();
+    const showInUploader = values[i][24];
+    const isActive = values[i][27];
+
+    if (!driverName) continue;
+
+    const show =
+      showInUploader === true ||
+      String(showInUploader || "").trim().toLowerCase() === "true";
+
+    const active =
+      isActive === true ||
+      String(isActive || "").trim().toLowerCase() === "true";
+
+    if (!show || !active) continue;
+
+    const key = driverName.toUpperCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    drivers.push(driverName);
+  }
+
+  drivers.sort((a, b) => a.localeCompare(b));
+
+  return ContentService
+    .createTextOutput(JSON.stringify(drivers))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+04_App_DocIntakeWriter.gs
+
+function writeDocToDB_(payload) {
+  const ss = SpreadsheetApp.openById(SETTINGS.SPREADSHEET_ID);
+  const sh = ss.getSheetByName("DB_Docs");
+
+  const values = sh.getDataRange().getValues();
+  const headers = values[0];
+
+  const map = {};
+  headers.forEach((h, i) => map[String(h || "").trim()] = i);
+
+  const now = new Date();
+  const row = new Array(headers.length).fill("");
+
+  const docIntakeId = makeDocIntakeId_({
+    timestamp: now,
+    company: payload.company || "",
+    driver: payload.driver || "",
+    loadNumber: payload.loadNumber || "",
+    documentPhase: payload.phase || "",
+    documentUrl: payload.url || ""
+  });
+
+  const canonicalDriverId = lookupCanonicalDriverId_(ss, payload.driver || "");
+
+  if (map["DocIntakeId"] !== undefined) row[map["DocIntakeId"]] = docIntakeId;
+  if (map["Timestamp"] !== undefined) row[map["Timestamp"]] = now;
+  if (map["Company"] !== undefined) row[map["Company"]] = payload.company || "";
+  if (map["Driver"] !== undefined) row[map["Driver"]] = payload.driver || "";
+  if (map["LoadNumber"] !== undefined) row[map["LoadNumber"]] = payload.loadNumber || "";
+  if (map["DocumentPhase"] !== undefined) row[map["DocumentPhase"]] = payload.phase || "";
+  if (map["Origin"] !== undefined) row[map["Origin"]] = payload.origin || "";
+  if (map["Destination"] !== undefined) row[map["Destination"]] = payload.destination || "";
+  if (map["DocumentUrl"] !== undefined) row[map["DocumentUrl"]] = payload.url || "";
+  if (map["MatchStatus"] !== undefined) row[map["MatchStatus"]] = "NEW";
+  if (map["SourceApp"] !== undefined) row[map["SourceApp"]] = "UPLOADER";
+  if (map["UploaderVersion"] !== undefined) row[map["UploaderVersion"]] = "v7_mapped";
+  if (map["CanonicalDriverId"] !== undefined) row[map["CanonicalDriverId"]] = canonicalDriverId || "";
+  if (map["MatchedLoadId"] !== undefined) row[map["MatchedLoadId"]] = "";
+  if (map["DocumentVersion"] !== undefined) row[map["DocumentVersion"]] = 1;
+  if (map["IntakeNotes"] !== undefined) row[map["IntakeNotes"]] = "";
+  if (map["ProcessedAt"] !== undefined) row[map["ProcessedAt"]] = "";
+
+  sh.appendRow(row);
+}
+
+function makeDocIntakeId_(payload) {
+  const raw = [
+    payload.timestamp || "",
+    payload.company || "",
+    payload.driver || "",
+    payload.loadNumber || "",
+    payload.documentPhase || "",
+    payload.documentUrl || ""
+  ].join("|");
+
+  const digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, raw);
+  const hex = digest.map(function(b) {
+    const v = (b < 0 ? b + 256 : b).toString(16);
+    return v.length === 1 ? "0" + v : v;
+  }).join("").substring(0, 16).toUpperCase();
+
+  return "DIN-" + hex;
+}
+
+function lookupCanonicalDriverId_(ss, driverName) {
+  const sh = ss.getSheetByName("Drivers");
+  if (!sh || sh.getLastRow() < 2) return "";
+
+  const values = sh.getDataRange().getValues();
+  const headers = values[0].map(function(h) {
+    return String(h || "").trim().toLowerCase();
+  });
+
+  const nameIdx = headers.indexOf("name");
+  const canonicalIdx = headers.indexOf("canonicaldriverid");
+  const driverIdIdx = headers.indexOf("driverid");
+
+  if (nameIdx === -1) return "";
+
+  const target = String(driverName || "").trim().toUpperCase();
+
+  for (let i = 1; i < values.length; i++) {
+    const rowName = String(values[i][nameIdx] || "").trim().toUpperCase();
+    if (rowName !== target) continue;
+
+    if (canonicalIdx !== -1 && values[i][canonicalIdx]) return values[i][canonicalIdx];
+    if (driverIdIdx !== -1 && values[i][driverIdIdx]) return values[i][driverIdIdx];
+    return "";
+  }
+
+  return "";
+}
+
+
+05_App_Notifications.gs
+
+function sendNotifications(company, driverName, cleanLoad, bolProtocol, originFormatted, destFormatted, pdfUrl, pdfBlob, formattedName, docTypeForFile) {
+  const emailBody =
+    `${bolProtocol} received\n` +
+    `Carrier: ${company}\n` +
+    `Driver: ${driverName}\n` +
+    `Load#: ${cleanLoad}\n` +
+    `Type: ${bolProtocol === "PICKUP" ? "Pickup" : "Delivery"}\n` +
+    `Route: ${originFormatted.replace(",", "")} - ${destFormatted.replace(",", "")}\n\n` +
+    `View Document:\n${pdfUrl}\n`;
+
+  const htmlBody =
+    `<div style="font-family:Arial,sans-serif;line-height:1.6">
+        <div><b>${bolProtocol} received</b></div>
+        <div><b>Carrier:</b> ${company}</div>
+        <div><b>Driver:</b> ${driverName}</div>
+        <div><b>Load#:</b> ${cleanLoad}</div>
+        <div><b>Type:</b> ${bolProtocol === "PICKUP" ? "Pickup" : "Delivery"}</div>
+        <div><b>Route:</b> ${originFormatted.replace(",", "")} - ${destFormatted.replace(",", "")}</div>
+        <br/>
+        <div><b>View Document:</b> <a href="${pdfUrl}" target="_blank">Open PDF in Drive</a></div>
+      </div>`;
+
+  MailApp.sendEmail({
+    to: SETTINGS.EMAILS[company],
+    subject: formattedName,
+    body: emailBody,
+    htmlBody: htmlBody,
+    attachments: [pdfBlob]
+  });
+
+  const shortLink = pdfUrl.split('/view')[0]; 
+  const smsBody = `${docTypeForFile} ${cleanLoad} - ${originFormatted.replace(",", "")} - ${destFormatted.replace(",", "")} - ${driverName}\n${shortLink}`;
+  
+  MailApp.sendEmail(SETTINGS.SMS_GATEWAY, "", smsBody);
+}
+
+06_App_Utils.gs
+
+function getExpectedUploadToken_() {
+  return PropertiesService.getScriptProperties().getProperty("UPLOAD_TOKEN") || "";
+}
+
+function isUploadAuthorized_(uploadToken) {
+  const expected = getExpectedUploadToken_();
+  if (!expected) return false;
+  if (!uploadToken) return false;
+  return String(uploadToken) === String(expected);
+}
+
+function isAllowedUploadCompany_(company) {
+  return company === "BST" || company === "GLX";
+}
+
+function toCityState_(value) {
+  const raw = (value || "").toString().trim();
+  if (!raw) return "Unknown";
+
+  let s = raw.replace(/\s+/g, " ").replace(/\n/g, " ").trim();
+
+  const commaMatch = s.match(/^(.+?),\s*([A-Za-z]{2})\b/);
+  if (commaMatch) {
+    return `${commaMatch[1].trim().toUpperCase()}, ${commaMatch[2].toUpperCase()}`;
+  }
+
+  const tokens = s.split(" ").filter(Boolean);
+  let stIdx = -1;
+  for (let i = tokens.length - 1; i >= 0; i--) {
+    if (/^[A-Za-z]{2}$/.test(tokens[i])) { stIdx = i; break; }
+  }
+  if (stIdx === -1) return s.toUpperCase();
+
+  const state = tokens[stIdx].toUpperCase();
+  const city = tokens.slice(0, stIdx).join(" ").trim().toUpperCase();
+  if (!city) return `Unknown, ${state}`;
+  return `${city}, ${state}`;
+}
+
+function triggerPermissions() {
+  const ss = SpreadsheetApp.openById(SETTINGS.SPREADSHEET_ID);
+  MailApp.sendEmail(Session.getActiveUser().getEmail(), "ELM Permission Refresh", "Permissions are now active.");
+  const folder = DriveApp.getFolderById(SETTINGS.FOLDERS.BST.bol);
+  Logger.log("Drive Access Verified: " + folder.getName());
+}

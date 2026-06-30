@@ -10,7 +10,8 @@ import { useUploader } from './hooks/useUploader';
 import { COMPANY_OPTIONS, STATES_US } from './constants.ts'; 
 import { CombinedLocationField } from './components/CombinedLocationField'; 
 import { ThumbnailGallery } from './components/ThumbnailGallery'; 
-import { QueueStatusBadge } from './components/QueueStatusBadge'; 
+import { QueueStatusBadge } from './components/QueueStatusBadge';
+import { IMAGE_FILE_ACCEPT, UPLOAD_FORMAT_HINT } from './utils/uploadFileRules';
 
 export default function App() {
   const {
@@ -87,26 +88,17 @@ export default function App() {
               </div>
             </div>
 
-            {/* --- Load Data: Identifiers --- */}
-            <div> 
-              <div className="grid grid-cols-2 gap-4">
-                <FormField 
-                  id="loadNumber" 
-                  label="LOAD #" 
-                  value={formState.loadNumber} 
-                  onChange={handleInputChange} 
-                  placeholder="Enter Load ID or Load #" 
-                  theme={currentTheme}
-                />
-                <FormField 
-                  id="bolNumber" 
-                  label="BOL #" 
-                  value={formState.bolNumber} 
-                  onChange={handleInputChange} 
-                  placeholder="Enter BOL #" 
-                  theme={currentTheme}
-                />
-              </div>
+            {/* --- BOL # (required) --- */}
+            <div>
+              <FormField
+                id="bolNumber"
+                label="BOL #"
+                value={formState.bolNumber}
+                onChange={handleInputChange}
+                placeholder="Enter BOL #"
+                required
+                theme={currentTheme}
+              />
             </div>
               
             {/* --- Load Data: Pickup AND Delivery Location --- */}
@@ -151,6 +143,7 @@ export default function App() {
                     <h3 className={`font-bold ${currentTheme.text} uppercase tracking-wider text-sm`}>UPLOAD BOL IMAGE(S)</h3>
                 </div>
                 
+                <p className="text-xs text-gray-400">{UPLOAD_FORMAT_HINT}</p>
                 <ThumbnailGallery
                   fileType="bolFiles"
                   files={fileState.bolFiles}
@@ -158,7 +151,7 @@ export default function App() {
                   onFileReorder={handleFileReorder}
                   onFileDrop={handleFileDrop}
                   theme={currentTheme}
-                  accept={{'image/*': ['.jpeg', '.png'], 'application/pdf': ['.pdf']}}
+                  accept={IMAGE_FILE_ACCEPT}
                 />
             </div>
             
@@ -166,6 +159,7 @@ export default function App() {
             <div className="space-y-4 mb-4">
               <h3 className={`font-bold ${currentTheme.text} uppercase tracking-wider text-sm`}>UPLOAD IMAGES OF FREIGHT LOADED ON THE TRAILER</h3>
               
+              <p className="text-xs text-gray-400">{UPLOAD_FORMAT_HINT}</p>
               <ThumbnailGallery
                 fileType="freightFiles"
                 files={fileState.freightFiles}
@@ -173,7 +167,7 @@ export default function App() {
                 onFileReorder={handleFileReorder}
                 onFileDrop={handleFileDrop}
                 theme={currentTheme}
-                accept={{'image/*': ['.jpeg', '.png'], 'video/*': ['.mp4', '.mov']}}
+                accept={IMAGE_FILE_ACCEPT}
               />
             </div>
 

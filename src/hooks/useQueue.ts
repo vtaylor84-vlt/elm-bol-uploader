@@ -9,7 +9,7 @@ const submissionStore = createStore('bol-uploader-db', 'submissions');
 export interface QueuedJob {
   id: number;
   data: any; // FormState data
-  files: { name: string, blob: Blob, type: string }[];
+  files: { name: string, blob: Blob, type: string, category: 'bol' | 'freight' }[];
   timestamp: number;
 }
 

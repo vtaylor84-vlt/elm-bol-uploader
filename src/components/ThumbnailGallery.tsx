@@ -2,7 +2,7 @@
 import React, { useCallback } from 'react';
 import { UploadedFile, FileState } from '../types'; 
 import { useDropzone } from 'react-dropzone';
-import { Image, Video, FileText, X, Camera } from 'lucide-react'; 
+import { Image, FileText, X, Camera } from 'lucide-react'; 
 
 interface ThumbnailGalleryProps {
   fileType: keyof FileState;
@@ -16,18 +16,10 @@ interface ThumbnailGalleryProps {
 
 // Utility to render the file icon/preview
 const FilePreview: React.FC<{ file: UploadedFile }> = ({ file }) => {
-  const isVideo = file.file.type.startsWith('video');
   const isImage = file.file.type.startsWith('image');
   
   if (isImage) {
     return <img src={file.previewUrl} alt="Preview" className="w-full h-full object-cover" />;
-  }
-  if (isVideo) {
-    return (
-      <div className="relative w-full h-full flex items-center justify-center bg-gray-700">
-        <Video size={36} className="text-gray-400" />
-      </div>
-    );
   }
   return (
     <div className="w-full h-full flex flex-col items-center justify-center bg-gray-700 p-1">
@@ -79,7 +71,8 @@ export const ThumbnailGallery: React.FC<ThumbnailGalleryProps> = ({
     }
   };
 
-  // Hidden input for camera usage 
+  const cameraAccept = 'image/jpeg,image/png';
+
   const cameraInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleCameraChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -140,7 +133,7 @@ export const ThumbnailGallery: React.FC<ThumbnailGalleryProps> = ({
                 <Image size={32} className={`${theme.text}`} />
                 <span>Select Files</span>
                 <span className="text-xs text-gray-500 font-normal">
-                    {fileType === 'bolFiles' ? 'Images & PDF' : 'Images & Video'}
+                    JPG or PNG only
                 </span>
             </button>
 
@@ -157,14 +150,14 @@ export const ThumbnailGallery: React.FC<ThumbnailGalleryProps> = ({
                 <input
                     ref={cameraInputRef}
                     type="file"
-                    accept={fileType === 'bolFiles' ? 'image/*' : 'image/*,video/*'}
+                    accept={cameraAccept}
                     capture="environment" // Forces use of device camera
                     multiple={true}
                     onChange={handleCameraChange}
                     className="hidden"
                 />
                 <span className="text-xs text-gray-500 font-normal">
-                    Supported: Images & Video (Max 50MB)
+                    JPG or PNG only
                 </span>
             </button>
         </div>
