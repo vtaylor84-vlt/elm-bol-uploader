@@ -4,50 +4,83 @@
  */
 
 function handleVerifyDriverLogin_(data) {
+  const tokenPresent = Boolean(data && data.uploadToken);
+  const email = normalizeLoginEmail_(data && data.email);
+
   if (!isUploadAuthorized_(data && data.uploadToken)) {
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        status: "error",
-        message: "Unauthorized",
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
+    return loginJsonResponse_("error", {
+      message: "Unauthorized",
+      loginDiag: buildLoginDiag_(email, {
+        tokenPresent: tokenPresent,
+        routeMatched: true,
+        isBridgeAdmin: false,
+        driverMatchFound: false,
+      }),
+    });
   }
 
-  const email = normalizeLoginEmail_(data && data.email);
   if (!email || !isValidLoginEmail_(email)) {
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        status: "error",
-        message: "Access denied",
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
+    return loginJsonResponse_("error", {
+      message: "Access denied",
+      loginDiag: buildLoginDiag_(email, {
+        tokenPresent: true,
+        routeMatched: true,
+        isBridgeAdmin: false,
+        driverMatchFound: false,
+      }),
+    });
   }
 
   const adminProfile = lookupBridgeAdminProfile_(email);
   if (adminProfile) {
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        status: "success",
-        profile: adminProfile,
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
+    return loginJsonResponse_("success", {
+      profile: adminProfile,
+      loginDiag: buildLoginDiag_(email, {
+        tokenPresent: true,
+        routeMatched: true,
+        isBridgeAdmin: true,
+        driverMatchFound: false,
+      }),
+    });
   }
 
   const driverProfile = lookupDriverProfileByEmail_(email);
   if (!driverProfile) {
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        status: "error",
-        message: "Access denied",
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
+    return loginJsonResponse_("error", {
+      message: "Access denied",
+      loginDiag: buildLoginDiag_(email, {
+        tokenPresent: true,
+        routeMatched: true,
+        isBridgeAdmin: false,
+        driverMatchFound: false,
+      }),
+    });
   }
 
+  return loginJsonResponse_("success", {
+    profile: driverProfile,
+    loginDiag: buildLoginDiag_(email, {
+      tokenPresent: true,
+      routeMatched: true,
+      isBridgeAdmin: false,
+      driverMatchFound: true,
+    }),
+  });
+}
+
+function buildLoginDiag_(email, flags) {
+  return {
+    emailNormalized: email || "",
+    tokenPresent: Boolean(flags && flags.tokenPresent),
+    routeMatched: Boolean(flags && flags.routeMatched),
+    isBridgeAdmin: Boolean(flags && flags.isBridgeAdmin),
+    driverMatchFound: Boolean(flags && flags.driverMatchFound),
+  };
+}
+
+function loginJsonResponse_(status, payload) {
   return ContentService
-    .createTextOutput(JSON.stringify({
-      status: "success",
-      profile: driverProfile,
-    }))
+    .createTextOutput(JSON.stringify(Object.assign({ status: status }, payload)))
     .setMimeType(ContentService.MimeType.JSON);
 }
 
@@ -74,9 +107,25 @@ function maskEmail_(email) {
 
 function lookupBridgeAdminProfile_(email) {
   const admins = (SETTINGS && SETTINGS.BRIDGE_ADMINS) || {};
-  const entry = admins[email];
-  if (!entry) return null;
+  const normalized = normalizeLoginEmail_(email);
+  if (!normalized) return null;
 
+  if (admins[normalized]) {
+    return buildBridgeAdminProfile_(normalized, admins[normalized]);
+  }
+
+  const keys = Object.keys(admins);
+  for (let i = 0; i < keys.length; i++) {
+    if (normalizeLoginEmail_(keys[i]) === normalized) {
+      return buildBridgeAdminProfile_(normalized, admins[keys[i]]);
+    }
+  }
+
+  return null;
+}
+
+function buildBridgeAdminProfile_(email, entry) {
+  if (!entry) return null;
   return {
     authRole: "admin",
     driverId: entry.driverId || "",

@@ -1,5 +1,10 @@
 const MAX_EMAIL_LENGTH = 254;
 
+/** Login-enabled ELM_CONNECT_UPLOADER deployment (@39+). Upload keeps APPS_SCRIPT_WEB_APP_URL. */
+const LOGIN_APPS_SCRIPT_WEB_APP_URL =
+  process.env.LOGIN_APPS_SCRIPT_WEB_APP_URL ||
+  'https://script.google.com/macros/s/AKfycbxT_Zl6T-iP7NemVqxJ3rFILPMtsEofJ-lyX1ghOeKqeuyJecTjAElheGazedvVpkXx/exec';
+
 function getAllowedOrigins() {
   return (process.env.ALLOWED_ORIGINS || '')
     .split(',')
@@ -50,7 +55,6 @@ function respond(statusCode, body, corsOrigin) {
 
 function validateServerConfig() {
   if (!process.env.UPLOAD_TOKEN) return 'Missing UPLOAD_TOKEN';
-  if (!process.env.APPS_SCRIPT_WEB_APP_URL) return 'Missing APPS_SCRIPT_WEB_APP_URL';
   if (getAllowedOrigins().length === 0) return 'Missing ALLOWED_ORIGINS';
   return null;
 }
@@ -82,8 +86,18 @@ function logLoginDiag(stage, details = {}) {
   console.log('[driver-login-diag]', JSON.stringify({ stage, ...details }));
 }
 
-async function forwardToAppsScript(payload) {
-  const response = await fetch(process.env.APPS_SCRIPT_WEB_APP_URL, {
+function buildSafeLoginDiag(email, gasDiag, extras = {}) {
+  return {
+    emailNormalized: email || gasDiag?.emailNormalized || '',
+    tokenPresent: Boolean(process.env.UPLOAD_TOKEN),
+    routeMatched: gasDiag?.routeMatched ?? extras.routeMatched ?? false,
+    isBridgeAdmin: gasDiag?.isBridgeAdmin ?? false,
+    driverMatchFound: gasDiag?.driverMatchFound ?? false,
+  };
+}
+
+async function forwardToLoginAppsScript(payload) {
+  const response = await fetch(LOGIN_APPS_SCRIPT_WEB_APP_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -99,7 +113,11 @@ async function forwardToAppsScript(payload) {
   } catch {
     return {
       httpStatus: response.status,
-      result: { status: 'error', message: 'Invalid Apps Script response' },
+      result: {
+        status: 'error',
+        message: 'Invalid Apps Script response',
+        loginDiag: buildSafeLoginDiag(payload.email, null, { routeMatched: false }),
+      },
     };
   }
 }
@@ -123,7 +141,7 @@ export const handler = async (event) => {
   }
 
   if (!corsOrigin || !isOriginAllowed(requestOrigin, allowedOrigins)) {
-    logLoginDiag('origin_rejected');
+    logLoginDiag('origin_rejected', { requestOrigin: requestOrigin || null });
     return jsonResponse(403, { success: false, error: 'Forbidden origin' }, null);
   }
 
@@ -138,43 +156,55 @@ export const handler = async (event) => {
     const email = normalizeEmail(body.email);
 
     if (!email || !isValidEmail(email) || email.length > MAX_EMAIL_LENGTH) {
-      logLoginDiag('validation_rejected', { reason: 'invalid_email' });
+      const loginDiag = buildSafeLoginDiag(email, null, { routeMatched: false });
+      logLoginDiag('validation_rejected', { reason: 'invalid_email', ...loginDiag });
       return jsonResponse(400, {
         success: false,
         error: 'Access denied. Use an approved driver or admin email.',
+        loginDiag,
       }, corsOrigin);
     }
 
-    logLoginDiag('forward_apps_script', { emailMasked: maskEmailForLog(email) });
+    logLoginDiag('forward_apps_script', {
+      emailMasked: maskEmailForLog(email),
+      tokenPresent: Boolean(process.env.UPLOAD_TOKEN),
+    });
 
-    const gasResponse = await forwardToAppsScript({
+    const gasResponse = await forwardToLoginAppsScript({
       action: 'verifyDriverLogin',
       uploadToken: process.env.UPLOAD_TOKEN,
       email,
     });
 
     const gasResult = gasResponse.result;
+    const loginDiag = buildSafeLoginDiag(email, gasResult.loginDiag, {
+      routeMatched: gasResult.loginDiag?.routeMatched ?? Boolean(gasResult.status),
+    });
 
     if (gasResult.status === 'success' && gasResult.profile) {
       logLoginDiag('login_success', {
         authRole: gasResult.profile.authRole,
         canSelectAnyDriver: gasResult.profile.canSelectAnyDriver,
+        ...loginDiag,
       });
       return jsonResponse(200, {
         success: true,
         profile: gasResult.profile,
+        loginDiag,
       }, corsOrigin);
     }
 
     logLoginDiag('login_denied', {
       appsScriptHttpStatus: gasResponse.httpStatus,
       message: gasResult.message || null,
+      ...loginDiag,
     });
 
     const statusCode = gasResult.message === 'Unauthorized' ? 401 : 403;
     return jsonResponse(statusCode, {
       success: false,
       error: 'Access denied. Use an approved driver or admin email.',
+      loginDiag,
     }, corsOrigin);
   } catch (err) {
     logLoginDiag('handler_exception', {
