@@ -389,6 +389,9 @@ const App: React.FC = () => {
   const [showVerification, setShowVerification] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showUploadFailure, setShowUploadFailure] = useState(false);
+  const [uploadFailureMessage, setUploadFailureMessage] = useState('');
+  const [uploadSavedLocally, setUploadSavedLocally] = useState(false);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [fullImage, setFullImage] = useState<string | null>(null);
 
@@ -1717,6 +1720,9 @@ const App: React.FC = () => {
             <button
               onClick={async () => {
                 setIsSubmitting(true);
+                setShowUploadFailure(false);
+                setUploadFailureMessage('');
+                setUploadSavedLocally(false);
 
                 const base64 = await Promise.all(
                   uploadedFiles.map(async (f) => {
@@ -1754,30 +1760,45 @@ const App: React.FC = () => {
                     body: JSON.stringify(payload)
                   });
 
-                  const result = await response.json();
+                  let result: { success?: boolean; error?: string } = {};
+                  try {
+                    result = await response.json();
+                  } catch {
+                    throw new Error('Upload failed: invalid server response');
+                  }
+
                   if (!response.ok || !result.success) {
                     throw new Error(result.error || 'Upload failed');
                   }
 
                   setShowSuccess(true);
                 } catch (e) {
-                  const currentVault: VaultEntry[] = JSON.parse(
-                    localStorage.getItem('multi_vault') || '[]'
-                  );
+                  const message =
+                    e instanceof Error ? e.message : 'Upload failed. Please try again.';
 
-                  localStorage.setItem(
-                    'multi_vault',
-                    JSON.stringify([
-                      ...currentVault,
-                      {
-                        id: Math.random().toString(),
-                        timestamp: Date.now(),
-                        payload
-                      }
-                    ])
-                  );
+                  try {
+                    const currentVault: VaultEntry[] = JSON.parse(
+                      localStorage.getItem('multi_vault') || '[]'
+                    );
 
-                  setShowSuccess(true);
+                    localStorage.setItem(
+                      'multi_vault',
+                      JSON.stringify([
+                        ...currentVault,
+                        {
+                          id: Math.random().toString(),
+                          timestamp: Date.now(),
+                          payload
+                        }
+                      ])
+                    );
+                    setUploadSavedLocally(true);
+                  } catch {
+                    setUploadSavedLocally(false);
+                  }
+
+                  setUploadFailureMessage(message);
+                  setShowUploadFailure(true);
                 } finally {
                   setIsSubmitting(false);
                 }
@@ -1806,7 +1827,7 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {isSubmitting && !showSuccess && (
+      {isSubmitting && !showSuccess && !showUploadFailure && (
         <div className="fixed inset-0 z-[700] bg-black flex flex-col items-center justify-center p-8 animate-in zoom-in">
           <div className="relative w-64 h-64 mb-12">
             <div className="absolute inset-0 border-8 border-blue-500/20 rounded-full animate-ping"></div>
@@ -1822,6 +1843,64 @@ const App: React.FC = () => {
           <p className="text-orange-500 font-bold text-[11px] uppercase tracking-[0.4em] animate-pulse">
             Warning: Do not exit until handshake complete
           </p>
+        </div>
+      )}
+
+      {showUploadFailure && (
+        <div className="fixed inset-0 z-[800] bg-black flex flex-col items-center justify-center p-6 animate-in slide-in-from-bottom">
+          <div className="w-full max-w-md bg-zinc-950 border-[3px] border-red-500/60 rounded-[3.5rem] p-10 text-center relative">
+            <div className="w-20 h-20 rounded-full border-4 border-red-500 mx-auto flex items-center justify-center text-4xl mb-6 shadow-2xl text-red-500">
+              ✕
+            </div>
+
+            <h2 className="text-3xl font-black italic text-white uppercase tracking-tighter mb-2">
+              Upload Failed
+            </h2>
+            <p className="text-red-400 font-bold text-[10px] uppercase tracking-[0.3em] mb-4">
+              Not synchronized with fleet control
+            </p>
+
+            <p className="text-zinc-300 text-sm normal-case tracking-normal mb-6 px-2">
+              {uploadFailureMessage}
+            </p>
+
+            {uploadSavedLocally ? (
+              <div className="bg-orange-500/10 border border-orange-500/30 rounded-3xl p-5 mb-8 text-left">
+                <p className="text-orange-400 font-black text-[10px] uppercase tracking-[0.25em] mb-2">
+                  Saved locally, not submitted
+                </p>
+                <p className="text-zinc-400 text-[11px] normal-case tracking-normal leading-relaxed">
+                  Your documents were saved on this device only. Contact dispatch or
+                  tap Try Again to resubmit when you have a connection.
+                </p>
+              </div>
+            ) : (
+              <div className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-5 mb-8 text-left">
+                <p className="text-zinc-400 text-[11px] normal-case tracking-normal leading-relaxed">
+                  Contact dispatch if this keeps happening, or tap Try Again.
+                </p>
+              </div>
+            )}
+
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => setShowUploadFailure(false)}
+                className="w-full py-6 rounded-[2rem] font-black uppercase tracking-[0.5em] text-[10px] bg-red-600 text-white"
+              >
+                Try Again
+              </button>
+              <button
+                onClick={() => {
+                  setShowUploadFailure(false);
+                  setShowVerification(false);
+                  setCurrentStage('EVIDENCE');
+                }}
+                className="w-full py-4 rounded-[2rem] font-black uppercase tracking-[0.4em] text-[10px] text-zinc-500 border border-zinc-800"
+              >
+                Back to Edit
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
