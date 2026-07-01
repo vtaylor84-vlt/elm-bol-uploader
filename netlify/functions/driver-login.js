@@ -1,6 +1,6 @@
 const MAX_EMAIL_LENGTH = 254;
 
-/** Login-enabled ELM_CONNECT_UPLOADER deployment (@39+). Upload keeps APPS_SCRIPT_WEB_APP_URL. */
+/** Login-enabled ELM_CONNECT_UPLOADER deployment (@42). Upload keeps APPS_SCRIPT_WEB_APP_URL. */
 const LOGIN_APPS_SCRIPT_WEB_APP_URL =
   process.env.LOGIN_APPS_SCRIPT_WEB_APP_URL ||
   'https://script.google.com/macros/s/AKfycbxT_Zl6T-iP7NemVqxJ3rFILPMtsEofJ-lyX1ghOeKqeuyJecTjAElheGazedvVpkXx/exec';

@@ -1,27 +1,34 @@
 import React from 'react';
 import {
+  DRIVER_SELECT_MANUAL,
+  DRIVER_SELECT_NOT_LISTED,
   EXPENSE_TYPE_OPTIONS,
   PAID_WITH_OPTIONS,
+  isCustomDriverSelection,
   type ExpenseFormState,
 } from '../../types/expense.ts';
 import { formatCurrencyInput } from '../../utils/expenseForm.ts';
-import type { DriverOption } from '../../services/terminalDataService.ts';
+import type { DriverOption, TruckOption } from '../../services/terminalDataService.ts';
+import ExpenseDateField from './ExpenseDateField.tsx';
 import {
   ExpenseFieldLabel,
   RevealField,
   SegmentedToggle,
   expenseInputClass,
   expenseSelectClass,
+  expenseSelectPlaceholderClass,
 } from './ExpenseFormPrimitives.tsx';
 
 interface ExpenseDetailsFormProps {
   form: ExpenseFormState;
-  trucks: string[];
+  trucks: TruckOption[];
   drivers: DriverOption[];
   isAdmin: boolean;
   currentDriverLabel?: string;
   trucksLoading?: boolean;
+  trucksError?: string;
   onChange: (patch: Partial<ExpenseFormState>) => void;
+  onTruckSelect: (truckNumber: string) => void;
 }
 
 const ExpenseDetailsForm: React.FC<ExpenseDetailsFormProps> = ({
@@ -31,7 +38,9 @@ const ExpenseDetailsForm: React.FC<ExpenseDetailsFormProps> = ({
   isAdmin,
   currentDriverLabel,
   trucksLoading,
+  trucksError,
   onChange,
+  onTruckSelect,
 }) => (
   <div className="space-y-5 sm:space-y-6">
     {isAdmin ? (
@@ -48,7 +57,12 @@ const ExpenseDetailsForm: React.FC<ExpenseDetailsFormProps> = ({
             id="expense-driver"
             className={expenseSelectClass}
             value={form.selectedDriverName}
-            onChange={(e) => onChange({ selectedDriverName: e.target.value.toUpperCase() })}
+            onChange={(e) =>
+              onChange({
+                selectedDriverName: e.target.value,
+                customDriverName: isCustomDriverSelection(e.target.value) ? form.customDriverName : '',
+              })
+            }
           >
             <option value="">Select driver</option>
             {drivers.map((d) => (
@@ -56,11 +70,26 @@ const ExpenseDetailsForm: React.FC<ExpenseDetailsFormProps> = ({
                 {d.label}
               </option>
             ))}
+            <option value={DRIVER_SELECT_MANUAL}>Manual Entry</option>
+            <option value={DRIVER_SELECT_NOT_LISTED}>Driver Not Listed</option>
           </select>
           <p className="text-[10px] text-zinc-500 normal-case mt-2 leading-relaxed">
             Select the driver this expense belongs to.
           </p>
         </div>
+
+        <RevealField show={isCustomDriverSelection(form.selectedDriverName)}>
+          <ExpenseFieldLabel htmlFor="custom-driver-name" required>
+            Enter Driver Name
+          </ExpenseFieldLabel>
+          <input
+            id="custom-driver-name"
+            className={expenseInputClass}
+            placeholder="Driver full name"
+            value={form.customDriverName}
+            onChange={(e) => onChange({ customDriverName: e.target.value })}
+          />
+        </RevealField>
 
         <div>
           <ExpenseFieldLabel required>Is this reimbursement for this driver?</ExpenseFieldLabel>
@@ -87,149 +116,153 @@ const ExpenseDetailsForm: React.FC<ExpenseDetailsFormProps> = ({
       </div>
     ) : null}
 
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div className="elm-form-grid">
       <div>
         <ExpenseFieldLabel htmlFor="expense-truck" required>
           Truck Number
         </ExpenseFieldLabel>
-        {trucks.length > 0 ? (
-          <select
-            id="expense-truck"
-            className={expenseSelectClass}
-            value={form.truckNumber}
-            onChange={(e) => onChange({ truckNumber: e.target.value })}
-            disabled={trucksLoading}
-          >
-            <option value="">{trucksLoading ? 'Loading trucks...' : 'Select truck'}</option>
-            {trucks.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
-        ) : (
-          <input
-            id="expense-truck"
-            className={expenseInputClass}
-            placeholder={trucksLoading ? 'Loading trucks...' : 'Enter truck number'}
-            value={form.truckNumber}
-            onChange={(e) => onChange({ truckNumber: e.target.value })}
-            disabled={trucksLoading}
-          />
-        )}
+        <select
+          id="expense-truck"
+          className={`${expenseSelectClass} ${expenseSelectPlaceholderClass(form.truckNumber)}`}
+          value={form.truckNumber}
+          onChange={(e) => onTruckSelect(e.target.value)}
+          disabled={trucksLoading}
+          required
+        >
+          <option value="" disabled hidden>
+            {trucksLoading ? 'Loading trucks...' : 'Select truck number'}
+          </option>
+          {trucks.map((t) => (
+            <option key={t.truckNumber} value={t.truckNumber}>
+              {t.truckNumber}
+              {t.companyCode ? ` (${t.companyCode})` : ''}
+            </option>
+          ))}
+        </select>
+        {trucksError ? (
+          <p className="text-[10px] text-amber-400/90 normal-case mt-2">{trucksError}</p>
+        ) : null}
+        {form.companyCode ? (
+          <p className="text-[9px] text-zinc-600 mt-1.5 font-mono uppercase">
+            Company: {form.companyCode}
+          </p>
+        ) : null}
+      </div>
+
+      <ExpenseDateField
+        value={form.expenseDate}
+        onChange={(expenseDate) => onChange({ expenseDate })}
+      />
+
+      <div>
+        <ExpenseFieldLabel htmlFor="expense-vendor" required>
+          Vendor / Payee
+        </ExpenseFieldLabel>
+        <input
+          id="expense-vendor"
+          className={expenseInputClass}
+          placeholder="Love's, Pilot, TA, Walmart..."
+          value={form.vendor}
+          onChange={(e) => onChange({ vendor: e.target.value })}
+        />
       </div>
 
       <div>
-        <ExpenseFieldLabel htmlFor="expense-date" required>
-          Expense Date
+        <ExpenseFieldLabel htmlFor="expense-amount" required>
+          Reimbursement Amount
         </ExpenseFieldLabel>
-        <input
-          id="expense-date"
-          type="date"
-          className={expenseInputClass}
-          value={form.expenseDate}
-          onChange={(e) => onChange({ expenseDate: e.target.value })}
-        />
+        <div className="relative">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 text-lg font-semibold">
+            $
+          </span>
+          <input
+            id="expense-amount"
+            inputMode="decimal"
+            className={`${expenseInputClass} pl-9 text-lg font-semibold tracking-wide`}
+            placeholder="0.00"
+            value={form.amount}
+            onChange={(e) => onChange({ amount: formatCurrencyInput(e.target.value) })}
+          />
+        </div>
       </div>
-    </div>
 
-    <div>
-      <ExpenseFieldLabel htmlFor="expense-amount" required>
-        Reimbursement Amount
-      </ExpenseFieldLabel>
-      <div className="relative">
-        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 text-lg font-semibold">
-          $
-        </span>
-        <input
-          id="expense-amount"
-          inputMode="decimal"
-          className={`${expenseInputClass} pl-9 text-lg font-semibold tracking-wide`}
-          placeholder="0.00"
-          value={form.amount}
-          onChange={(e) => onChange({ amount: formatCurrencyInput(e.target.value) })}
-        />
+      <div>
+        <ExpenseFieldLabel htmlFor="expense-paid" required>
+          Paid With
+        </ExpenseFieldLabel>
+        <select
+          id="expense-paid"
+          className={`${expenseSelectClass} ${expenseSelectPlaceholderClass(form.paidWith)}`}
+          value={form.paidWith}
+          required
+          onChange={(e) =>
+            onChange({
+              paidWith: e.target.value as ExpenseFormState['paidWith'],
+              paidWithOther: '',
+            })
+          }
+        >
+          <option value="" disabled hidden>
+            Select paid with
+          </option>
+          {PAID_WITH_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+        <RevealField show={form.paidWith === 'other'}>
+          <ExpenseFieldLabel htmlFor="paid-other" required>
+            Please specify payment method
+          </ExpenseFieldLabel>
+          <input
+            id="paid-other"
+            className={expenseInputClass}
+            placeholder="Describe payment method"
+            value={form.paidWithOther}
+            onChange={(e) => onChange({ paidWithOther: e.target.value })}
+          />
+        </RevealField>
       </div>
-    </div>
 
-    <div>
-      <ExpenseFieldLabel htmlFor="expense-paid" required>
-        Paid With
-      </ExpenseFieldLabel>
-      <select
-        id="expense-paid"
-        className={expenseSelectClass}
-        value={form.paidWith}
-        onChange={(e) =>
-          onChange({ paidWith: e.target.value as ExpenseFormState['paidWith'], paidWithOther: '' })
-        }
-      >
-        {PAID_WITH_OPTIONS.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-      <RevealField show={form.paidWith === 'other'}>
-        <ExpenseFieldLabel htmlFor="paid-other" required>
-          Please Specify
+      <div>
+        <ExpenseFieldLabel htmlFor="expense-type" required>
+          Expense Type
         </ExpenseFieldLabel>
-        <input
-          id="paid-other"
-          className={expenseInputClass}
-          placeholder="How was this expense paid?"
-          value={form.paidWithOther}
-          onChange={(e) => onChange({ paidWithOther: e.target.value })}
-        />
-      </RevealField>
-    </div>
-
-    <div>
-      <ExpenseFieldLabel htmlFor="expense-vendor" required>
-        Vendor / Payee
-      </ExpenseFieldLabel>
-      <input
-        id="expense-vendor"
-        className={expenseInputClass}
-        placeholder="Love's, Pilot, TA, Walmart..."
-        value={form.vendor}
-        onChange={(e) => onChange({ vendor: e.target.value })}
-      />
-    </div>
-
-    <div>
-      <ExpenseFieldLabel htmlFor="expense-type" required>
-        Expense Type
-      </ExpenseFieldLabel>
-      <select
-        id="expense-type"
-        className={expenseSelectClass}
-        value={form.expenseType}
-        onChange={(e) =>
-          onChange({
-            expenseType: e.target.value as ExpenseFormState['expenseType'],
-            expenseTypeOther: '',
-          })
-        }
-      >
-        {EXPENSE_TYPE_OPTIONS.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
+        <select
+          id="expense-type"
+          className={`${expenseSelectClass} ${expenseSelectPlaceholderClass(form.expenseType)}`}
+          value={form.expenseType}
+          required
+          onChange={(e) =>
+            onChange({
+              expenseType: e.target.value as ExpenseFormState['expenseType'],
+              expenseTypeOther: '',
+            })
+          }
+        >
+          <option value="" disabled hidden>
+            Select expense type
           </option>
-        ))}
-      </select>
-      <RevealField show={form.expenseType === 'other'}>
-        <ExpenseFieldLabel htmlFor="type-other" required>
-          Please Specify
-        </ExpenseFieldLabel>
-        <input
-          id="type-other"
-          className={expenseInputClass}
-          placeholder="Describe the expense type"
-          value={form.expenseTypeOther}
-          onChange={(e) => onChange({ expenseTypeOther: e.target.value })}
-        />
-      </RevealField>
+          {EXPENSE_TYPE_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+        <RevealField show={form.expenseType === 'other'}>
+          <ExpenseFieldLabel htmlFor="type-other" required>
+            Please specify expense type
+          </ExpenseFieldLabel>
+          <input
+            id="type-other"
+            className={expenseInputClass}
+            placeholder="Describe the expense type"
+            value={form.expenseTypeOther}
+            onChange={(e) => onChange({ expenseTypeOther: e.target.value })}
+          />
+        </RevealField>
+      </div>
     </div>
 
     <p className="text-[10px] text-zinc-600 normal-case text-center pt-1">

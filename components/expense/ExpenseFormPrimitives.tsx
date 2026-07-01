@@ -6,7 +6,10 @@ export const expenseLabelClass =
 export const expenseInputClass =
   'w-full min-h-[52px] px-4 py-3.5 rounded-xl bg-[#06060c]/90 border border-zinc-800/90 text-[15px] text-white placeholder:text-zinc-600 placeholder:normal-case outline-none transition-all duration-200 focus:border-blue-500/55 focus:ring-2 focus:ring-blue-500/15 focus:shadow-[0_0_20px_rgba(59,130,246,0.08)]';
 
-export const expenseSelectClass = `${expenseInputClass} appearance-none cursor-pointer`;
+export const expenseSelectClass = `${expenseInputClass} appearance-none cursor-pointer expense-select`;
+
+export const expenseSelectPlaceholderClass = (value: string) =>
+  !value ? 'text-zinc-500' : 'text-white';
 
 interface ExpenseFieldLabelProps {
   htmlFor?: string;

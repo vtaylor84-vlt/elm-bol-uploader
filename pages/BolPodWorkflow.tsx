@@ -21,6 +21,7 @@ import {
   HEIC_BLOCK_MESSAGE,
   UPLOAD_FORMAT_HINT,
 } from '../utils/uploadFileRules.ts';
+import { GAS_WEB_APP_URL } from '../utils/gasWebAppUrl.ts';
 
 /**
  * ELM CONNECT — ORACLE UI PASS
@@ -79,9 +80,6 @@ const VISIBLE_FLOW_STEPS = [
   { label: 'Review & Submit', short: 'Review' },
 ] as const;
 type ManualCarrierOption = '' | 'BST Expedite Inc' | 'Greenleaf Xpress' | 'Other Carrier';
-
-const GOOGLE_SCRIPT_URL =
-  'https://script.google.com/macros/s/AKfycbxQwhSs6p01gLRgqW0mA-_qtJEFcvEiJebTqSlzNCxgRE8X7Rv_BYm_Th_saL6QQsQj/exec';
 
 // ----------------------------
 // AUDIO
@@ -1163,7 +1161,7 @@ const BolPodWorkflow: React.FC = () => {
 
     const fetchDrivers = async () => {
       try {
-        const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getDrivers`);
+        const response = await fetch(`${GAS_WEB_APP_URL}?action=getDrivers`);
         const data = await response.json();
 
         if (Array.isArray(data)) {
@@ -1210,7 +1208,7 @@ const BolPodWorkflow: React.FC = () => {
 
       try {
         const response = await fetch(
-          `${GOOGLE_SCRIPT_URL}?action=getDriverLoads&driver=${encodeURIComponent(
+          `${GAS_WEB_APP_URL}?action=getDriverLoads&driver=${encodeURIComponent(
             driverName
           )}&type=${eventType}`
         );

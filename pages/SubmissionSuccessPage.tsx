@@ -1,6 +1,9 @@
 import React, { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import AuthenticatedShell from '../components/terminal/AuthenticatedShell.tsx';
+import ElmButton from '../design-system/components/ElmButton.tsx';
+import ElmPageHeader from '../design-system/components/ElmPageHeader.tsx';
+import PageContainer from '../design-system/components/PageContainer.tsx';
 import { useSubmissionDraft } from '../context/SubmissionDraftContext.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
 import type { SubmissionType } from '../types/submission.ts';
@@ -53,7 +56,17 @@ const SubmissionSuccessPage: React.FC = () => {
 
   return (
     <AuthenticatedShell title="Submission Complete">
-      <div className="max-w-md mx-auto py-10 sm:py-14 text-center space-y-8 expense-page-enter px-2">
+      <PageContainer width="narrow" className="text-center space-y-8">
+        <ElmPageHeader
+          eyebrow="Success"
+          title="Submission Successful"
+          description={
+            isExpense
+              ? 'Your expense has been submitted and is on its way for review.'
+              : 'Your documents have been transmitted successfully.'
+          }
+        />
+
         <div className="relative mx-auto w-24 h-24 sm:w-28 sm:h-28">
           <div className="absolute inset-0 rounded-full bg-green-500/20 blur-2xl success-glow-pulse" aria-hidden />
           <div
@@ -62,20 +75,6 @@ const SubmissionSuccessPage: React.FC = () => {
           >
             ✓
           </div>
-        </div>
-
-        <div className="space-y-3">
-          <p className="text-[9px] font-black uppercase tracking-[0.45em] text-green-400/90">
-            Success
-          </p>
-          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-            Submission Successful
-          </h1>
-          <p className="text-sm text-zinc-400 normal-case leading-relaxed max-w-sm mx-auto">
-            {isExpense
-              ? 'Your expense has been submitted and is on its way for review.'
-              : 'Your documents have been transmitted successfully.'}
-          </p>
         </div>
 
         {submissionId ? (
@@ -88,24 +87,16 @@ const SubmissionSuccessPage: React.FC = () => {
         ) : null}
 
         <div className="flex flex-col gap-3 pt-2 max-w-sm mx-auto w-full">
-          <button
-            type="button"
-            onClick={handleWorkspace}
-            className="terminal-btn-primary w-full min-h-[52px] py-4 rounded-xl font-black uppercase tracking-[0.26em] text-sm text-white"
-          >
-            Return to Workspace ›
-          </button>
+          <ElmButton variant="primary" fullWidth onClick={handleWorkspace} trailing={<span aria-hidden>›</span>}>
+            Return to Workspace
+          </ElmButton>
           {isExpense ? (
-            <button
-              type="button"
-              onClick={handleAnother}
-              className="w-full min-h-[48px] py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-blue-400 hover:text-blue-300 transition-colors"
-            >
+            <ElmButton variant="ghost" fullWidth onClick={handleAnother}>
               Submit Another Expense
-            </button>
+            </ElmButton>
           ) : null}
         </div>
-      </div>
+      </PageContainer>
     </AuthenticatedShell>
   );
 };

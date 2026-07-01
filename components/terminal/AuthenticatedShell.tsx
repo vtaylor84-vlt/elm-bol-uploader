@@ -44,7 +44,7 @@ const AuthenticatedShell: React.FC<AuthenticatedShellProps> = ({
               ) : null}
               <ElmBrandLogo size="sm" subtitle={false} />
               {title ? (
-                <p className="hidden sm:block text-[9px] font-black uppercase tracking-[0.35em] text-zinc-500 truncate">
+                <p className="text-[9px] font-black uppercase tracking-[0.35em] text-zinc-500 truncate lg:text-[10px]">
                   {title}
                 </p>
               ) : null}

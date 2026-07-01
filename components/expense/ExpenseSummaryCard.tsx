@@ -4,39 +4,39 @@ import {
   displayPaidWith,
   type ExpenseFormState,
 } from '../../types/expense.ts';
-import { formatCurrencyDisplay } from '../../utils/expenseForm.ts';
+import { formatCurrencyDisplay, formatExpenseDateDisplay } from '../../utils/expenseForm.ts';
+import { companyCodeLabel } from '../../utils/companyMap.ts';
 import type { ExpenseRecord } from '../../types/submission.ts';
 
 interface ExpenseSummaryCardProps {
   expense: ExpenseRecord;
-  form?: ExpenseFormState;
   receiptPreview?: string | null;
   driverName?: string;
+  showReimbursementStatus?: boolean;
+  /** When false, receipt is shown in a sibling panel (desktop review layout). */
+  embedReceipt?: boolean;
 }
 
 const ExpenseSummaryCard: React.FC<ExpenseSummaryCardProps> = ({
   expense,
-  form,
   receiptPreview,
   driverName,
+  showReimbursementStatus,
+  embedReceipt = true,
 }) => {
-  const typeLabel = form
-    ? displayExpenseType(form)
-    : expense.expenseType
-      ? displayExpenseType({
-          expenseType: expense.expenseType as ExpenseFormState['expenseType'],
-          expenseTypeOther: expense.expenseTypeOther || '',
-        })
-      : expense.category;
+  const typeLabel = expense.expenseType
+    ? displayExpenseType({
+        expenseType: expense.expenseType as ExpenseFormState['expenseType'],
+        expenseTypeOther: expense.expenseTypeOther || '',
+      })
+    : expense.category;
 
-  const paidLabel = form
-    ? displayPaidWith(form)
-    : expense.paidWith
-      ? displayPaidWith({
-          paidWith: expense.paidWith as ExpenseFormState['paidWith'],
-          paidWithOther: expense.paidWithOther || '',
-        })
-      : '—';
+  const paidLabel = expense.paidWith
+    ? displayPaidWith({
+        paidWith: expense.paidWith as ExpenseFormState['paidWith'],
+        paidWithOther: expense.paidWithOther || '',
+      })
+    : '—';
 
   return (
     <div className="terminal-module-panel rounded-2xl overflow-hidden">
@@ -48,7 +48,7 @@ const ExpenseSummaryCard: React.FC<ExpenseSummaryCardProps> = ({
 
       <div className="p-5 sm:p-6 space-y-5">
         <div className="flex items-start justify-between gap-4">
-          <div>
+          <div className="min-w-0">
             {expense.truckNumber ? (
               <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
                 Truck {expense.truckNumber}
@@ -64,31 +64,51 @@ const ExpenseSummaryCard: React.FC<ExpenseSummaryCardProps> = ({
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 pt-2 border-t border-zinc-800/60">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-3 pt-2 border-t border-zinc-800/60 text-sm">
+          {expense.companyCode ? (
+            <div>
+              <p className="text-[8px] font-black uppercase tracking-widest text-zinc-600">Company</p>
+              <p className="text-zinc-200 font-semibold mt-1">
+                {companyCodeLabel(expense.companyCode)}
+                <span className="text-zinc-500 font-mono text-[10px] ml-1">({expense.companyCode})</span>
+              </p>
+            </div>
+          ) : null}
           <div>
             <p className="text-[8px] font-black uppercase tracking-widest text-zinc-600">Paid With</p>
-            <p className="text-sm font-semibold text-zinc-200 mt-1 normal-case">{paidLabel}</p>
+            <p className="text-zinc-200 font-semibold mt-1 normal-case">{paidLabel}</p>
           </div>
           <div>
-            <p className="text-[8px] font-black uppercase tracking-widest text-zinc-600">Date</p>
-            <p className="text-sm font-semibold text-zinc-200 mt-1">{expense.expenseDate}</p>
+            <p className="text-[8px] font-black uppercase tracking-widest text-zinc-600">Expense Date</p>
+            <p className="text-zinc-200 font-semibold mt-1">
+              {formatExpenseDateDisplay(expense.expenseDate)}
+            </p>
           </div>
           {driverName ? (
             <div className="col-span-2">
               <p className="text-[8px] font-black uppercase tracking-widest text-zinc-600">Driver</p>
-              <p className="text-sm font-semibold text-zinc-200 mt-1">{driverName}</p>
+              <p className="text-zinc-200 font-semibold mt-1">{driverName}</p>
             </div>
           ) : null}
-          {expense.reimbursementForDriver === false ? (
+          {showReimbursementStatus ? (
             <div className="col-span-2">
-              <p className="text-[11px] text-amber-400/90 normal-case bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
-                Recorded for tracking — reimbursement not requested.
+              <p className="text-[8px] font-black uppercase tracking-widest text-zinc-600">
+                Reimbursement
+              </p>
+              <p className="text-zinc-200 font-semibold mt-1">
+                {expense.reimbursementForDriver !== false ? 'Yes' : 'No'}
               </p>
             </div>
           ) : null}
         </div>
 
-        {receiptPreview ? (
+        {expense.reimbursementForDriver === false ? (
+          <p className="text-[11px] text-amber-400/90 normal-case bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
+            Recorded for tracking — reimbursement not requested.
+          </p>
+        ) : null}
+
+        {embedReceipt && receiptPreview ? (
           <div className="pt-2">
             <p className="text-[8px] font-black uppercase tracking-widest text-zinc-600 mb-3">
               Receipt Preview

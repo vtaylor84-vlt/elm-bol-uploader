@@ -3,35 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import AuthenticatedShell from '../components/terminal/AuthenticatedShell.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
 import { useSubmissionDraft } from '../context/SubmissionDraftContext.tsx';
-
-const WorkspaceCard: React.FC<{
-  title: string;
-  description: string;
-  icon: string;
-  accent: string;
-  onClick: () => void;
-}> = ({ title, description, icon, accent, onClick }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className={`group w-full text-left rounded-2xl border ${accent} bg-zinc-950/70 backdrop-blur-sm p-6 sm:p-8 transition-all hover:scale-[1.01] hover:shadow-[0_0_32px_rgba(59,130,246,0.12)] active:scale-[0.99]`}
-  >
-    <div className="flex items-start gap-4">
-      <div className="w-14 h-14 rounded-xl border border-blue-500/30 bg-blue-500/10 flex items-center justify-center text-2xl shrink-0">
-        {icon}
-      </div>
-      <div className="min-w-0 flex-1">
-        <h2 className="text-lg sm:text-xl font-black uppercase tracking-wide text-white group-hover:text-blue-300 transition-colors">
-          {title}
-        </h2>
-        <p className="text-sm text-zinc-400 normal-case mt-2 leading-relaxed">{description}</p>
-      </div>
-      <span className="text-blue-400 text-xl opacity-60 group-hover:opacity-100 shrink-0" aria-hidden>
-        ›
-      </span>
-    </div>
-  </button>
-);
+import ElmModuleCard from '../design-system/components/ElmModuleCard.tsx';
+import ElmPageHeader from '../design-system/components/ElmPageHeader.tsx';
+import PageContainer from '../design-system/components/PageContainer.tsx';
 
 const getCarrierDisplayName = (code?: string) => {
   const c = String(code || '').trim().toUpperCase();
@@ -39,6 +13,33 @@ const getCarrierDisplayName = (code?: string) => {
   if (c === 'GLX') return 'Greenleaf Xpress';
   return code || '';
 };
+
+const FUTURE_MODULES = [
+  {
+    title: 'Messages',
+    description: 'Dispatcher updates and load communications.',
+    icon: '💬',
+    accent: 'violet' as const,
+  },
+  {
+    title: 'Safety',
+    description: 'Incident reports, inspections, and compliance.',
+    icon: '🛡️',
+    accent: 'emerald' as const,
+  },
+  {
+    title: 'Payroll',
+    description: 'Settlement summaries and pay documents.',
+    icon: '💰',
+    accent: 'amber' as const,
+  },
+  {
+    title: 'Announcements',
+    description: 'Company news and operational bulletins.',
+    icon: '📢',
+    accent: 'rose' as const,
+  },
+];
 
 const WorkspacePage: React.FC = () => {
   const navigate = useNavigate();
@@ -70,40 +71,54 @@ const WorkspacePage: React.FC = () => {
 
   return (
     <AuthenticatedShell title="Driver Workspace">
-      <div className="max-w-lg mx-auto space-y-8 py-6 sm:py-10">
-        <section className="text-center space-y-2">
-          <p className="text-[9px] font-black uppercase tracking-[0.4em] text-blue-400/80">
-            Driver Workspace
-          </p>
-          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-            Welcome, {driverName}
-          </h1>
-          <p className="text-sm text-zinc-400 normal-case">
-            What would you like to do?
-          </p>
+      <PageContainer width="full" className="space-y-8 lg:space-y-10">
+        <ElmPageHeader
+          eyebrow="Driver Workspace"
+          title={`Welcome, ${driverName}`}
+          description="What would you like to do? Select a module to continue."
+        />
+
+        <section aria-label="Active modules">
+          <p className="elm-section-label mb-4 lg:mb-5">Active Modules</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-5">
+            <ElmModuleCard
+              title="BOL / POD"
+              description="Upload delivery documents for your assigned load."
+              icon="📄"
+              accent="blue"
+              onClick={openBolPod}
+            />
+            <ElmModuleCard
+              title="Expense Submission"
+              description="Submit an expense with receipt for reimbursement or tracking."
+              icon="🧾"
+              accent="cyan"
+              onClick={openReceipt}
+            />
+          </div>
         </section>
 
-        <div className="space-y-4">
-          <WorkspaceCard
-            title="BOL / POD"
-            description="Upload delivery documents for your assigned load."
-            icon="📄"
-            accent="border-blue-500/25 hover:border-blue-500/50"
-            onClick={openBolPod}
-          />
-          <WorkspaceCard
-            title="Expense Submission"
-            description="Submit an expense with receipt for reimbursement or tracking."
-            icon="🧾"
-            accent="border-cyan-500/25 hover:border-cyan-500/50"
-            onClick={openReceipt}
-          />
-        </div>
+        <section aria-label="Coming soon">
+          <p className="elm-section-label mb-4 lg:mb-5">Platform Modules · Coming Soon</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-5">
+            {FUTURE_MODULES.map((mod) => (
+              <ElmModuleCard
+                key={mod.title}
+                title={mod.title}
+                description={mod.description}
+                icon={mod.icon}
+                accent={mod.accent}
+                disabled
+                badge="Soon"
+              />
+            ))}
+          </div>
+        </section>
 
-        <p className="text-center text-[8px] font-mono uppercase tracking-widest text-zinc-600">
+        <p className="text-center text-[8px] font-mono uppercase tracking-widest text-zinc-600 pt-2">
           Secure session · {session?.maskedEmail || 'Connected'}
         </p>
-      </div>
+      </PageContainer>
     </AuthenticatedShell>
   );
 };

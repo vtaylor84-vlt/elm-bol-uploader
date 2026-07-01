@@ -3,7 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import AuthenticatedShell from '../components/terminal/AuthenticatedShell.tsx';
 import ExpenseStepper from '../components/expense/ExpenseStepper.tsx';
 import ExpenseSummaryCard from '../components/expense/ExpenseSummaryCard.tsx';
+import ReceiptPreviewPanel from '../components/expense/ReceiptPreviewPanel.tsx';
+import ElmButton from '../design-system/components/ElmButton.tsx';
+import ElmPageHeader from '../design-system/components/ElmPageHeader.tsx';
+import PageContainer from '../design-system/components/PageContainer.tsx';
+import ResponsiveSplit from '../design-system/components/ResponsiveSplit.tsx';
+import { useAuth } from '../context/AuthContext.tsx';
 import { useSubmissionDraft } from '../context/SubmissionDraftContext.tsx';
+import { companyCodeToUploadValue, resolveExpenseUploadCompany } from '../utils/companyMap.ts';
+import { validateExpenseForSubmit } from '../utils/expenseForm.ts';
 import {
   buildExpenseUploadPayload,
   filesToBase64Payload,
@@ -13,9 +21,12 @@ import {
 
 const SubmissionReviewPage: React.FC = () => {
   const navigate = useNavigate();
+  const { session } = useAuth();
   const { draft, receiptBlob } = useSubmissionDraft();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  const isAdmin = Boolean(session?.canSelectAnyDriver || session?.authRole === 'admin');
 
   useEffect(() => {
     if (!draft || draft.submissionType !== 'EXPENSE_RECEIPT' || !draft.expense) {
@@ -29,12 +40,24 @@ const SubmissionReviewPage: React.FC = () => {
 
   const { expense } = draft;
   const preview = draft.documents[0]?.previewUrl;
+  const companyValidationError = validateExpenseForSubmit(expense, draft.company);
+  const canSubmit = !companyValidationError && Boolean(receiptBlob);
 
   const handleSubmit = async () => {
     if (!receiptBlob) {
       setError('Receipt image missing. Go back and re-upload.');
       return;
     }
+
+    const preCheck = validateExpenseForSubmit(expense, draft.company);
+    if (preCheck) {
+      setError(preCheck);
+      return;
+    }
+
+    const uploadCompany =
+      resolveExpenseUploadCompany(expense, draft.company) ||
+      companyCodeToUploadValue(expense.companyCode || '');
 
     setIsSubmitting(true);
     setError('');
@@ -44,7 +67,7 @@ const SubmissionReviewPage: React.FC = () => {
         { category: 'expense_receipt', file: receiptBlob },
       ]);
       const payload = buildExpenseUploadPayload({
-        company: draft.company,
+        company: uploadCompany,
         driverName: draft.driverName,
         expense,
         files,
@@ -58,14 +81,17 @@ const SubmissionReviewPage: React.FC = () => {
         },
       });
     } catch (e) {
-      const message = e instanceof Error ? e.message : 'Upload failed';
+      const raw = e instanceof Error ? e.message : 'Upload failed';
+      const message = raw.toLowerCase().includes('invalid company')
+        ? 'Company could not be determined from the selected truck. Please select another truck or contact admin.'
+        : raw;
       try {
         const files = await filesToBase64Payload([
           { category: 'expense_receipt', file: receiptBlob },
         ]);
         savePayloadToVault(
           buildExpenseUploadPayload({
-            company: draft.company,
+            company: uploadCompany,
             driverName: draft.driverName,
             expense,
             files,
@@ -86,24 +112,33 @@ const SubmissionReviewPage: React.FC = () => {
       showBack
       onBack={() => navigate('/submissions/receipt')}
     >
-      <div className="max-w-lg mx-auto py-4 sm:py-6 space-y-6 expense-page-enter">
-        <header className="text-center space-y-1">
-          <p className="text-[9px] font-black uppercase tracking-[0.42em] text-blue-400/85">
-            Review
-          </p>
-          <h1 className="text-xl sm:text-2xl font-black text-white">Confirm & submit</h1>
-          <p className="text-sm text-zinc-500 normal-case">
-            Verify everything looks correct before transmitting.
-          </p>
-        </header>
+      <PageContainer width="wide" className="space-y-6 lg:space-y-8 expense-page-enter">
+        <ElmPageHeader
+          eyebrow="Review"
+          title="Confirm & submit"
+          description="Verify everything looks correct before transmitting."
+        />
 
         <ExpenseStepper current="Review" />
 
-        <ExpenseSummaryCard
-          expense={expense}
-          receiptPreview={preview}
-          driverName={draft.driverName}
+        <ResponsiveSplit
+          mobileOrder="primary-first"
+          primary={
+            <ExpenseSummaryCard
+              expense={expense}
+              driverName={draft.driverName}
+              showReimbursementStatus={isAdmin}
+              embedReceipt={false}
+            />
+          }
+          secondary={<ReceiptPreviewPanel preview={preview} className="lg:sticky lg:top-24" />}
         />
+
+        {companyValidationError ? (
+          <p className="text-[12px] text-red-400 normal-case text-center px-2" role="alert">
+            {companyValidationError}
+          </p>
+        ) : null}
 
         {error ? (
           <p className="text-[12px] text-red-400 normal-case text-center" role="alert">
@@ -111,25 +146,28 @@ const SubmissionReviewPage: React.FC = () => {
           </p>
         ) : null}
 
-        <div className="flex flex-col gap-3 pt-2">
-          <button
-            type="button"
-            disabled={isSubmitting}
+        <div className="flex flex-col sm:flex-row gap-3 pt-2 max-w-2xl mx-auto lg:max-w-none lg:mx-0">
+          <ElmButton
+            variant="primary"
+            fullWidth
+            disabled={isSubmitting || !canSubmit}
             onClick={handleSubmit}
-            className="terminal-btn-primary w-full min-h-[52px] py-4 rounded-xl font-black uppercase tracking-[0.28em] text-sm text-white disabled:opacity-60"
+            trailing={<span aria-hidden>›</span>}
+            className="sm:flex-1"
           >
-            {isSubmitting ? 'Submitting...' : 'Submit Expense ›'}
-          </button>
-          <button
-            type="button"
+            {isSubmitting ? 'Submitting...' : 'Submit Expense'}
+          </ElmButton>
+          <ElmButton
+            variant="secondary"
+            fullWidth
             disabled={isSubmitting}
             onClick={() => navigate('/submissions/receipt')}
-            className="w-full min-h-[48px] py-3 rounded-xl border border-zinc-700/80 text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:border-zinc-600 hover:text-zinc-200 transition-colors"
+            className="sm:flex-1 sm:max-w-xs"
           >
             Back to edit
-          </button>
+          </ElmButton>
         </div>
-      </div>
+      </PageContainer>
     </AuthenticatedShell>
   );
 };

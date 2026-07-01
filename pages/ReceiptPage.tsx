@@ -3,14 +3,26 @@ import { useNavigate } from 'react-router-dom';
 import AuthenticatedShell from '../components/terminal/AuthenticatedShell.tsx';
 import ExpenseDetailsForm from '../components/expense/ExpenseDetailsForm.tsx';
 import ExpenseStepper from '../components/expense/ExpenseStepper.tsx';
+import ElmButton from '../design-system/components/ElmButton.tsx';
+import ElmPageHeader from '../design-system/components/ElmPageHeader.tsx';
+import PageContainer from '../design-system/components/PageContainer.tsx';
 import ReceiptUploadZone from '../components/expense/ReceiptUploadZone.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
 import { useSubmissionDraft } from '../context/SubmissionDraftContext.tsx';
-import { fetchDriverRoster, fetchTruckNumbers } from '../services/terminalDataService.ts';
-import type { DriverOption } from '../services/terminalDataService.ts';
-import { defaultExpenseFormState, type ExpenseFormState } from '../types/expense.ts';
+import { fetchDriverRoster, fetchTrucks } from '../services/terminalDataService.ts';
+import type { DriverOption, TruckOption } from '../services/terminalDataService.ts';
+import {
+  defaultExpenseFormState,
+  isCustomDriverSelection,
+  type ExpenseFormState,
+} from '../types/expense.ts';
 import type { DocumentRecord } from '../types/submission.ts';
-import { expenseFormToRecord, validateExpenseDetails } from '../utils/expenseForm.ts';
+import { companyCodeToUploadValue } from '../utils/companyMap.ts';
+import {
+  expenseFormToRecord,
+  resolveExpenseDriverName as resolveDriver,
+  validateExpenseDetails,
+} from '../utils/expenseForm.ts';
 import { compressImage } from '../utils/imageCompress.ts';
 import {
   getFileRejectionReason,
@@ -23,7 +35,7 @@ type WizardStep = 'details' | 'upload';
 const ReceiptPage: React.FC = () => {
   const navigate = useNavigate();
   const { session } = useAuth();
-  const { draft, updateExpense, updateDriverName, setDocuments, setReceiptBlob } =
+  const { draft, updateExpense, updateDriverName, updateCompany, setDocuments, setReceiptBlob } =
     useSubmissionDraft();
 
   const isAdmin = Boolean(session?.canSelectAnyDriver || session?.authRole === 'admin');
@@ -34,16 +46,20 @@ const ReceiptPage: React.FC = () => {
     if (draft?.expense) {
       return {
         ...base,
-        expenseType: (draft.expense.expenseType as ExpenseFormState['expenseType']) || base.expenseType,
+        expenseType: (draft.expense.expenseType as ExpenseFormState['expenseType']) || '',
         expenseTypeOther: draft.expense.expenseTypeOther || '',
         amount: draft.expense.amount ? String(draft.expense.amount) : '',
         expenseDate: draft.expense.expenseDate || base.expenseDate,
         truckNumber: draft.expense.truckNumber || '',
+        companyCode: draft.expense.companyCode || '',
         vendor: draft.expense.vendor || '',
-        paidWith: (draft.expense.paidWith as ExpenseFormState['paidWith']) || base.paidWith,
+        paidWith: (draft.expense.paidWith as ExpenseFormState['paidWith']) || '',
         paidWithOther: draft.expense.paidWithOther || '',
         reimbursementForDriver: draft.expense.reimbursementForDriver ?? true,
-        selectedDriverName: draft.driverName || session?.driverName?.toUpperCase() || '',
+        selectedDriverName: isAdmin
+          ? draft.driverName || session?.driverName?.toUpperCase() || ''
+          : session?.driverName?.toUpperCase() || '',
+        customDriverName: '',
       };
     }
     return {
@@ -52,9 +68,10 @@ const ReceiptPage: React.FC = () => {
     };
   });
 
-  const [trucks, setTrucks] = useState<string[]>([]);
+  const [trucks, setTrucks] = useState<TruckOption[]>([]);
   const [drivers, setDrivers] = useState<DriverOption[]>([]);
   const [trucksLoading, setTrucksLoading] = useState(true);
+  const [trucksError, setTrucksError] = useState('');
   const [error, setError] = useState('');
   const [receiptFile, setReceiptFile] = useState<{
     file: Blob;
@@ -71,10 +88,15 @@ const ReceiptPage: React.FC = () => {
   useEffect(() => {
     let active = true;
     setTrucksLoading(true);
-    fetchTruckNumbers().then((list) => {
-      if (active) {
-        setTrucks(list);
-        setTrucksLoading(false);
+    setTrucksError('');
+    fetchTrucks().then(({ trucks: list, error: loadError }) => {
+      if (!active) return;
+      setTrucks(list);
+      setTrucksLoading(false);
+      if (loadError) {
+        setTrucksError(loadError);
+      } else if (!list.length) {
+        setTrucksError('No trucks found in Truck_Master. Contact admin if this persists.');
       }
     });
     if (isAdmin) {
@@ -95,10 +117,27 @@ const ReceiptPage: React.FC = () => {
     setForm((prev) => ({ ...prev, ...patch }));
   };
 
-  const driverDisplayName =
-    drivers.find((d) => d.value === form.selectedDriverName)?.label ||
-    session?.driverName ||
-    draft.driverName;
+  const handleTruckSelect = (truckNumber: string) => {
+    const match = trucks.find((t) => t.truckNumber === truckNumber);
+    patchForm({
+      truckNumber,
+      companyCode: match?.companyCode || '',
+    });
+    if (match?.companyCode) {
+      updateCompany(companyCodeToUploadValue(match.companyCode));
+    }
+  };
+
+  const driverDisplayName = isCustomDriverSelection(form.selectedDriverName)
+    ? form.customDriverName || 'Enter driver name'
+    : drivers.find((d) => d.value === form.selectedDriverName)?.label ||
+      session?.driverName ||
+      draft.driverName;
+
+  const persistDriver = () => {
+    const name = resolveDriver(form);
+    if (name) updateDriverName(name);
+  };
 
   const handleDetailsContinue = () => {
     setError('');
@@ -107,9 +146,7 @@ const ReceiptPage: React.FC = () => {
       setError(validationError);
       return;
     }
-    if (isAdmin && form.selectedDriverName) {
-      updateDriverName(form.selectedDriverName);
-    }
+    persistDriver();
     setStep('upload');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -150,8 +187,9 @@ const ReceiptPage: React.FC = () => {
 
     const record = expenseFormToRecord(form);
     updateExpense(record);
-    if (isAdmin && form.selectedDriverName) {
-      updateDriverName(form.selectedDriverName);
+    persistDriver();
+    if (record.companyCode) {
+      updateCompany(companyCodeToUploadValue(record.companyCode));
     }
 
     const doc: DocumentRecord = {
@@ -174,24 +212,20 @@ const ReceiptPage: React.FC = () => {
       showBack
       onBack={() => (step === 'upload' ? setStep('details') : navigate('/workspace'))}
     >
-      <div className="max-w-lg mx-auto py-4 sm:py-6 space-y-6 sm:space-y-8 expense-page-enter">
-        <header className="text-center space-y-1 px-2">
-          <p className="text-[9px] font-black uppercase tracking-[0.42em] text-blue-400/85">
-            Expense Submission
-          </p>
-          <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-            {step === 'details' ? 'Expense details' : 'Attach receipt'}
-          </h1>
-          <p className="text-sm text-zinc-500 normal-case">
-            {step === 'details'
+      <PageContainer width="wide" className="space-y-6 lg:space-y-8 expense-page-enter">
+        <ElmPageHeader
+          eyebrow="Expense Submission"
+          title={step === 'details' ? 'Expense details' : 'Attach receipt'}
+          description={
+            step === 'details'
               ? 'Tell us about the expense — we’ll guide you step by step.'
-              : 'Add a clear photo of your receipt to complete this submission.'}
-          </p>
-        </header>
+              : 'Add a clear photo of your receipt to complete this submission.'
+          }
+        />
 
         <ExpenseStepper current={stepperCurrent as 'Details' | 'Upload'} />
 
-        <section className="terminal-module-panel rounded-2xl p-5 sm:p-7">
+        <section className="terminal-module-panel rounded-2xl p-5 sm:p-7 lg:p-8 xl:p-10">
           {step === 'details' ? (
             <ExpenseDetailsForm
               form={form}
@@ -200,10 +234,12 @@ const ReceiptPage: React.FC = () => {
               isAdmin={isAdmin}
               currentDriverLabel={driverDisplayName}
               trucksLoading={trucksLoading}
+              trucksError={trucksError}
               onChange={patchForm}
+              onTruckSelect={handleTruckSelect}
             />
           ) : (
-            <div className="space-y-4">
+            <div className="max-w-xl mx-auto lg:max-w-2xl space-y-4">
               <ReceiptUploadZone
                 preview={receiptFile?.preview}
                 fileName={receiptFile?.name}
@@ -224,15 +260,17 @@ const ReceiptPage: React.FC = () => {
             </p>
           ) : null}
 
-          <button
-            type="button"
+          <ElmButton
+            variant="primary"
+            fullWidth
             onClick={step === 'details' ? handleDetailsContinue : handleUploadContinue}
-            className="terminal-btn-primary w-full min-h-[52px] mt-6 py-4 rounded-xl font-black uppercase tracking-[0.28em] text-sm text-white bg-gradient-to-r from-blue-600 to-blue-500 border border-blue-400/35 shadow-[0_0_28px_rgba(59,130,246,0.25)]"
+            trailing={<span aria-hidden>›</span>}
+            className="mt-6 lg:mt-8 max-w-md mx-auto lg:max-w-lg block"
           >
-            Continue ›
-          </button>
+            Continue
+          </ElmButton>
         </section>
-      </div>
+      </PageContainer>
     </AuthenticatedShell>
   );
 };

@@ -388,6 +388,29 @@ body::before {
   animation: login-fade-up 0.3s ease-out both;
 }
 
+.expense-date-input {
+  color-scheme: dark;
+  min-height: 52px;
+}
+
+.expense-date-input::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  position: absolute;
+  right: 0;
+  width: 48px;
+  height: 100%;
+  cursor: pointer;
+}
+
+.expense-select option {
+  color: #fff;
+  background: #0a0a12;
+}
+
+.expense-select option[disabled] {
+  color: #71717a;
+}
+
 /* --- Success screen --- */
 
 @keyframes success-pop {
@@ -406,4 +429,130 @@ body::before {
 
 .success-glow-pulse {
   animation: success-glow 2.5s ease-in-out infinite;
+}
+
+/* --- ELM CONNECT Design System --- */
+
+:root {
+  --elm-bg: #030308;
+  --elm-surface: rgba(12, 12, 18, 0.88);
+  --elm-border: rgba(59, 130, 246, 0.15);
+  --elm-primary: #3b82f6;
+  --elm-primary-light: #5eb8e8;
+  --elm-touch-min: 52px;
+}
+
+.elm-page-enter {
+  animation: login-fade-up 0.45s ease-out both;
+}
+
+.elm-eyebrow {
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: rgba(96, 165, 250, 0.85);
+}
+
+.elm-section-label {
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: #71717a;
+}
+
+.elm-field-label {
+  display: block;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #a1a1aa;
+  margin-bottom: 0.625rem;
+}
+
+.elm-input {
+  min-height: var(--elm-touch-min);
+  padding: 0.875rem 1rem;
+  border-radius: 0.75rem;
+  background: rgba(6, 6, 12, 0.9);
+  border: 1px solid rgba(39, 39, 42, 0.9);
+  font-size: 15px;
+  color: #fff;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.elm-input:focus {
+  border-color: rgba(59, 130, 246, 0.55);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.elm-input::placeholder {
+  color: #52525b;
+  text-transform: none;
+}
+
+.elm-card {
+  border-radius: 1.25rem;
+  border: 1px solid rgba(30, 58, 95, 0.8);
+  background: rgba(10, 15, 24, 0.95);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+}
+
+.elm-card-muted {
+  border-color: rgba(39, 39, 42, 0.8);
+  background: rgba(9, 9, 14, 0.6);
+}
+
+.elm-btn-primary {
+  color: #fff;
+  background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 55%, #1e3a8a 100%);
+  border: 1px solid rgba(96, 165, 250, 0.35);
+  box-shadow: 0 4px 20px rgba(37, 99, 235, 0.45);
+}
+
+.elm-btn-secondary {
+  color: #a1a1aa;
+  background: transparent;
+  border: 1px solid rgba(63, 63, 70, 0.8);
+}
+
+.elm-btn-secondary:hover:not(:disabled) {
+  border-color: rgba(113, 113, 122, 0.9);
+  color: #e4e4e7;
+}
+
+.elm-btn-ghost {
+  color: #60a5fa;
+  background: transparent;
+  border: 1px solid transparent;
+}
+
+.elm-form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 1024px) {
+  .elm-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem 1.5rem;
+  }
+}
+
+.login-brand-crop-desktop {
+  display: block;
+  height: 220px;
+  object-fit: cover;
+  object-position: center top;
+}
+
+@media (min-width: 1280px) {
+  .login-brand-crop-desktop {
+    height: 260px;
+  }
 }

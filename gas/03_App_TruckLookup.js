@@ -15,28 +15,54 @@ function getTrucksData() {
       .setMimeType(ContentService.MimeType.JSON);
   }
 
-  const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+  const lastCol = sh.getLastColumn();
+  const headers = sh.getRange(1, 1, 1, lastCol).getValues()[0];
   const headerMap = {};
   headers.forEach(function (h, i) {
-    headerMap[String(h || "").trim().toLowerCase()] = i;
+    const key = String(h || "").trim().toLowerCase().replace(/[\s#_-]+/g, "");
+    headerMap[key] = i;
   });
 
-  const truckIdx = headerMap.trucknumber !== undefined ? headerMap.trucknumber : 0;
-  const values = sh.getRange(2, 1, lastRow - 1, sh.getLastColumn()).getValues();
+  function colIndex(candidates, fallback) {
+    for (let c = 0; c < candidates.length; c++) {
+      const key = candidates[c];
+      if (headerMap[key] !== undefined) return headerMap[key];
+    }
+    return fallback;
+  }
+
+  const truckIdx = colIndex(
+    ["trucknumber", "trucknum", "truck", "truckid", "unitnumber", "unit"],
+    0
+  );
+  const companyIdx = colIndex(
+    ["companycode", "company", "carriercode", "carrier", "tenant"],
+    -1
+  );
+  const values = sh.getRange(2, 1, lastRow, lastCol).getValues();
   const seen = new Set();
   const trucks = [];
 
   for (let i = 0; i < values.length; i++) {
     const truckNumber = String(values[i][truckIdx] || "").trim();
     if (!truckNumber) continue;
+
     const key = truckNumber.toUpperCase();
     if (seen.has(key)) continue;
     seen.add(key);
-    trucks.push(truckNumber);
+
+    const companyCode = companyIdx >= 0
+      ? String(values[i][companyIdx] || "").trim().toUpperCase()
+      : "";
+
+    trucks.push({
+      truckNumber: truckNumber,
+      companyCode: companyCode
+    });
   }
 
   trucks.sort(function (a, b) {
-    return a.localeCompare(b, undefined, { numeric: true });
+    return String(a.truckNumber).localeCompare(String(b.truckNumber), undefined, { numeric: true });
   });
 
   return ContentService
