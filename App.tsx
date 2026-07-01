@@ -375,7 +375,7 @@ const App: React.FC = () => {
   const [loadSelectionError, setLoadSelectionError] = useState(false);
 
   // Route fields
-  const [loadNum, setLoadNum] = useState('');
+  const [bolNum, setBolNum] = useState('');
   const [loadId, setLoadId] = useState('');
   const [puCity, setPuCity] = useState('');
   const [puState, setPuState] = useState('');
@@ -399,6 +399,11 @@ const App: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const freightCamRef = useRef<HTMLInputElement>(null);
   const freightFileRef = useRef<HTMLInputElement>(null);
+  const selectedLoadRef = useRef<AvailableLoad | null>(null);
+
+  selectedLoadRef.current = selectedLoad;
+
+  const assignedLoadNumber = String(selectedLoad?.loadNumber || '').trim();
 
   const states = [
     'AL','AR','AZ','CA','CO','CT','DE','FL','GA','IA','ID','IL','IN','KS','KY',
@@ -470,7 +475,6 @@ const App: React.FC = () => {
         : 'text-zinc-300';
 
   const hasManualAssignmentData = !!(
-    loadNum.trim() &&
     puCity &&
     puState &&
     delCity &&
@@ -493,9 +497,10 @@ const App: React.FC = () => {
     effectiveCompany !== 'Other Carrier' &&
     driverName &&
     eventType &&
-    loadNum.trim() &&
+    bolNum.trim() &&
     hasRouteData &&
-    hasBolEvidence
+    hasBolEvidence &&
+    hasAssignment
   );
 
   useEffect(() => {
@@ -570,7 +575,7 @@ const App: React.FC = () => {
 
     setCompany('');
     setManualCarrier('');
-    setLoadNum('');
+    setBolNum('');
     setLoadId('');
     setPuCity('');
     setPuState('');
@@ -590,7 +595,7 @@ const App: React.FC = () => {
       setsCurrentStage: 'ASSIGNMENT',
     });
     setSelectedLoad(null);
-    setLoadNum('');
+    setBolNum('');
     setLoadId('');
     setPuCity('');
     setPuState('');
@@ -601,6 +606,31 @@ const App: React.FC = () => {
     setShowFreightPrompt(false);
     setIsConnecting(false);
     setCurrentStage('ASSIGNMENT');
+  };
+
+  const buildSubmissionPayload = (
+    files: { category: string; base64: unknown }[]
+  ) => {
+    const payloadLoadNum = assignedLoadNumber || 'NA';
+    const payloadLoadId = selectedLoad
+      ? String(selectedLoad.loadId || '').trim()
+      : String(loadId || '').trim();
+
+    return {
+      company: effectiveCompany,
+      driverName,
+      loadNum: payloadLoadNum,
+      bolNum: bolNum.trim(),
+      loadId: payloadLoadId,
+      puCity,
+      puState,
+      delCity,
+      delState,
+      origin: `${puCity} ${puState}`,
+      destination: `${delCity} ${delState}`,
+      bolProtocol: eventType,
+      files,
+    };
   };
 
   useEffect(() => {
@@ -629,13 +659,16 @@ const App: React.FC = () => {
   useEffect(() => {
     const scanForLoads = async () => {
       const skipped =
-        !driverName || !eventType || manualMode || Boolean(selectedLoad);
+        !driverName ||
+        !eventType ||
+        manualMode ||
+        Boolean(selectedLoadRef.current);
 
       logUiDiag('scanForLoads_start', {
         driverNameSet: Boolean(driverName),
         eventType: eventType || null,
         manualMode,
-        selectedLoad: selectedLoadDiag(selectedLoad),
+        selectedLoad: selectedLoadDiag(selectedLoadRef.current),
         skipped,
       });
 
@@ -655,6 +688,14 @@ const App: React.FC = () => {
           )}&type=${eventType}`
         );
         const data = await response.json();
+
+        if (selectedLoadRef.current) {
+          logUiDiag('scanForLoads_end', {
+            success: true,
+            skippedAfterFetch: true,
+          });
+          return;
+        }
 
         if (Array.isArray(data)) {
           setAvailableLoads(data);
@@ -676,8 +717,10 @@ const App: React.FC = () => {
         }
       } catch (err) {
         console.error('Radar Link Failure', err);
-        setAvailableLoads([]);
-        setLoadSelectionError(true);
+        if (!selectedLoadRef.current) {
+          setAvailableLoads([]);
+          setLoadSelectionError(true);
+        }
         logUiDiag('scanForLoads_end', {
           success: false,
           reason: 'fetch_failed',
@@ -690,7 +733,7 @@ const App: React.FC = () => {
     };
 
     scanForLoads();
-  }, [driverName, eventType, manualMode, selectedLoad]);
+  }, [driverName, eventType, manualMode]);
 
   useEffect(() => {
     const willAdvanceToEvidence =
@@ -731,7 +774,7 @@ const App: React.FC = () => {
 
     setSelectedLoad(load);
     setLoadId(String(load.loadId || '').trim());
-    setLoadNum(String(load.loadNumber || '').trim());
+    setBolNum('');
 
     setPuCity((puParts[0] || '').toUpperCase());
     setPuState((puParts[1] || '').toUpperCase());
@@ -739,16 +782,8 @@ const App: React.FC = () => {
     setDelState((delParts[1] || '').toUpperCase());
 
     setCompany(carrierName || '');
-    setIsConnecting(true);
-
-    window.setTimeout(() => {
-      logUiDiag('handleLoadSelection_timeout', {
-        action: 'set_evidence',
-        load: selectedLoadDiag(load),
-      });
-      setIsConnecting(false);
-      setCurrentStage('EVIDENCE');
-    }, 1200);
+    setIsConnecting(false);
+    setCurrentStage('EVIDENCE');
   };
 
   const onFileSelect = async (
@@ -899,6 +934,33 @@ const App: React.FC = () => {
               Securing assignment identity and preparing document intake
             </div>
           </div>
+        ) : selectedLoad && currentStage !== 'ASSIGNMENT' ? (
+          <div className="space-y-4 animate-in fade-in duration-500">
+            <div
+              className={`p-6 rounded-[2rem] border-2 text-left ${themeBorderClass} ${themeBgClass}`}
+            >
+              <div className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 mb-2">
+                Assigned Load Linked
+              </div>
+              <div className="text-lg font-black text-white tracking-tight">
+                {assignedLoadNumber ? `LOAD #${assignedLoadNumber}` : 'SELECTED LOAD'}
+              </div>
+              {loadId ? (
+                <div className="mt-1 text-[9px] font-black uppercase tracking-[0.25em] text-zinc-500">
+                  Load ID: {loadId}
+                </div>
+              ) : null}
+              <div className="mt-3 text-[10px] font-mono text-zinc-400 uppercase">
+                {puCity}, {puState} → {delCity}, {delState}
+              </div>
+            </div>
+            <button
+              onClick={clearSelectedLoadButKeepDriver}
+              className="w-full py-4 rounded-2xl border border-zinc-700 text-[9px] font-black uppercase tracking-[0.25em] text-zinc-400"
+            >
+              Change Assignment
+            </button>
+          </div>
         ) : !manualMode && availableLoads.length > 0 ? (
           <div className="space-y-4 animate-in fade-in slide-in-from-top duration-500">
             {availableLoads.map((load) => {
@@ -994,7 +1056,7 @@ const App: React.FC = () => {
                 });
                 setManualMode(true);
                 setSelectedLoad(null);
-                setLoadNum('');
+                setBolNum('');
                 setLoadId('');
                 setPuCity('');
                 setPuState('');
@@ -1079,13 +1141,6 @@ const App: React.FC = () => {
               <option value="Other Carrier">Other Carrier</option>
             </select>
 
-            <input
-              className={inpStyle(loadNum)}
-              placeholder="BOL #"
-              value={loadNum}
-              onChange={(e) => setLoadNum(e.target.value.trim())}
-            />
-
             {manualMode && (
               <button
                 onClick={() => {
@@ -1096,7 +1151,7 @@ const App: React.FC = () => {
                   setManualMode(false);
                   setLoadSelectionError(false);
                   setSelectedLoad(null);
-                  setLoadNum('');
+                  setBolNum('');
                   setLoadId('');
                   setPuCity('');
                   setPuState('');
@@ -1237,7 +1292,7 @@ const App: React.FC = () => {
                 Elite Logistics Manager
               </div>
 
-              {eventType || driverName || loadNum ? (
+              {eventType || driverName || assignedLoadNumber || bolNum ? (
                 <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
                   {eventType ? (
                     <span className="px-3 py-1 rounded-full border border-zinc-700 bg-zinc-900 text-[8px] font-black uppercase tracking-[0.25em] text-zinc-300">
@@ -1249,9 +1304,14 @@ const App: React.FC = () => {
                       OPERATOR: {driverName}
                     </span>
                   ) : null}
-                  {loadNum ? (
+                  {assignedLoadNumber ? (
                     <span className="px-3 py-1 rounded-full border border-zinc-700 bg-zinc-900 text-[8px] font-black uppercase tracking-[0.25em] text-zinc-300">
-                      LOAD: {loadNum}
+                      LOAD: {assignedLoadNumber}
+                    </span>
+                  ) : null}
+                  {bolNum ? (
+                    <span className="px-3 py-1 rounded-full border border-zinc-700 bg-zinc-900 text-[8px] font-black uppercase tracking-[0.25em] text-zinc-300">
+                      BOL: {bolNum}
                     </span>
                   ) : null}
                   {loadId ? (
@@ -1371,7 +1431,7 @@ const App: React.FC = () => {
                       });
                       setDriverName(e.target.value.toUpperCase());
                       setSelectedLoad(null);
-                      setLoadNum('');
+                      setBolNum('');
                       setLoadId('');
                       setPuCity('');
                       setPuState('');
@@ -1443,6 +1503,24 @@ const App: React.FC = () => {
                   {eventType}
                 </span>
               </div>
+            </div>
+
+            <div className="mb-6">
+              <div className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-500 mb-3">
+                Enter BOL # From Paperwork
+              </div>
+              <input
+                className={inpStyle(bolNum)}
+                placeholder="BOL #"
+                value={bolNum}
+                onChange={(e) => setBolNum(e.target.value.trim())}
+              />
+              {assignedLoadNumber ? (
+                <div className="mt-2 text-[8px] text-zinc-600 normal-case tracking-normal">
+                  Assigned load #: {assignedLoadNumber}
+                  {loadId ? ` · Load ID: ${loadId}` : ''}
+                </div>
+              ) : null}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -1668,7 +1746,8 @@ const App: React.FC = () => {
               {[
                 { l: 'EVENT', v: eventType, id: 'eventType' },
                 { l: 'OPERATOR', v: driverName, id: 'driverName' },
-                { l: 'BOL #', v: loadNum || 'N/A', id: 'reference' },
+                { l: 'LOAD #', v: assignedLoadNumber || 'N/A', id: 'loadNumber' },
+                { l: 'BOL #', v: bolNum || 'N/A', id: 'reference' },
                 { l: 'LOAD ID', v: loadId || 'N/A', id: 'loadId' },
                 { l: 'PICKUP', v: `${puCity}, ${puState}`, id: 'origin' },
                 { l: 'DESTINATION', v: `${delCity}, ${delState}`, id: 'destination' },
@@ -1677,7 +1756,7 @@ const App: React.FC = () => {
                 <div
                   key={item.l}
                   onClick={() => {
-                    if (!['eventType', 'loadId', 'reference'].includes(item.id)) {
+                    if (!['eventType', 'loadId', 'reference', 'loadNumber'].includes(item.id)) {
                       setEditingField(item.id);
                     }
                   }}
@@ -1688,7 +1767,7 @@ const App: React.FC = () => {
                       {item.l}
                     </span>
 
-                    {!['eventType', 'loadId', 'reference'].includes(item.id) ? (
+                    {!['eventType', 'loadId', 'reference', 'loadNumber'].includes(item.id) ? (
                       <span className="text-[7px] font-black text-white/30 uppercase border border-white/10 px-2 py-0.5 rounded">
                         Tap to Edit
                       </span>
@@ -1737,21 +1816,7 @@ const App: React.FC = () => {
                   })
                 );
 
-                const payload = {
-                  company: effectiveCompany,
-                  driverName,
-                  loadNum,
-                  bolNum: loadNum,
-                  loadId,
-                  puCity,
-                  puState,
-                  delCity,
-                  delState,
-                  origin: `${puCity} ${puState}`,
-                  destination: `${delCity} ${delState}`,
-                  bolProtocol: eventType,
-                  files: base64
-                };
+                const payload = buildSubmissionPayload(base64);
 
                 try {
                   const response = await fetch('/.netlify/functions/upload', {
@@ -1927,8 +1992,12 @@ const App: React.FC = () => {
                 <span className="text-white font-bold">{eventType}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-zinc-500">REF ID:</span>
-                <span className="text-white font-bold">{loadNum || 'N/A'}</span>
+                <span className="text-zinc-500">LOAD #:</span>
+                <span className="text-white font-bold">{assignedLoadNumber || 'N/A'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-zinc-500">BOL #:</span>
+                <span className="text-white font-bold">{bolNum || 'N/A'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-500">LOAD ID:</span>
