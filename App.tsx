@@ -1,4 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  getFileRejectionReason,
+  isHeicFile,
+  HEIC_BLOCK_MESSAGE,
+  UPLOAD_FORMAT_HINT,
+} from './utils/uploadFileRules.ts';
 
 /**
  * ELM CONNECT — ORACLE UI PASS
@@ -91,11 +97,13 @@ const playOpenSound = () => {
 };
 
 const compressImage = (file: File): Promise<Blob> => {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader();
+    reader.onerror = () => reject(new Error('read_failed'));
     reader.readAsDataURL(file);
     reader.onload = (e) => {
       const img = new Image();
+      img.onerror = () => reject(new Error('decode_failed'));
       img.src = e.target?.result as string;
       img.onload = () => {
         const canvas = document.createElement('canvas');
@@ -124,7 +132,17 @@ const compressImage = (file: File): Promise<Blob> => {
           ctx.drawImage(img, 0, 0, w, h);
         }
 
-        canvas.toBlob((b) => resolve(b || file), 'image/jpeg', 0.82);
+        canvas.toBlob(
+          (b) => {
+            if (!b) {
+              reject(new Error('encode_failed'));
+              return;
+            }
+            resolve(b);
+          },
+          'image/jpeg',
+          0.82
+        );
       };
     };
   });
@@ -437,11 +455,13 @@ const App: React.FC = () => {
         : 'text-zinc-300';
 
   const hasManualAssignmentData = !!(
+    loadNum.trim() &&
     puCity &&
     puState &&
     delCity &&
     delState &&
-    effectiveCompany
+    effectiveCompany &&
+    effectiveCompany !== 'Other Carrier'
   );
 
   const hasAssignment = !!(selectedLoad || hasManualAssignmentData);
@@ -455,8 +475,10 @@ const App: React.FC = () => {
 
   const isReady = !!(
     effectiveCompany &&
+    effectiveCompany !== 'Other Carrier' &&
     driverName &&
     eventType &&
+    loadNum.trim() &&
     hasRouteData &&
     hasBolEvidence
   );
@@ -635,16 +657,26 @@ const App: React.FC = () => {
       const files = Array.from(e.target.files);
 
       for (const f of files) {
-        const enh = await compressImage(f);
-        setUploadedFiles((prev) => [
-          ...prev,
-          {
-            file: enh,
-            preview: URL.createObjectURL(enh),
-            id: Math.random().toString(),
-            category: cat
-          }
-        ]);
+        const rejection = getFileRejectionReason(f);
+        if (rejection) {
+          window.alert(rejection);
+          continue;
+        }
+
+        try {
+          const enh = await compressImage(f);
+          setUploadedFiles((prev) => [
+            ...prev,
+            {
+              file: enh,
+              preview: URL.createObjectURL(enh),
+              id: Math.random().toString(),
+              category: cat
+            }
+          ]);
+        } catch {
+          window.alert(isHeicFile(f) ? HEIC_BLOCK_MESSAGE : 'Could not process this photo. Use JPG or PNG.');
+        }
       }
 
       if (
@@ -935,6 +967,13 @@ const App: React.FC = () => {
               <option value="Greenleaf Xpress">Greenleaf Xpress</option>
               <option value="Other Carrier">Other Carrier</option>
             </select>
+
+            <input
+              className={inpStyle(loadNum)}
+              placeholder="BOL #"
+              value={loadNum}
+              onChange={(e) => setLoadNum(e.target.value.trim())}
+            />
 
             {manualMode && (
               <button
@@ -1255,6 +1294,9 @@ const App: React.FC = () => {
                     ? 'Capture Bill Of Lading'
                     : 'Capture Delivery Document'}
                 </div>
+                <div className="mt-2 text-[8px] text-zinc-600 normal-case tracking-normal">
+                  {UPLOAD_FORMAT_HINT}
+                </div>
               </div>
 
               <div className="flex items-center gap-2">
@@ -1492,7 +1534,7 @@ const App: React.FC = () => {
               {[
                 { l: 'EVENT', v: eventType, id: 'eventType' },
                 { l: 'OPERATOR', v: driverName, id: 'driverName' },
-                { l: 'REFERENCE', v: loadNum || 'N/A', id: 'reference' },
+                { l: 'BOL #', v: loadNum || 'N/A', id: 'reference' },
                 { l: 'LOAD ID', v: loadId || 'N/A', id: 'loadId' },
                 { l: 'PICKUP', v: `${puCity}, ${puState}`, id: 'origin' },
                 { l: 'DESTINATION', v: `${delCity}, ${delState}`, id: 'destination' },
@@ -1562,6 +1604,7 @@ const App: React.FC = () => {
                   company: effectiveCompany,
                   driverName,
                   loadNum,
+                  bolNum: loadNum,
                   loadId,
                   puCity,
                   puState,
@@ -1574,11 +1617,17 @@ const App: React.FC = () => {
                 };
 
                 try {
-                  await fetch(GOOGLE_SCRIPT_URL, {
+                  const response = await fetch('/.netlify/functions/upload', {
                     method: 'POST',
-                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                   });
+
+                  const result = await response.json();
+                  if (!response.ok || !result.success) {
+                    throw new Error(result.error || 'Upload failed');
+                  }
+
                   setShowSuccess(true);
                 } catch (e) {
                   const currentVault: VaultEntry[] = JSON.parse(
@@ -1819,7 +1868,7 @@ const App: React.FC = () => {
         ref={cameraInputRef}
         className="hidden"
         capture="environment"
-        accept="image/*"
+        accept="image/jpeg,image/png"
         multiple
         onChange={(e) => onFileSelect(e, 'bol')}
       />
@@ -1828,7 +1877,7 @@ const App: React.FC = () => {
         ref={fileInputRef}
         className="hidden"
         multiple
-        accept="image/*"
+        accept="image/jpeg,image/png"
         onChange={(e) => onFileSelect(e, 'bol')}
       />
       <input
@@ -1836,7 +1885,7 @@ const App: React.FC = () => {
         ref={freightCamRef}
         className="hidden"
         capture="environment"
-        accept="image/*"
+        accept="image/jpeg,image/png"
         multiple
         onChange={(e) => onFileSelect(e, 'freight')}
       />
@@ -1845,7 +1894,7 @@ const App: React.FC = () => {
         ref={freightFileRef}
         className="hidden"
         multiple
-        accept="image/*"
+        accept="image/jpeg,image/png"
         onChange={(e) => onFileSelect(e, 'freight')}
       />
     </div>
