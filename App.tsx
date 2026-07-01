@@ -746,16 +746,21 @@ const App: React.FC = () => {
   }, [driverName, eventType, manualMode]);
 
   useEffect(() => {
-    const willAdvanceToEvidence =
+    const willAdvanceFromSelectedLoad = !!(selectedLoad && !manualMode);
+    const willAdvanceFromManual =
       (manualMode || loadSelectionError) &&
       hasManualAssignmentData &&
       !selectedLoad;
+    const willAdvanceToEvidence =
+      willAdvanceFromSelectedLoad || willAdvanceFromManual;
 
-    logUiDiag('manual_fallback_effect', {
+    logUiDiag('assignment_advance_effect', {
       manualMode,
       loadSelectionError,
       hasManualAssignmentData,
       selectedLoad: selectedLoadDiag(selectedLoad),
+      willAdvanceFromSelectedLoad,
+      willAdvanceFromManual,
       willAdvanceToEvidence,
     });
 
@@ -794,7 +799,6 @@ const App: React.FC = () => {
     setCompany(carrierName || '');
     setLoadSelectionError(false);
     setIsConnecting(false);
-    setCurrentStage('EVIDENCE');
   };
 
   const onFileSelect = async (
@@ -963,26 +967,54 @@ const App: React.FC = () => {
               Securing assignment identity and preparing document intake
             </div>
           </div>
-        ) : selectedLoad && currentStage !== 'ASSIGNMENT' ? (
+        ) : selectedLoad ? (
           <div className="space-y-4 animate-in fade-in duration-500">
-            <div
-              className={`p-6 rounded-[2rem] border-2 text-left ${themeBorderClass} ${themeBgClass}`}
-            >
-              <div className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 mb-2">
-                Assigned Load Linked
+            {assignedLoadNumber || loadId ? (
+              <div className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-500">
+                {assignedLoadNumber ? `Assigned load #: ${assignedLoadNumber}` : null}
+                {loadId
+                  ? `${assignedLoadNumber ? ' · ' : ''}Load ID: ${loadId}`
+                  : null}
               </div>
-              <div className="text-lg font-black text-white tracking-tight">
-                {assignedLoadNumber ? `LOAD #${assignedLoadNumber}` : 'SELECTED LOAD'}
-              </div>
-              {loadId ? (
-                <div className="mt-1 text-[9px] font-black uppercase tracking-[0.25em] text-zinc-500">
-                  Load ID: {loadId}
-                </div>
-              ) : null}
-              <div className="mt-3 text-[10px] font-mono text-zinc-400 uppercase">
-                {puCity}, {puState} → {delCity}, {delState}
-              </div>
+            ) : null}
+
+            <div className="grid grid-cols-4 gap-4">
+              <input
+                readOnly
+                className={`${inpStyle(puCity)} col-span-3`}
+                value={puCity}
+                aria-label="Pickup city"
+              />
+              <input
+                readOnly
+                className={inpStyle(puState)}
+                value={puState}
+                aria-label="Pickup state"
+              />
             </div>
+
+            <div className="grid grid-cols-4 gap-4">
+              <input
+                readOnly
+                className={`${inpStyle(delCity)} col-span-3`}
+                value={delCity}
+                aria-label="Delivery city"
+              />
+              <input
+                readOnly
+                className={inpStyle(delState)}
+                value={delState}
+                aria-label="Delivery state"
+              />
+            </div>
+
+            <input
+              readOnly
+              className={inpStyle(effectiveCompany)}
+              value={effectiveCompany}
+              aria-label="Carrier"
+            />
+
             <button
               onClick={clearSelectedLoadButKeepDriver}
               className="w-full py-4 rounded-2xl border border-zinc-700 text-[9px] font-black uppercase tracking-[0.25em] text-zinc-400"
@@ -1598,6 +1630,45 @@ const App: React.FC = () => {
                 ))}
             </div>
 
+            {eventType === 'PICKUP' &&
+            (freightNotRequired ||
+              uploadedFiles.some((f) => f.category === 'freight')) ? (
+              <div className="mt-6">
+                {freightNotRequired ? (
+                  <div className="mb-3 p-3 rounded-xl border border-orange-500/30 bg-orange-500/10 text-center text-[8px] font-black uppercase tracking-[0.2em] text-orange-400">
+                    Freight photos not required (confirmed)
+                  </div>
+                ) : null}
+                {uploadedFiles.some((f) => f.category === 'freight') ? (
+                  <div className="grid grid-cols-4 gap-2">
+                    {uploadedFiles
+                      .filter((f) => f.category === 'freight')
+                      .map((f) => (
+                        <div
+                          key={f.id}
+                          className="aspect-square rounded-xl overflow-hidden border border-orange-900 relative"
+                        >
+                          <img
+                            src={f.preview}
+                            className="w-full h-full object-cover"
+                          />
+                          <button
+                            onClick={() =>
+                              setUploadedFiles((p) =>
+                                p.filter((i) => i.id !== f.id)
+                              )
+                            }
+                            className="absolute top-1 right-1 bg-red-600 w-5 h-5 rounded-full text-[10px]"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+
             <div className="mt-6 flex flex-col md:flex-row gap-4">
               {selectedLoad ? (
                 <button
@@ -1624,69 +1695,6 @@ const App: React.FC = () => {
             </div>
           </section>
         )}
-
-        {hasAssignment &&
-          currentStage !== 'ASSIGNMENT' &&
-          !isConnecting &&
-          eventType === 'PICKUP' && (
-            <section
-              className={`p-8 rounded-[2.5rem] border-2 animate-in slide-in-from-bottom ${
-                solarMode
-                  ? 'bg-white border-zinc-300'
-                  : 'bg-zinc-900/30 border-orange-500/20'
-              }`}
-            >
-              <h3 className="text-[10px] font-black uppercase tracking-[0.5em] mb-8 text-orange-500">
-                [ 04 ] Capacity Verification
-              </h3>
-
-              <div className="grid grid-cols-2 gap-4">
-                <button
-                  onClick={() => freightCamRef.current?.click()}
-                  className="flex flex-col items-center justify-center py-12 bg-orange-500/10 border-2 border-dashed border-orange-500/30 rounded-3xl active:scale-95 text-center"
-                >
-                  <div className="text-4xl">📸</div>
-                  <div className="mt-4 text-[10px] font-black uppercase tracking-[0.2em] text-orange-500">
-                    Capture freight photo
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => freightFileRef.current?.click()}
-                  className="flex flex-col items-center justify-center py-12 bg-orange-500/10 border-2 border-dashed border-orange-500/30 rounded-3xl active:scale-95 text-center"
-                >
-                  <div className="text-4xl">🖼️</div>
-                  <div className="mt-4 text-[10px] font-black uppercase tracking-[0.2em] text-orange-500 px-4">
-                    Add freight photo already taken or saved
-                  </div>
-                </button>
-              </div>
-
-              <div className="grid grid-cols-4 gap-2 mt-6">
-                {uploadedFiles
-                  .filter((f) => f.category === 'freight')
-                  .map((f) => (
-                    <div
-                      key={f.id}
-                      className="aspect-square rounded-xl overflow-hidden border border-orange-900 relative"
-                    >
-                      <img
-                        src={f.preview}
-                        className="w-full h-full object-cover"
-                      />
-                      <button
-                        onClick={() =>
-                          setUploadedFiles((p) => p.filter((i) => i.id !== f.id))
-                        }
-                        className="absolute top-1 right-1 bg-red-600 w-5 h-5 rounded-full text-[10px]"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  ))}
-              </div>
-            </section>
-          )}
 
         <button
           onClick={() => {
@@ -1772,7 +1780,10 @@ const App: React.FC = () => {
                 Confirm
               </button>
               <button
-                onClick={() => setShowFreightConfirm(false)}
+                onClick={() => {
+                  setShowFreightConfirm(false);
+                  setShowFreightPrompt(true);
+                }}
                 className="bg-zinc-800 text-white py-6 rounded-2xl font-black uppercase tracking-widest active:scale-95 shadow-xl border border-zinc-700"
               >
                 Cancel
