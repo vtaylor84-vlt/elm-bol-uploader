@@ -632,6 +632,135 @@ const App: React.FC = () => {
     ? 'w-full p-3 rounded-xl font-mono text-sm border border-zinc-300 bg-white text-black outline-none focus:ring-2 focus:ring-blue-500/40'
     : 'w-full p-3 rounded-xl font-mono text-sm border border-zinc-700 bg-black/80 text-white outline-none focus:ring-2 focus:ring-blue-500/40';
 
+  const premiumPanel = solarMode
+    ? 'rounded-[1.75rem] border border-zinc-200/90 bg-white/95 backdrop-blur-sm shadow-[0_12px_40px_rgba(0,0,0,0.08)]'
+    : 'rounded-[1.75rem] border border-zinc-700/55 bg-zinc-900/80 backdrop-blur-md shadow-[0_12px_40px_rgba(0,0,0,0.45)]';
+
+  const driverFlowSteps: { stage: Stage; label: string }[] = [
+    { stage: 'EVENT', label: 'Event' },
+    { stage: 'OPERATOR', label: 'Driver' },
+    { stage: 'ASSIGNMENT', label: 'Load' },
+    { stage: 'EVIDENCE', label: 'Documents' },
+    { stage: 'REVIEW', label: 'Review' },
+  ];
+
+  const activeFlowIndex = showVerification ? 4 : currentStageIndex;
+  const documentProgressTotal = eventType === 'PICKUP' ? 2 : 1;
+  const documentProgressDone =
+    (hasBolEvidence && bolNum.trim() ? 1 : 0) +
+    (eventType === 'PICKUP' &&
+    (freightNotRequired || uploadedFiles.some((f) => f.category === 'freight'))
+      ? 1
+      : 0);
+
+  const accentRing =
+    themeMode === 'green'
+      ? 'ring-green-500/35 shadow-[0_0_20px_rgba(34,197,94,0.18)]'
+      : themeMode === 'blue'
+        ? 'ring-blue-500/35 shadow-[0_0_20px_rgba(59,130,246,0.22)]'
+        : 'ring-zinc-600/35';
+
+  const renderFlowStepper = () => (
+    <div className={`${premiumPanel} p-4`}>
+      <div className="flex items-center justify-between gap-1">
+        {driverFlowSteps.map((step, idx) => {
+          const done = idx < activeFlowIndex;
+          const active = idx === activeFlowIndex;
+          return (
+            <div key={step.stage} className="flex-1 flex flex-col items-center gap-1.5 min-w-0">
+              <div className="flex items-center w-full">
+                {idx > 0 ? (
+                  <div
+                    className={`h-px flex-1 ${done || active ? (themeMode === 'green' ? 'bg-green-500/50' : 'bg-blue-500/50') : 'bg-zinc-800'}`}
+                  />
+                ) : (
+                  <div className="flex-1" />
+                )}
+                <div
+                  className={`w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-black shrink-0 transition-all ${
+                    active
+                      ? `bg-blue-600 text-white ${accentRing} ring-2`
+                      : done
+                        ? 'bg-blue-600/15 text-blue-400 border border-blue-500/35'
+                        : 'bg-zinc-950 text-zinc-600 border border-zinc-800'
+                  }`}
+                >
+                  {done ? '✓' : active ? idx + 1 : idx + 1}
+                </div>
+                {idx < driverFlowSteps.length - 1 ? (
+                  <div
+                    className={`h-px flex-1 ${done ? (themeMode === 'green' ? 'bg-green-500/50' : 'bg-blue-500/50') : 'bg-zinc-800'}`}
+                  />
+                ) : (
+                  <div className="flex-1" />
+                )}
+              </div>
+              <span
+                className={`text-[7px] font-black uppercase tracking-[0.12em] truncate w-full text-center ${
+                  active ? themeTextClass : done ? 'text-zinc-500' : 'text-zinc-700'
+                }`}
+              >
+                {step.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  const renderVerifiedSummary = (
+    title: string,
+    value: string,
+    onChange?: () => void
+  ) => (
+    <div
+      className={`${premiumPanel} p-4 flex items-center justify-between gap-3 animate-in fade-in duration-300 ${accentRing} ring-1`}
+    >
+      <div className="flex items-center gap-3 min-w-0">
+        <div className="w-9 h-9 rounded-full bg-green-600/15 border border-green-500/40 flex items-center justify-center text-green-400 text-sm font-black shrink-0">
+          ✓
+        </div>
+        <div className="min-w-0">
+          <p className="text-[8px] font-black uppercase tracking-[0.25em] text-zinc-500">
+            {title}
+          </p>
+          <p className="text-sm font-bold text-white uppercase tracking-tight truncate">
+            {value}
+          </p>
+        </div>
+      </div>
+      {onChange ? (
+        <button
+          type="button"
+          onClick={onChange}
+          className="shrink-0 text-[8px] font-black uppercase tracking-widest text-blue-400 px-3 py-2 rounded-lg border border-blue-500/30 bg-blue-500/10 active:scale-95"
+        >
+          Change
+        </button>
+      ) : null}
+    </div>
+  );
+
+  const renderAssignmentLoadRef = () => {
+    if (selectedLoad && assignedLoadNumber) {
+      return (
+        <p className="text-[9px] font-mono text-zinc-600 normal-case tracking-normal">
+          Load #{' '}
+          <span className="text-zinc-400">{assignedLoadNumber}</span>
+        </p>
+      );
+    }
+    if (!selectedLoad && (manualMode || hasManualAssignmentData)) {
+      return (
+        <p className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-600">
+          Manual assignment
+        </p>
+      );
+    }
+    return null;
+  };
+
   const resetFlowFromEvent = (nextEvent: EventType) => {
     logUiDiag('resetFlowFromEvent', { nextEvent, clearsSelectedLoad: true });
     setEventType(nextEvent);
@@ -956,23 +1085,46 @@ const App: React.FC = () => {
   };
 
   const renderAssignmentPanel = () => {
-    const panelBase = `p-8 rounded-[2.5rem] border-2 transition-all ${
-      solarMode
-        ? 'bg-white border-zinc-300'
-        : 'bg-zinc-900/30 border-zinc-800'
-    }`;
+    const panelBase = `space-y-3 animate-in fade-in duration-500`;
 
     if (!eventType || !driverName) return null;
 
+    if (hasAssignment && currentStage !== 'ASSIGNMENT' && !isScanning && !isConnecting) {
+      return (
+        <section className="space-y-3">
+          <div className="px-1">
+            <p className="text-[8px] font-black uppercase tracking-[0.4em] text-zinc-600">
+              Step 3 of 5
+            </p>
+          </div>
+          {renderVerifiedSummary(
+            'Load confirmed',
+            `${puCity}, ${puState} → ${delCity}, ${delState}`,
+            () => setCurrentStage('ASSIGNMENT')
+          )}
+          <div className="text-center space-y-1 px-2">
+            {renderAssignmentLoadRef()}
+            <p className="text-[9px] text-zinc-500 normal-case">{reviewCarrierDisplay}</p>
+          </div>
+        </section>
+      );
+    }
+
     return (
       <section className={panelBase}>
-        <div className="flex justify-between items-center mb-8 gap-4">
-          <h3 className="text-[10px] font-black uppercase tracking-[0.5em] text-zinc-600">
-            [ 02 ] Assignment
+        <div className="px-1">
+          <p className="text-[8px] font-black uppercase tracking-[0.4em] text-zinc-600">
+            Step 3 of 5
+          </p>
+          <h3 className="text-lg font-black uppercase tracking-tight text-white">
+            Select Your Load
           </h3>
+        </div>
 
+        <div className={`${premiumPanel} p-4`}>
+        <div className="flex justify-between items-center mb-4 gap-4">
           {isScanning && (
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2 shrink-0 ml-auto">
               <div
                 className={`w-1.5 h-1.5 rounded-full animate-pulse ${
                   themeMode === 'green' ? 'bg-green-500' : 'bg-blue-500'
@@ -983,7 +1135,7 @@ const App: React.FC = () => {
                   themeMode === 'green' ? 'text-green-500' : 'text-blue-500'
                 }`}
               >
-                Loading Assignment Data...
+                Finding your load...
               </span>
             </div>
           )}
@@ -1003,10 +1155,10 @@ const App: React.FC = () => {
                 themeMode === 'green' ? 'text-green-400' : 'text-blue-400'
               }`}
             >
-              ELM IS CONNECTING
+              Connecting to dispatch...
             </div>
             <div className="mt-3 text-[10px] font-black uppercase tracking-[0.25em] text-zinc-500 max-w-md leading-relaxed">
-              Scanning the load board and matching your active assignment data
+              Matching your active loads
             </div>
           </div>
         ) : isConnecting ? (
@@ -1032,7 +1184,7 @@ const App: React.FC = () => {
               ELM IS CONNECTING
             </div>
             <div className="mt-3 text-[10px] font-black uppercase tracking-[0.25em] text-zinc-500 max-w-md leading-relaxed">
-              Securing assignment identity and preparing document intake
+              Preparing your assignment
             </div>
           </div>
         ) : selectedLoad ? (
@@ -1043,19 +1195,8 @@ const App: React.FC = () => {
               <div
                 className={`text-[10px] font-black uppercase tracking-[0.3em] ${themeTextClass}`}
               >
-                Assigned Load Selected
+                Load confirmed
               </div>
-
-              {assignedLoadNumber || loadId ? (
-                <div className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-500">
-                  {assignedLoadNumber
-                    ? `Assigned load #: ${assignedLoadNumber}`
-                    : null}
-                  {loadId
-                    ? `${assignedLoadNumber ? ' · ' : ''}Load ID: ${loadId}`
-                    : null}
-                </div>
-              ) : null}
 
               <div className="grid grid-cols-4 gap-4">
                 <input
@@ -1093,6 +1234,12 @@ const App: React.FC = () => {
                 value={confirmedCarrierLabel}
                 aria-label="Carrier"
               />
+
+              {assignedLoadNumber ? (
+                <div className="pt-2 border-t border-zinc-800/60">
+                  {renderAssignmentLoadRef()}
+                </div>
+              ) : null}
             </div>
 
             <button
@@ -1225,6 +1372,10 @@ const App: React.FC = () => {
               </div>
             )}
 
+            {manualMode ? (
+              <div className="px-1">{renderAssignmentLoadRef()}</div>
+            ) : null}
+
             <div className="grid grid-cols-4 gap-4">
               <input
                 className={`${inpStyle(puCity)} col-span-3`}
@@ -1310,6 +1461,7 @@ const App: React.FC = () => {
             )}
           </div>
         )}
+        </div>
       </section>
     );
   };
@@ -1377,7 +1529,7 @@ const App: React.FC = () => {
   return (
     <div
       className={`min-h-screen transition-all duration-700 ${
-        solarMode ? 'bg-zinc-100 text-black' : 'bg-[#020202] text-zinc-100'
+        solarMode ? 'bg-zinc-100 text-black' : 'bg-[#050508] text-zinc-100'
       } pb-32`}
     >
       <div
@@ -1442,22 +1594,12 @@ const App: React.FC = () => {
                   ) : null}
                   {driverName ? (
                     <span className="px-3 py-1 rounded-full border border-zinc-700 bg-zinc-900 text-[8px] font-black uppercase tracking-[0.25em] text-zinc-300">
-                      OPERATOR: {driverName}
-                    </span>
-                  ) : null}
-                  {assignedLoadNumber ? (
-                    <span className="px-3 py-1 rounded-full border border-zinc-700 bg-zinc-900 text-[8px] font-black uppercase tracking-[0.25em] text-zinc-300">
-                      LOAD: {assignedLoadNumber}
+                      DRIVER: {driverName}
                     </span>
                   ) : null}
                   {bolNum ? (
                     <span className="px-3 py-1 rounded-full border border-zinc-700 bg-zinc-900 text-[8px] font-black uppercase tracking-[0.25em] text-zinc-300">
                       BOL: {bolNum}
-                    </span>
-                  ) : null}
-                  {loadId ? (
-                    <span className="px-3 py-1 rounded-full border border-zinc-700 bg-zinc-900 text-[8px] font-black uppercase tracking-[0.25em] text-zinc-300">
-                      ID: {loadId}
                     </span>
                   ) : null}
                   <span className="px-3 py-1 rounded-full border border-zinc-700 bg-zinc-900 text-[8px] font-black uppercase tracking-[0.25em] text-zinc-300">
@@ -1483,260 +1625,233 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto px-6 mb-8">
-        <section
-          className={`p-5 rounded-[2.5rem] border-2 transition-all ${
-            solarMode
-              ? 'bg-white border-zinc-300'
-              : 'bg-zinc-900/30 border-zinc-800'
-          }`}
-        >
-          <div className="text-[10px] font-black uppercase tracking-[0.5em] mb-4 text-zinc-600">
-            System State
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-            {stageOrder.map((stage, idx) => renderStagePill(stage, idx))}
-          </div>
-        </section>
-      </div>
+      <div className="max-w-4xl mx-auto px-6 mb-6">{renderFlowStepper()}</div>
 
-      <div className="max-w-4xl mx-auto space-y-8 px-6">
-        <section
-          className={`p-8 rounded-[2.5rem] border-2 transition-all ${
-            solarMode
-              ? 'bg-white border-zinc-300'
-              : 'bg-zinc-900/30 border-zinc-800'
-          }`}
-        >
-          <h3 className="text-[10px] font-black uppercase tracking-[0.5em] mb-3 text-zinc-600">
-            [ 00 ] Event
-          </h3>
-          <div className="text-[11px] font-black uppercase tracking-[0.25em] text-zinc-500 mb-8">
-            Select document event to begin
+      <div className="max-w-4xl mx-auto space-y-5 px-6">
+        <section className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <div>
+              <p className="text-[8px] font-black uppercase tracking-[0.4em] text-zinc-600">
+                Step 1 of 5
+              </p>
+              <h3 className="text-lg font-black uppercase tracking-tight text-white">
+                What are you doing?
+              </h3>
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-6">
-            <button
-              onClick={() => resetFlowFromEvent('PICKUP')}
-              className={`py-10 rounded-[2rem] border-2 font-black uppercase tracking-widest transition-all ${
-                eventType === 'PICKUP'
-                  ? 'bg-zinc-200 text-black border-zinc-100 shadow-[0_0_25px_rgba(255,255,255,0.08)]'
-                  : 'bg-black/40 border-zinc-700 text-zinc-400'
-              }`}
-            >
-              PICKUP
-            </button>
-
-            <button
-              onClick={() => resetFlowFromEvent('DELIVERY')}
-              className={`py-10 rounded-[2rem] border-2 font-black uppercase tracking-widest transition-all ${
-                eventType === 'DELIVERY'
-                  ? 'bg-zinc-200 text-black border-zinc-100 shadow-[0_0_25px_rgba(255,255,255,0.08)]'
-                  : 'bg-black/40 border-zinc-700 text-zinc-400'
-              }`}
-            >
-              DELIVERY
-            </button>
-          </div>
+          {eventType && currentStageIndex > 0 ? (
+            renderVerifiedSummary('Event verified', eventType, () =>
+              setCurrentStage('EVENT')
+            )
+          ) : (
+            <div className={`${premiumPanel} p-4`}>
+              <p className="text-[9px] text-zinc-500 normal-case mb-4">
+                Select pickup or delivery for this stop.
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => resetFlowFromEvent('PICKUP')}
+                  className={`py-8 rounded-2xl border font-black uppercase tracking-widest text-[11px] transition-all active:scale-[0.98] ${
+                    eventType === 'PICKUP'
+                      ? 'bg-blue-600 border-blue-500 text-white shadow-[0_0_24px_rgba(59,130,246,0.35)]'
+                      : 'bg-zinc-950/80 border-zinc-700 text-zinc-400 hover:border-zinc-600'
+                  }`}
+                >
+                  Pickup
+                </button>
+                <button
+                  onClick={() => resetFlowFromEvent('DELIVERY')}
+                  className={`py-8 rounded-2xl border font-black uppercase tracking-widest text-[11px] transition-all active:scale-[0.98] ${
+                    eventType === 'DELIVERY'
+                      ? 'bg-blue-600 border-blue-500 text-white shadow-[0_0_24px_rgba(59,130,246,0.35)]'
+                      : 'bg-zinc-950/80 border-zinc-700 text-zinc-400 hover:border-zinc-600'
+                  }`}
+                >
+                  Delivery
+                </button>
+              </div>
+            </div>
+          )}
         </section>
 
         {eventType && (
-          <section
-            className={`p-8 rounded-[2.5rem] border-2 transition-all ${
-              solarMode
-                ? 'bg-white border-zinc-300'
-                : 'bg-zinc-900/30 border-zinc-800'
-            }`}
-          >
-            <h3 className="text-[10px] font-black uppercase tracking-[0.5em] mb-8 text-zinc-600">
-              [ 01 ] Operator
-            </h3>
-
-            <div className="grid grid-cols-1 gap-6">
-              {!manualMode ? (
-                <select
-                  className={inpStyle(driverName)}
-                  value={driverName}
-                  onChange={(e) => {
-                    if (e.target.value === 'MANUAL') {
-                      logUiDiag('driver_select_manual_entry', {
-                        setsCurrentStage: 'ASSIGNMENT',
-                      });
-                      setManualMode(true);
-                      setDriverName('');
-                      setCurrentStage('ASSIGNMENT');
-                    } else {
-                      logUiDiag('driver_select_change', {
-                        clearsSelectedLoad: true,
-                        setsCurrentStage: 'ASSIGNMENT',
-                      });
-                      setDriverName(e.target.value.toUpperCase());
-                      setSelectedLoad(null);
-                      setBolNum('');
-                      setLoadId('');
-                      setPuCity('');
-                      setPuState('');
-                      setDelCity('');
-                      setDelState('');
-                      setCompany('');
-                      setManualCarrier('');
-                      setCurrentStage('ASSIGNMENT');
-                    }
-                  }}
-                >
-                  <option value="">SELECT DRIVER</option>
-                  {driverList.map((d) => (
-                    <option key={d.value} value={d.value}>
-                      {d.label}
-                    </option>
-                  ))}
-                  <option value="MANUAL">+ MANUAL ENTRY</option>
-                </select>
-              ) : (
-                <input
-                  type="text"
-                  placeholder="TYPE FULL NAME"
-                  className={inpStyle(driverName)}
-                  value={driverName}
-                  onChange={(e) => setDriverName(e.target.value.toUpperCase())}
-                  autoFocus
-                />
-              )}
+          <section className="space-y-3">
+            <div className="px-1">
+              <p className="text-[8px] font-black uppercase tracking-[0.4em] text-zinc-600">
+                Step 2 of 5
+              </p>
+              <h3 className="text-lg font-black uppercase tracking-tight text-white">
+                Who are you?
+              </h3>
             </div>
+
+            {driverName && currentStage !== 'OPERATOR' ? (
+              renderVerifiedSummary('Driver verified', driverName, () =>
+                setCurrentStage('OPERATOR')
+              )
+            ) : (
+              <div className={`${premiumPanel} p-4 space-y-3`}>
+                {!manualMode ? (
+                  <select
+                    className={inpStyle(driverName)}
+                    value={driverName}
+                    onChange={(e) => {
+                      if (e.target.value === 'MANUAL') {
+                        logUiDiag('driver_select_manual_entry', {
+                          setsCurrentStage: 'ASSIGNMENT',
+                        });
+                        setManualMode(true);
+                        setDriverName('');
+                        setCurrentStage('ASSIGNMENT');
+                      } else {
+                        logUiDiag('driver_select_change', {
+                          clearsSelectedLoad: true,
+                          setsCurrentStage: 'ASSIGNMENT',
+                        });
+                        setDriverName(e.target.value.toUpperCase());
+                        setSelectedLoad(null);
+                        setBolNum('');
+                        setLoadId('');
+                        setPuCity('');
+                        setPuState('');
+                        setDelCity('');
+                        setDelState('');
+                        setCompany('');
+                        setManualCarrier('');
+                        setCurrentStage('ASSIGNMENT');
+                      }
+                    }}
+                  >
+                    <option value="">Select driver</option>
+                    {driverList.map((d) => (
+                      <option key={d.value} value={d.value}>
+                        {d.label}
+                      </option>
+                    ))}
+                    <option value="MANUAL">+ Manual entry</option>
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    placeholder="Type full name"
+                    className={inpStyle(driverName)}
+                    value={driverName}
+                    onChange={(e) => setDriverName(e.target.value.toUpperCase())}
+                    autoFocus
+                  />
+                )}
+              </div>
+            )}
           </section>
         )}
 
         {driverName && renderAssignmentPanel()}
 
         {hasAssignment && currentStage !== 'ASSIGNMENT' && !isConnecting && (
-          <section
-            className={`p-8 rounded-[2.5rem] border-2 transition-all ${
-              solarMode
-                ? 'bg-white border-zinc-300'
-                : `bg-zinc-900/30 ${themeBorderClass === 'border-zinc-700' ? 'border-zinc-800' : themeBorderClass}`
-            }`}
-          >
-            <div className="flex justify-between items-center mb-8 gap-4">
+          <section className="space-y-4">
+            <div className="flex items-start justify-between gap-3 px-1">
               <div>
-                <h3 className="text-[10px] font-black uppercase tracking-[0.5em] text-zinc-600">
-                  [ 03 ] Evidence
+                <p className="text-[8px] font-black uppercase tracking-[0.4em] text-zinc-600">
+                  Step 4 of 5
+                </p>
+                <h3 className="text-lg font-black uppercase tracking-tight text-white">
+                  What documents do you need?
                 </h3>
-                <div className="mt-2 text-[9px] font-black uppercase tracking-[0.25em] text-zinc-500">
-                  {eventType === 'PICKUP'
-                    ? 'Capture Bill Of Lading'
-                    : 'Capture Delivery Document'}
-                </div>
-                <div className="mt-2 text-[8px] text-zinc-600 normal-case tracking-normal">
-                  {UPLOAD_FORMAT_HINT}
-                </div>
+                <p className="text-[10px] text-zinc-500 normal-case mt-1">
+                  Let&apos;s collect your documents.
+                </p>
               </div>
-
-              <div className="flex items-center gap-2">
-                <span
-                  className={`px-3 py-2 rounded-xl text-[10px] font-black border-2 ${
-                    themeMode === 'green'
-                      ? 'bg-green-600 text-white border-green-500'
-                      : themeMode === 'blue'
-                        ? 'bg-blue-600 text-white border-blue-500'
-                        : 'bg-zinc-700 text-white border-zinc-500'
-                  }`}
-                >
-                  {eventType}
-                </span>
-              </div>
+              <span className="shrink-0 px-2.5 py-1 rounded-full border border-zinc-700 bg-zinc-900 text-[7px] font-black uppercase tracking-widest text-zinc-400">
+                Step 4 of 5
+              </span>
             </div>
 
-            <div className="mb-6">
-              <div className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-500 mb-3">
-                Enter BOL # From Paperwork
-              </div>
-              <input
-                className={inpStyle(bolNum)}
-                placeholder="BOL #"
-                value={bolNum}
-                onChange={(e) => setBolNum(e.target.value.trim())}
-              />
-              {assignedLoadNumber ? (
-                <div className="mt-2 text-[8px] text-zinc-600 normal-case tracking-normal">
-                  Assigned load #: {assignedLoadNumber}
-                  {loadId ? ` · Load ID: ${loadId}` : ''}
-                </div>
-              ) : null}
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <button
-                onClick={() => cameraInputRef.current?.click()}
-                className="flex flex-col items-center justify-center py-12 bg-zinc-800/30 rounded-[2rem] border-2 border-dashed border-zinc-700 active:scale-95 text-center"
-              >
-                <div className="text-4xl">📸</div>
-                <div className="mt-4 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-300">
-                  Tap or click to capture photo of the BOL
-                </div>
-              </button>
-
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="flex flex-col items-center justify-center py-12 bg-zinc-800/30 rounded-[2rem] border-2 border-dashed border-zinc-700 active:scale-95 text-center"
-              >
-                <div className="text-4xl">🖼️</div>
-                <div className="mt-4 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-300 px-4">
-                  Tap or click to add a picture you have already taken or saved
-                </div>
-              </button>
-            </div>
-
-            <div className="grid grid-cols-4 gap-2 mt-6">
-              {uploadedFiles
-                .filter((f) => f.category === 'bol')
-                .map((f) => (
-                  <div
-                    key={f.id}
-                    className="aspect-[3/4] rounded-xl overflow-hidden border-2 border-zinc-800 relative animate-in zoom-in"
-                  >
-                    <img
-                      src={f.preview}
-                      className="w-full h-full object-cover"
-                    />
-                    <button
-                      onClick={() =>
-                        setUploadedFiles((p) => p.filter((i) => i.id !== f.id))
-                      }
-                      className="absolute top-1 right-1 bg-red-600 w-5 h-5 rounded-full text-[10px]"
-                    >
-                      ✕
-                    </button>
+            <div
+              className={`${premiumPanel} border-blue-500/30 overflow-hidden ${
+                hasBolEvidence && bolNum.trim() ? 'ring-1 ring-blue-500/25' : ''
+              }`}
+            >
+              <div className="p-4 border-b border-zinc-800/80 flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-600/15 border border-blue-500/30 flex items-center justify-center text-lg">
+                    📄
                   </div>
-                ))}
-            </div>
-
-            {eventType === 'PICKUP' &&
-            (freightNotRequired ||
-              uploadedFiles.some((f) => f.category === 'freight')) ? (
-              <div className="mt-6">
-                {freightNotRequired ? (
-                  <div className="mb-3 p-3 rounded-xl border border-orange-500/30 bg-orange-500/10 text-center text-[8px] font-black uppercase tracking-[0.2em] text-orange-400">
-                    Freight photos not required (confirmed)
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">
+                      Bill of Lading
+                    </p>
+                    <span className="inline-block mt-1 px-2 py-0.5 rounded text-[7px] font-black uppercase tracking-widest bg-blue-500/15 text-blue-300 border border-blue-500/25">
+                      Required
+                    </span>
                   </div>
+                </div>
+                {hasBolEvidence && bolNum.trim() ? (
+                  <span className="text-[8px] font-black uppercase text-green-400 flex items-center gap-1">
+                    ✓ Uploaded
+                  </span>
                 ) : null}
-                {uploadedFiles.some((f) => f.category === 'freight') ? (
-                  <div className="grid grid-cols-4 gap-2">
+              </div>
+
+              <div className="p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <input
+                    className={`${inpStyle(bolNum)} flex-1`}
+                    placeholder="BOL number"
+                    value={bolNum}
+                    onChange={(e) => setBolNum(e.target.value.trim())}
+                  />
+                </div>
+                <p className="text-[8px] text-zinc-600 normal-case">{UPLOAD_FORMAT_HINT}</p>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => cameraInputRef.current?.click()}
+                    className="py-4 rounded-xl border border-dashed border-blue-500/35 bg-blue-500/5 active:scale-[0.98] transition-all"
+                  >
+                    <div className="text-xl mb-1">📸</div>
+                    <div className="text-[8px] font-black uppercase tracking-[0.15em] text-blue-300">
+                      Take Photo
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="py-4 rounded-xl border border-dashed border-blue-500/35 bg-blue-500/5 active:scale-[0.98] transition-all"
+                  >
+                    <div className="text-xl mb-1">🖼️</div>
+                    <div className="text-[8px] font-black uppercase tracking-[0.15em] text-blue-300">
+                      Choose Existing
+                    </div>
+                  </button>
+                </div>
+
+                {uploadedFiles.some((f) => f.category === 'bol') ? (
+                  <div className="flex gap-2 overflow-x-auto pt-1">
                     {uploadedFiles
-                      .filter((f) => f.category === 'freight')
+                      .filter((f) => f.category === 'bol')
                       .map((f) => (
                         <div
                           key={f.id}
-                          className="aspect-square rounded-xl overflow-hidden border border-orange-900 relative"
+                          className="relative shrink-0 w-20 h-24 rounded-xl overflow-hidden border border-blue-500/40"
                         >
                           <img
                             src={f.preview}
                             className="w-full h-full object-cover"
+                            alt="BOL"
                           />
                           <button
+                            type="button"
+                            onClick={() => setFullImage(f.preview)}
+                            className="absolute inset-x-0 bottom-0 bg-black/75 text-[6px] font-black uppercase text-blue-200 py-0.5"
+                          >
+                            View
+                          </button>
+                          <button
+                            type="button"
                             onClick={() =>
-                              setUploadedFiles((p) =>
-                                p.filter((i) => i.id !== f.id)
-                              )
+                              setUploadedFiles((p) => p.filter((i) => i.id !== f.id))
                             }
                             className="absolute top-1 right-1 bg-red-600 w-5 h-5 rounded-full text-[10px]"
                           >
@@ -1747,55 +1862,191 @@ const App: React.FC = () => {
                   </div>
                 ) : null}
               </div>
+            </div>
+
+            {eventType === 'PICKUP' ? (
+              freightNotRequired ? (
+                <div
+                  className={`${premiumPanel} p-4 border-amber-500/25 flex items-center gap-3`}
+                >
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-lg">
+                    🛡️
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-amber-400">
+                      Freight photos waived
+                    </p>
+                    <p className="text-[10px] text-zinc-400 normal-case mt-0.5">
+                      Confirmed by dispatch
+                    </p>
+                  </div>
+                  <span className="ml-auto text-green-400 text-xs font-black">✓</span>
+                </div>
+              ) : (
+                <div
+                  className={`${premiumPanel} border-green-500/30 overflow-hidden ${
+                    uploadedFiles.some((f) => f.category === 'freight')
+                      ? 'ring-1 ring-green-500/25'
+                      : ''
+                  }`}
+                >
+                  <div className="p-4 border-b border-zinc-800/80 flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-green-600/15 border border-green-500/30 flex items-center justify-center text-lg">
+                        🚛
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-green-400">
+                          Freight on Trailer
+                        </p>
+                        <span className="inline-block mt-1 px-2 py-0.5 rounded text-[7px] font-black uppercase tracking-widest bg-green-500/15 text-green-300 border border-green-500/25">
+                          Pickup only
+                        </span>
+                      </div>
+                    </div>
+                    {uploadedFiles.some((f) => f.category === 'freight') ? (
+                      <span className="text-[8px] font-black uppercase text-green-400">
+                        ✓ {uploadedFiles.filter((f) => f.category === 'freight').length}{' '}
+                        image
+                        {uploadedFiles.filter((f) => f.category === 'freight').length === 1
+                          ? ''
+                          : 's'}
+                      </span>
+                    ) : null}
+                  </div>
+
+                  <div className="p-4 space-y-3">
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => freightCamRef.current?.click()}
+                        className="py-4 rounded-xl border border-dashed border-green-500/35 bg-green-500/5 active:scale-[0.98]"
+                      >
+                        <div className="text-xl mb-1">📸</div>
+                        <div className="text-[8px] font-black uppercase tracking-[0.15em] text-green-300">
+                          Take Photo
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => freightFileRef.current?.click()}
+                        className="py-4 rounded-xl border border-dashed border-green-500/35 bg-green-500/5 active:scale-[0.98]"
+                      >
+                        <div className="text-xl mb-1">🖼️</div>
+                        <div className="text-[8px] font-black uppercase tracking-[0.15em] text-green-300">
+                          Choose Existing
+                        </div>
+                      </button>
+                    </div>
+
+                    {uploadedFiles.some((f) => f.category === 'freight') ? (
+                      <div className="flex gap-2 overflow-x-auto">
+                        {uploadedFiles
+                          .filter((f) => f.category === 'freight')
+                          .map((f) => (
+                            <div
+                              key={f.id}
+                              className="relative shrink-0 w-20 h-20 rounded-xl overflow-hidden border border-green-500/40"
+                            >
+                              <img
+                                src={f.preview}
+                                className="w-full h-full object-cover"
+                                alt="Freight"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setFullImage(f.preview)}
+                                className="absolute inset-x-0 bottom-0 bg-black/75 text-[6px] font-black uppercase text-green-200 py-0.5"
+                              >
+                                View
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setUploadedFiles((p) => p.filter((i) => i.id !== f.id))
+                                }
+                                className="absolute top-1 right-1 bg-red-600 w-5 h-5 rounded-full text-[10px]"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ))}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              )
             ) : null}
 
-            <div className="mt-6 flex flex-col md:flex-row gap-4">
-              {selectedLoad ? (
-                <button
-                  onClick={clearSelectedLoadButKeepDriver}
-                  className="flex-1 py-4 rounded-2xl border border-zinc-700 text-[9px] font-black uppercase tracking-[0.25em] text-zinc-400"
-                >
-                  Change Assignment
-                </button>
-              ) : null}
+            {(selectedLoad || manualMode) && (
+              <div className="flex flex-col sm:flex-row gap-2">
+                {selectedLoad ? (
+                  <button
+                    type="button"
+                    onClick={clearSelectedLoadButKeepDriver}
+                    className="flex-1 py-3 rounded-xl border border-zinc-700 text-[8px] font-black uppercase tracking-[0.2em] text-zinc-500"
+                  >
+                    Change assignment
+                  </button>
+                ) : null}
+                {manualMode ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      logUiDiag('edit_manual_entry_click', {
+                        setsCurrentStage: 'ASSIGNMENT',
+                      });
+                      setCurrentStage('ASSIGNMENT');
+                    }}
+                    className="flex-1 py-3 rounded-xl border border-zinc-700 text-[8px] font-black uppercase tracking-[0.2em] text-zinc-500"
+                  >
+                    Edit manual entry
+                  </button>
+                ) : null}
+              </div>
+            )}
 
-              {manualMode ? (
-                <button
-                  onClick={() => {
-                    logUiDiag('edit_manual_entry_click', {
-                      setsCurrentStage: 'ASSIGNMENT',
-                    });
-                    setCurrentStage('ASSIGNMENT');
-                  }}
-                  className="flex-1 py-4 rounded-2xl border border-zinc-700 text-[9px] font-black uppercase tracking-[0.25em] text-zinc-400"
-                >
-                  Edit Manual Entry
-                </button>
-              ) : null}
+            <div className={`${premiumPanel} p-4 flex items-center gap-4`}>
+              <div
+                className="relative w-12 h-12 shrink-0 rounded-full border-2 border-blue-500/40 flex items-center justify-center"
+                style={{
+                  background: `conic-gradient(#3b82f6 ${(documentProgressDone / documentProgressTotal) * 360}deg, #27272a 0deg)`,
+                }}
+              >
+                <div className="w-9 h-9 rounded-full bg-zinc-950 flex items-center justify-center text-[9px] font-black text-white">
+                  {documentProgressDone}/{documentProgressTotal}
+                </div>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-400">
+                  {documentProgressDone} of {documentProgressTotal} documents complete
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (isReady) {
+                    setCurrentStage('REVIEW');
+                    setShowVerification(true);
+                  }
+                }}
+                disabled={!isReady}
+                className={`shrink-0 px-5 py-3 rounded-xl font-black uppercase tracking-[0.2em] text-[9px] text-white transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed ${
+                  themeMode === 'green'
+                    ? 'bg-green-600 shadow-[0_0_16px_rgba(34,197,94,0.3)]'
+                    : 'bg-blue-600 shadow-[0_0_16px_rgba(59,130,246,0.35)]'
+                }`}
+              >
+                Ready for review →
+              </button>
             </div>
+
+            <p className="text-center text-[8px] text-zinc-600 normal-case flex items-center justify-center gap-1.5">
+              <span>🔒</span>
+              Your documents are secure and will be sent to dispatch.
+            </p>
           </section>
         )}
-
-        <button
-          onClick={() => {
-            if (isReady) {
-              setCurrentStage('REVIEW');
-              setShowVerification(true);
-            }
-          }}
-          disabled={!isReady}
-          className={`w-full py-10 rounded-[3rem] font-black uppercase tracking-[1em] text-sm shadow-2xl transition-all ${
-            isReady
-              ? themeMode === 'green'
-                ? 'bg-green-600 text-white animate-pulse'
-                : themeMode === 'blue'
-                  ? 'bg-blue-600 text-white animate-pulse'
-                  : 'bg-zinc-200 text-black animate-pulse'
-              : 'bg-zinc-900 text-zinc-700 cursor-not-allowed'
-          }`}
-        >
-          Review & Confirm
-        </button>
       </div>
 
       {showFreightPrompt && (
@@ -1897,20 +2148,21 @@ const App: React.FC = () => {
 
             <div>
               <p className="text-[8px] font-black uppercase tracking-[0.45em] text-zinc-600 mb-1">
-                Step 4 of 4
+                Step 5 of 5
               </p>
               <h2 className="text-2xl font-black italic text-white uppercase tracking-tighter">
-                Review & Confirm
+                Before Sending
               </h2>
               <p className="mt-1 text-[10px] text-zinc-500 normal-case tracking-normal">
-                Review everything below and submit to dispatch.
+                Does everything look correct?
               </p>
             </div>
 
             <div className="flex items-center justify-between gap-1 px-1">
               {[
                 { label: 'Event', done: true },
-                { label: 'Assignment', done: true },
+                { label: 'Driver', done: true },
+                { label: 'Load', done: true },
                 { label: 'Documents', done: hasBolEvidence },
                 { label: 'Review', done: false, active: true },
               ].map((step, idx) => (
