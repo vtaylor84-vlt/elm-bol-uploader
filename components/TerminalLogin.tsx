@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { verifyDriverEmail } from '../services/driverLoginService.ts';
 import type { DriverSessionProfile } from '../utils/driverSession.ts';
 import { writeDriverSession } from '../utils/driverSession.ts';
+import ElmBrandLogo from './terminal/ElmBrandLogo.tsx';
+import ConnectionPulse from './terminal/ConnectionPulse.tsx';
 
 const PROGRESS_STEPS = [
   'Establishing secure link...',
@@ -14,7 +16,7 @@ const BOOT_CHECKLIST = [
   'Establishing link',
   'Verifying identity',
   'Securing session',
-  'Welcome, driver',
+  'Welcome, Driver',
 ] as const;
 
 interface TerminalLoginProps {
@@ -43,53 +45,6 @@ const ShieldIcon = () => (
     />
     <path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
-);
-
-const PlugGraphic = () => (
-  <div className="relative w-full max-w-[300px] mx-auto py-4 flex items-center justify-center">
-    <div className="absolute inset-0 rounded-full border border-cyan-500/15 animate-pulse" />
-    <div className="absolute inset-6 rounded-full border border-blue-500/25" />
-    <svg viewBox="0 0 200 120" className="w-full h-auto relative z-10 drop-shadow-[0_0_28px_rgba(59,130,246,0.55)]">
-      <rect x="20" y="45" width="50" height="30" rx="6" fill="#0a0a12" stroke="#3b82f6" strokeWidth="2" />
-      <rect x="130" y="45" width="50" height="30" rx="6" fill="#0a0a12" stroke="#3b82f6" strokeWidth="2" />
-      <circle cx="45" cy="60" r="8" fill="none" stroke="#22d3ee" strokeWidth="2" className="animate-pulse" />
-      <circle cx="155" cy="60" r="8" fill="none" stroke="#22d3ee" strokeWidth="2" className="animate-pulse" />
-      <path
-        d="M70 60 Q100 20 130 60"
-        fill="none"
-        stroke="#38bdf8"
-        strokeWidth="3"
-        strokeLinecap="round"
-        className="terminal-arc"
-      />
-      <path
-        d="M95 35 L100 25 L105 35"
-        fill="none"
-        stroke="#67e8f9"
-        strokeWidth="2"
-        className="terminal-spark"
-      />
-    </svg>
-  </div>
-);
-
-const ElmLogo = () => (
-  <div className="text-center lg:text-left">
-    <h1 className="text-3xl sm:text-[2rem] font-black tracking-[0.08em] leading-none">
-      <span
-        className="text-transparent bg-clip-text bg-gradient-to-b from-zinc-100 via-zinc-300 to-zinc-500"
-        style={{ textShadow: '0 0 24px rgba(59,130,246,0.25)' }}
-      >
-        ELM
-      </span>
-      <span className="text-transparent bg-clip-text bg-gradient-to-b from-blue-300 via-blue-400 to-blue-600">
-        CONNECT
-      </span>
-    </h1>
-    <p className="mt-2 text-[9px] sm:text-[10px] font-black uppercase tracking-[0.42em] text-zinc-500">
-      Elite Logistics Manager
-    </p>
-  </div>
 );
 
 const TerminalLogin: React.FC<TerminalLoginProps> = ({ onLogin }) => {
@@ -156,32 +111,50 @@ const TerminalLogin: React.FC<TerminalLoginProps> = ({ onLogin }) => {
       <div className="terminal-login-scanlines absolute inset-0 pointer-events-none" aria-hidden />
       <div className="terminal-login-frame absolute inset-3 sm:inset-5 pointer-events-none" aria-hidden />
 
-      <div className="relative z-10 flex-1 flex flex-col lg:flex-row max-w-6xl mx-auto w-full px-5 sm:px-8 py-8 lg:py-10 gap-10 lg:gap-14 items-center lg:items-stretch">
-        {/* Left — branding & status */}
-        <div className="flex-1 flex flex-col justify-center w-full max-w-md mx-auto lg:mx-0 space-y-6">
-          <ElmLogo />
-          <PlugGraphic />
+      <div className="relative z-10 flex justify-end px-5 sm:px-8 pt-5">
+        <div className="terminal-connected-badge">
+          <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_6px_#22c55e]" />
+          <span className="text-[7px] font-black uppercase tracking-[0.2em] text-green-400">
+            Terminal Online
+          </span>
+        </div>
+      </div>
 
-          <div className="space-y-3 w-full">
-            <div className="flex justify-between items-center gap-2 text-[8px] sm:text-[9px] font-mono uppercase tracking-[0.2em] text-cyan-400/90">
-              <span>Initializing secure connection...</span>
-              <span className="text-cyan-300 tabular-nums">{bootProgress}%</span>
+      <div className="relative z-10 flex-1 flex flex-col lg:flex-row max-w-6xl mx-auto w-full px-5 sm:px-8 py-4 lg:py-8 gap-10 lg:gap-16 items-center lg:items-stretch">
+        <div className="flex-1 flex flex-col justify-center w-full max-w-md mx-auto lg:mx-0 space-y-8">
+          <ElmBrandLogo size="lg" align="left" />
+          <ConnectionPulse />
+
+          <div className="terminal-glass-panel p-5 space-y-4">
+            <div className="flex justify-between items-center gap-2 text-[8px] sm:text-[9px] font-mono uppercase tracking-[0.18em] text-cyan-400/90">
+              <span>Initializing secure connection</span>
+              <span className="text-cyan-300 tabular-nums font-bold">{bootProgress}%</span>
             </div>
-            <div className="h-2 rounded-full bg-zinc-900/90 border border-zinc-800 overflow-hidden">
+            <div className="h-2 rounded-full bg-zinc-900/90 border border-zinc-800/80 overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-blue-700 via-blue-500 to-cyan-400 transition-all duration-300 shadow-[0_0_14px_rgba(56,189,248,0.65)]"
                 style={{ width: `${bootProgress}%` }}
               />
             </div>
-            <ul className="space-y-1.5 text-[8px] sm:text-[9px] font-mono uppercase tracking-[0.15em]">
+            <ul className="space-y-2 text-[8px] sm:text-[9px] font-mono uppercase tracking-[0.12em]">
               {BOOT_CHECKLIST.map((label, i) => {
                 const done = bootProgress > i * 22;
                 return (
                   <li
                     key={label}
-                    className={`flex items-center gap-2 ${done ? 'text-cyan-400/95' : 'text-zinc-600'}`}
+                    className={`terminal-status-item flex items-center gap-2.5 ${
+                      done ? 'text-cyan-400/95' : 'text-zinc-600'
+                    }`}
                   >
-                    <span className="w-3 text-center">{done ? '✓' : '·'}</span>
+                    <span
+                      className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] border ${
+                        done
+                          ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-400'
+                          : 'border-zinc-800 text-zinc-700'
+                      }`}
+                    >
+                      {done ? '✓' : '·'}
+                    </span>
                     {label}
                   </li>
                 );
@@ -190,23 +163,26 @@ const TerminalLogin: React.FC<TerminalLoginProps> = ({ onLogin }) => {
           </div>
         </div>
 
-        {/* Right — login form */}
         <div className="flex-1 flex flex-col justify-center w-full max-w-md mx-auto lg:mx-0">
-          <div className="terminal-login-panel rounded-2xl border border-blue-500/35 bg-zinc-950/90 backdrop-blur-md p-6 sm:p-8 shadow-[0_0_56px_rgba(59,130,246,0.18)]">
-            <p className="text-[9px] font-black uppercase tracking-[0.55em] text-zinc-500 text-center mb-6">
-              Driver Access
-            </p>
+          <div className="terminal-login-panel terminal-login-card relative rounded-2xl border border-blue-500/30 bg-zinc-950/90 backdrop-blur-xl p-7 sm:p-9">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-blue-500/40 to-transparent" />
+              <p className="text-[9px] font-black uppercase tracking-[0.55em] text-zinc-400 shrink-0">
+                Driver Access
+              </p>
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-blue-500/40 to-transparent" />
+            </div>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label
                   htmlFor="driver-email"
-                  className="block text-[9px] font-black uppercase tracking-[0.4em] text-blue-400/90 mb-2.5"
+                  className="block text-[9px] font-black uppercase tracking-[0.4em] text-blue-400/90 mb-3"
                 >
                   Email address
                 </label>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none select-none">
                     <UserIcon />
                   </span>
                   <input
@@ -218,7 +194,7 @@ const TerminalLogin: React.FC<TerminalLoginProps> = ({ onLogin }) => {
                     value={email}
                     onChange={(ev) => setEmail(ev.target.value)}
                     disabled={isSubmitting}
-                    className="w-full pl-11 pr-4 py-4 rounded-xl bg-black/70 border border-zinc-800/90 focus:border-blue-500/70 focus:ring-2 focus:ring-blue-500/20 outline-none text-sm text-white placeholder:text-zinc-600 placeholder:normal-case transition-all shadow-[inset_0_2px_8px_rgba(0,0,0,0.4)]"
+                    className="terminal-input w-full pl-11 pr-4 py-4 rounded-xl bg-black/70 border border-zinc-800/90 focus:border-blue-500/70 focus:ring-2 focus:ring-blue-500/20 outline-none text-sm text-white placeholder:text-zinc-600 placeholder:normal-case shadow-[inset_0_2px_10px_rgba(0,0,0,0.45)]"
                   />
                 </div>
               </div>
@@ -226,7 +202,7 @@ const TerminalLogin: React.FC<TerminalLoginProps> = ({ onLogin }) => {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-4 rounded-xl font-black uppercase tracking-[0.3em] text-sm text-white bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 border border-blue-400/50 shadow-[0_0_36px_rgba(59,130,246,0.45),inset_0_1px_0_rgba(255,255,255,0.15)] hover:shadow-[0_0_48px_rgba(59,130,246,0.55)] active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+                className="terminal-btn-primary w-full py-4 rounded-xl font-black uppercase tracking-[0.28em] text-sm text-white bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 border border-blue-400/50 shadow-[0_0_36px_rgba(59,130,246,0.4),inset_0_1px_0_rgba(255,255,255,0.12)] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-3"
               >
                 <span>{isSubmitting ? 'Connecting...' : 'Connect'}</span>
                 {!isSubmitting && (
@@ -237,17 +213,17 @@ const TerminalLogin: React.FC<TerminalLoginProps> = ({ onLogin }) => {
               </button>
 
               {error ? (
-                <p className="text-center text-[11px] text-red-400 font-medium normal-case px-2">
+                <p className="text-center text-[11px] text-red-400 font-medium normal-case px-2" role="alert">
                   {error}
                 </p>
               ) : null}
 
               {progressIndex >= 0 && isSubmitting ? (
-                <div className="space-y-2 pt-2 border-t border-zinc-800/80">
+                <div className="space-y-2 pt-3 border-t border-zinc-800/80">
                   {PROGRESS_STEPS.map((step, i) => (
                     <p
                       key={step}
-                      className={`text-[9px] font-mono uppercase tracking-wide ${
+                      className={`text-[9px] font-mono uppercase tracking-wide transition-colors ${
                         i <= progressIndex ? 'text-cyan-400' : 'text-zinc-700'
                       }`}
                     >
@@ -259,13 +235,13 @@ const TerminalLogin: React.FC<TerminalLoginProps> = ({ onLogin }) => {
               ) : null}
             </form>
 
-            <p className="mt-6 flex items-start justify-center gap-2 text-[9px] text-zinc-500 normal-case text-center leading-relaxed max-w-xs mx-auto">
+            <p className="mt-8 flex items-start justify-center gap-2 text-[9px] text-zinc-500 normal-case text-center leading-relaxed max-w-xs mx-auto">
               <ShieldIcon />
               <span>Your connection is protected. All data is encrypted end-to-end.</span>
             </p>
           </div>
 
-          <p className="mt-5 text-center text-[8px] font-black uppercase tracking-[0.45em] text-zinc-600">
+          <p className="mt-6 text-center text-[8px] font-black uppercase tracking-[0.45em] text-zinc-600">
             ELM Connect Secure Terminal
           </p>
         </div>

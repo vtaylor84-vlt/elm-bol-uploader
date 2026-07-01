@@ -1,5 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import TerminalLogin from './components/TerminalLogin.tsx';
+import TerminalAppHeader from './components/terminal/TerminalAppHeader.tsx';
+import LogoutConfirmDialog from './components/terminal/LogoutConfirmDialog.tsx';
+import WorkflowEditBar from './components/terminal/WorkflowEditBar.tsx';
 import {
   clearDriverSession,
   readDriverSession,
@@ -414,6 +417,10 @@ const App: React.FC = () => {
   const [fullImage, setFullImage] = useState<string | null>(null);
   type ReviewEditCard = 'event' | 'carrier' | 'pickup' | 'destination' | 'bol' | null;
   const [reviewEditCard, setReviewEditCard] = useState<ReviewEditCard>(null);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [assignmentEditReturnStage, setAssignmentEditReturnStage] = useState<Stage | null>(
+    null
+  );
   const [reviewDraft, setReviewDraft] = useState({
     eventType: '' as EventType,
     manualCarrier: '' as ManualCarrierOption,
@@ -479,7 +486,23 @@ const App: React.FC = () => {
     setAuthSession(null);
     setIsAuthenticated(false);
     setDriverName('');
+    setShowLogoutConfirm(false);
+    setAssignmentEditReturnStage(null);
     resetFlowState();
+  };
+
+  const openAssignmentEdit = (returnStage: Stage) => {
+    setAssignmentEditReturnStage(returnStage);
+    setCurrentStage('ASSIGNMENT');
+  };
+
+  const exitAssignmentEdit = () => {
+    if (assignmentEditReturnStage) {
+      setCurrentStage(assignmentEditReturnStage);
+    } else if (hasAssignment) {
+      setCurrentStage('EVIDENCE');
+    }
+    setAssignmentEditReturnStage(null);
   };
 
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -646,8 +669,20 @@ const App: React.FC = () => {
 
   const currentStageIndex = stageOrder.indexOf(currentStage);
 
+  const headerStepLabels: Record<Stage, string> = {
+    EVENT: 'Select Event',
+    OPERATOR: 'Identify Driver',
+    ASSIGNMENT: 'Select Load',
+    EVIDENCE: 'Capture Documents',
+    REVIEW: 'Review & Submit',
+  };
+
+  const headerStepIndex = showVerification ? stageOrder.length - 1 : currentStageIndex;
+  const headerStepLabel =
+    showVerification ? 'Review & Submit' : headerStepLabels[currentStage] || 'Workflow';
+
   const inpStyle = (v: string) =>
-    `w-full p-5 rounded-2xl font-mono text-sm border-2 transition-all outline-none ${
+    `w-full p-5 rounded-2xl font-mono text-sm border-2 transition-all outline-none terminal-input ${
       solarMode
         ? v
           ? 'bg-zinc-50 border-zinc-900 text-black'
@@ -712,7 +747,7 @@ const App: React.FC = () => {
 
   const premiumPanel = solarMode
     ? 'rounded-[1.75rem] border border-zinc-200/90 bg-white/95 backdrop-blur-sm shadow-[0_12px_40px_rgba(0,0,0,0.08)]'
-    : 'rounded-[1.75rem] border border-zinc-700/55 bg-zinc-900/80 backdrop-blur-md shadow-[0_12px_40px_rgba(0,0,0,0.45)]';
+    : 'terminal-module-panel';
 
   const driverFlowSteps: { stage: Stage; label: string }[] = [
     { stage: 'EVENT', label: 'Event' },
@@ -926,10 +961,10 @@ const App: React.FC = () => {
     onChange?: () => void
   ) => (
     <div
-      className={`${premiumPanel} p-4 flex items-center justify-between gap-3 animate-in fade-in duration-300 ${accentRing} ring-1`}
+      className={`${premiumPanel} terminal-verified-card p-5 flex items-center justify-between gap-3 animate-in fade-in duration-300 ${accentRing} ring-1`}
     >
       <div className="flex items-center gap-3 min-w-0">
-        <div className="w-9 h-9 rounded-full bg-green-600/15 border border-green-500/40 flex items-center justify-center text-green-400 text-sm font-black shrink-0">
+        <div className="w-10 h-10 rounded-full bg-green-600/15 border border-green-500/40 flex items-center justify-center text-green-400 text-sm font-black shrink-0 shadow-[0_0_12px_rgba(34,197,94,0.2)]">
           ✓
         </div>
         <div className="min-w-0">
@@ -945,7 +980,7 @@ const App: React.FC = () => {
         <button
           type="button"
           onClick={onChange}
-          className="shrink-0 text-[8px] font-black uppercase tracking-widest text-blue-400 px-3 py-2 rounded-lg border border-blue-500/30 bg-blue-500/10 active:scale-95"
+          className="terminal-btn-ghost shrink-0 text-[8px] font-black uppercase tracking-widest text-blue-400 px-3 py-2.5 rounded-lg border border-blue-500/30 bg-blue-500/10 active:scale-95"
         >
           Change
         </button>
@@ -1244,6 +1279,7 @@ const App: React.FC = () => {
     setCompany(carrierName || '');
     setLoadSelectionError(false);
     setIsConnecting(false);
+    setAssignmentEditReturnStage(null);
   };
 
   const onFileSelect = async (
@@ -1352,7 +1388,7 @@ const App: React.FC = () => {
           {renderVerifiedSummary(
             'Load confirmed',
             `${puCity}, ${puState} → ${delCity}, ${delState}`,
-            () => setCurrentStage('ASSIGNMENT')
+            () => openAssignmentEdit('EVIDENCE')
           )}
           <div className="text-center space-y-1 px-2">
             {renderAssignmentLoadRef()}
@@ -1364,6 +1400,9 @@ const App: React.FC = () => {
 
     return (
       <section className={panelBase}>
+        {assignmentEditReturnStage ? (
+          <WorkflowEditBar onBack={exitAssignmentEdit} onClose={exitAssignmentEdit} />
+        ) : null}
         <div className="px-1">
           <p className="text-[8px] font-black uppercase tracking-[0.4em] text-zinc-600">
             Step 3 of 5
@@ -1373,10 +1412,10 @@ const App: React.FC = () => {
           </h3>
         </div>
 
-        <div className={`${premiumPanel} p-4`}>
-        <div className="flex justify-between items-center mb-4 gap-4">
+        <div className={`${premiumPanel} p-5 sm:p-6`}>
+        <div className="flex justify-end items-center mb-4 gap-4 min-h-[1.25rem]">
           {isScanning && (
-            <div className="flex items-center gap-2 shrink-0 ml-auto">
+            <div className="flex items-center gap-2 shrink-0">
               <div
                 className={`w-1.5 h-1.5 rounded-full animate-pulse ${
                   themeMode === 'green' ? 'bg-green-500' : 'bg-blue-500'
@@ -1515,7 +1554,7 @@ const App: React.FC = () => {
                 <button
                   key={identity}
                   onClick={() => handleLoadSelection(load)}
-                  className={`w-full p-6 rounded-[2rem] border-2 text-left transition-all ${
+                  className={`terminal-load-card w-full p-6 rounded-[2rem] border-2 text-left transition-all active:scale-[0.99] ${
                     isSelected
                       ? `${themeBorderClass} ${themeBgClass}`
                       : solarMode
@@ -1606,9 +1645,9 @@ const App: React.FC = () => {
                 setManualCarrier('');
                 setCurrentStage('ASSIGNMENT');
               }}
-              className="w-full py-4 text-[9px] font-black text-zinc-600 uppercase tracking-[0.3em]"
+              className="w-full py-4 rounded-xl border border-dashed border-zinc-700/80 bg-zinc-950/40 text-[9px] font-black text-zinc-500 uppercase tracking-[0.25em] hover:border-blue-500/40 hover:text-blue-400 transition-colors"
             >
-              Load Not Listed / Manual Override
+              Load not listed — enter manually
             </button>
           </div>
         ) : (
@@ -1625,7 +1664,15 @@ const App: React.FC = () => {
             )}
 
             {manualMode ? (
-              <div className="px-1">{renderAssignmentLoadRef()}</div>
+              <div className="rounded-xl border border-blue-500/25 bg-blue-500/5 px-4 py-3 mb-2 space-y-1">
+                <p className="text-[8px] font-black uppercase tracking-[0.3em] text-blue-400">
+                  Manual route entry
+                </p>
+                <p className="text-[10px] text-zinc-500 normal-case">
+                  Enter pickup, delivery, and carrier for this stop.
+                </p>
+                {renderAssignmentLoadRef()}
+              </div>
             ) : null}
 
             <div className="grid grid-cols-4 gap-4">
@@ -1724,123 +1771,55 @@ const App: React.FC = () => {
 
   return (
     <div
-      className={`min-h-screen transition-all duration-700 ${
-        solarMode ? 'bg-zinc-100 text-black' : 'bg-[#050508] text-zinc-100'
-      } pb-32`}
+      className={`min-h-screen transition-all duration-700 pb-32 ${
+        solarMode ? 'bg-zinc-100 text-black' : 'terminal-app-bg text-zinc-100'
+      }`}
     >
-      <div
-        className={`fixed top-0 w-full z-[100] px-6 py-4 flex justify-between items-center text-[10px] font-black border-b ${
-          solarMode
-            ? 'bg-white/90 border-zinc-200 shadow-sm'
-            : 'bg-black/90 border-zinc-900'
-        } backdrop-blur-md`}
-      >
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_#22c55e]"></div>
-          <span className="tracking-widest uppercase italic">Connected</span>
-          {isAdminUploadMode ? (
-            <span className="ml-2 px-2.5 py-1 rounded-full text-[7px] font-black uppercase tracking-[0.2em] border border-amber-500/50 bg-amber-500/15 text-amber-300">
-              Admin Upload Mode
-            </span>
-          ) : null}
-        </div>
+      <TerminalAppHeader
+        solarMode={solarMode}
+        stepLabel={headerStepLabel}
+        stepIndex={headerStepIndex}
+        stepTotal={stageOrder.length}
+        isAdmin={isAdminUploadMode}
+        maskedEmail={authSession?.maskedEmail}
+        eventType={eventType || undefined}
+        companyLabel={effectiveCompany || undefined}
+        themeBorderClass={themeBorderClass}
+        themeBgClass={themeBgClass}
+        themeTextClass={themeTextClass}
+        onLogoutRequest={() => setShowLogoutConfirm(true)}
+        onToggleSolar={() => setSolarMode(!solarMode)}
+      />
 
-        <div className="flex items-center gap-3">
-          {authSession?.maskedEmail ? (
-            <span className="hidden sm:inline text-[8px] font-mono text-zinc-500 truncate max-w-[140px]">
-              {authSession.maskedEmail}
-            </span>
-          ) : null}
-          {eventType ? (
-            <span className="px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.25em] border border-zinc-600 bg-zinc-900/60 text-zinc-200">
-              {eventType}
-            </span>
-          ) : null}
+      <LogoutConfirmDialog
+        open={showLogoutConfirm}
+        onConfirm={handleLogout}
+        onCancel={() => setShowLogoutConfirm(false)}
+      />
 
-          {effectiveCompany ? (
-            <span
-              className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.25em] border ${themeBorderClass} ${themeBgClass} ${themeTextClass}`}
-            >
-              {effectiveCompany}
-            </span>
-          ) : null}
-
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2 border border-zinc-700 rounded-lg uppercase text-[8px] font-black text-zinc-400 hover:text-red-400 hover:border-red-500/40 transition-colors"
+      {effectiveCompany ? (
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-[4.5rem] sm:pt-20 pb-2">
+          <div
+            className={`${premiumPanel} px-4 py-3 flex items-center justify-center min-h-[72px] overflow-hidden`}
           >
-            Switch User
-          </button>
-
-          <button
-            onClick={() => setSolarMode(!solarMode)}
-            className="px-5 py-2 border-2 border-zinc-700 rounded-lg uppercase text-[9px] font-black"
-          >
-            {solarMode ? '🌙 Midnight' : '☀️ Solar'}
-          </button>
-        </div>
-      </div>
-
-      <header className="max-w-4xl mx-auto pt-24 px-6 mb-8">
-        <div
-          className={`w-full min-h-[180px] rounded-[3.5rem] border-2 flex items-center justify-center transition-all ${
-            solarMode
-              ? 'bg-white border-zinc-300 shadow-xl'
-              : `bg-zinc-950 shadow-2xl ${themeBorderClass === 'border-zinc-700' ? 'border-zinc-900' : themeBorderClass}`
-          }`}
-        >
-          {!effectiveCompany ? (
-            <div className="text-center px-6">
-              <h1 className="text-5xl font-black italic text-zinc-800 uppercase tracking-tighter">
-                ELM<span className="text-zinc-500">CONNECT</span>
-              </h1>
-              <div className="mt-3 text-[11px] font-black uppercase tracking-[0.35em] text-zinc-600">
-                Elite Logistics Manager
-              </div>
-
-              {eventType || driverName || assignedLoadNumber || bolNum ? (
-                <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-                  {eventType ? (
-                    <span className="px-3 py-1 rounded-full border border-zinc-700 bg-zinc-900 text-[8px] font-black uppercase tracking-[0.25em] text-zinc-300">
-                      EVENT: {eventType}
-                    </span>
-                  ) : null}
-                  {driverName ? (
-                    <span className="px-3 py-1 rounded-full border border-zinc-700 bg-zinc-900 text-[8px] font-black uppercase tracking-[0.25em] text-zinc-300">
-                      DRIVER: {driverName}
-                    </span>
-                  ) : null}
-                  {bolNum ? (
-                    <span className="px-3 py-1 rounded-full border border-zinc-700 bg-zinc-900 text-[8px] font-black uppercase tracking-[0.25em] text-zinc-300">
-                      BOL: {bolNum}
-                    </span>
-                  ) : null}
-                  <span className="px-3 py-1 rounded-full border border-zinc-700 bg-zinc-900 text-[8px] font-black uppercase tracking-[0.25em] text-zinc-300">
-                    MODE: {manualMode ? 'MANUAL' : 'AUTO'}
-                  </span>
-                </div>
-              ) : null}
-            </div>
-          ) : effectiveCompany === 'Greenleaf Xpress' ? (
-            <GreenleafLogo />
-          ) : effectiveCompany === 'BST Expedite Inc' ? (
-            <BstLogo />
-          ) : (
-            <div className="text-center px-6">
-              <h1 className="text-5xl font-black italic text-zinc-800 uppercase tracking-tighter">
-                ELM<span className="text-zinc-500">CONNECT</span>
-              </h1>
-              <div className="mt-3 text-[11px] font-black uppercase tracking-[0.35em] text-zinc-600">
+            {effectiveCompany === 'Greenleaf Xpress' ? (
+              <GreenleafLogo />
+            ) : effectiveCompany === 'BST Expedite Inc' ? (
+              <BstLogo />
+            ) : (
+              <p className="text-sm font-black uppercase tracking-[0.2em] text-zinc-400">
                 {effectiveCompany}
-              </div>
-            </div>
-          )}
+              </p>
+            )}
+          </div>
         </div>
-      </header>
+      ) : (
+        <div className="pt-[4.5rem] sm:pt-20" aria-hidden />
+      )}
 
-      <div className="max-w-4xl mx-auto px-6 mb-6">{renderFlowStepper()}</div>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 mb-6">{renderFlowStepper()}</div>
 
-      <div className="max-w-4xl mx-auto space-y-5 px-6">
+      <div className="max-w-4xl mx-auto space-y-5 px-4 sm:px-6">
         <section className="space-y-3">
           <div className="flex items-center justify-between px-1">
             <div>
