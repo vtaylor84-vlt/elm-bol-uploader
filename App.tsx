@@ -590,6 +590,9 @@ const App: React.FC = () => {
     (selectedLoad ? confirmedCarrierLabel : effectiveCompany) || 'Carrier not listed';
 
   const openReviewEdit = (card: Exclude<ReviewEditCard, null>) => {
+    if (card === 'carrier' && carrierLockedFromDispatch) {
+      return;
+    }
     setReviewDraft({
       eventType: (eventType || 'PICKUP') as EventType,
       manualCarrier: (manualCarrier || reviewCarrierDisplay || '') as ManualCarrierOption,
@@ -645,13 +648,26 @@ const App: React.FC = () => {
   ];
 
   const activeFlowIndex = showVerification ? 4 : currentStageIndex;
+  const bolPhotoCount = uploadedFiles.filter((f) => f.category === 'bol').length;
+  const freightPhotoCount = uploadedFiles.filter((f) => f.category === 'freight').length;
+  const hasFreightPhotos = freightPhotoCount > 0;
+  const showFreightWaived = freightNotRequired && !hasFreightPhotos;
+  const freightDocumentComplete = showFreightWaived || hasFreightPhotos;
   const documentProgressTotal = eventType === 'PICKUP' ? 2 : 1;
   const documentProgressDone =
     (hasBolEvidence && bolNum.trim() ? 1 : 0) +
-    (eventType === 'PICKUP' &&
-    (freightNotRequired || uploadedFiles.some((f) => f.category === 'freight'))
-      ? 1
-      : 0);
+    (eventType === 'PICKUP' && freightDocumentComplete ? 1 : 0);
+  const carrierLockedFromDispatch = Boolean(selectedLoad);
+
+  const returnToFreightDocuments = () => {
+    setReviewEditCard(null);
+    setShowVerification(false);
+    setCurrentStage('EVIDENCE');
+  };
+
+  const reopenFreightWaiverChoice = () => {
+    setFreightNotRequired(false);
+  };
 
   const accentRing =
     themeMode === 'green'
@@ -1041,6 +1057,9 @@ const App: React.FC = () => {
             window.alert('This photo is already attached.');
             continue;
           }
+          if (cat === 'freight') {
+            setFreightNotRequired(false);
+          }
         } catch {
           window.alert(isHeicFile(f) ? HEIC_BLOCK_MESSAGE : 'Could not process this photo. Use JPG or PNG.');
         }
@@ -1049,6 +1068,7 @@ const App: React.FC = () => {
       if (
         cat === 'bol' &&
         eventType === 'PICKUP' &&
+        !freightNotRequired &&
         !uploadedFiles.some((f) => f.category === 'freight')
       ) {
         setTimeout(() => setShowFreightPrompt(true), 500);
@@ -1803,6 +1823,10 @@ const App: React.FC = () => {
                   />
                 </div>
                 <p className="text-[8px] text-zinc-600 normal-case">{UPLOAD_FORMAT_HINT}</p>
+                <p className="text-[8px] text-zinc-500 normal-case">
+                  Upload up to 5 BOL photos
+                  {bolPhotoCount > 0 ? ` · ${bolPhotoCount} attached` : ''}
+                </p>
 
                 <div className="grid grid-cols-2 gap-2">
                   <button
@@ -1865,29 +1889,35 @@ const App: React.FC = () => {
             </div>
 
             {eventType === 'PICKUP' ? (
-              freightNotRequired ? (
+              showFreightWaived ? (
                 <div
-                  className={`${premiumPanel} p-4 border-amber-500/25 flex items-center gap-3`}
+                  className={`${premiumPanel} p-4 border-amber-500/25`}
                 >
-                  <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-lg">
-                    🛡️
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-lg shrink-0">
+                      🛡️
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[9px] font-black uppercase tracking-[0.2em] text-amber-400">
+                        ✓ Freight Photos Waived
+                      </p>
+                      <p className="text-[10px] text-zinc-400 normal-case mt-0.5">
+                        Confirmed by dispatch
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={reopenFreightWaiverChoice}
+                      className="shrink-0 px-3 py-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 text-[8px] font-black uppercase tracking-widest text-amber-300 active:scale-95"
+                    >
+                      Edit
+                    </button>
                   </div>
-                  <div>
-                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-amber-400">
-                      Freight photos waived
-                    </p>
-                    <p className="text-[10px] text-zinc-400 normal-case mt-0.5">
-                      Confirmed by dispatch
-                    </p>
-                  </div>
-                  <span className="ml-auto text-green-400 text-xs font-black">✓</span>
                 </div>
               ) : (
                 <div
                   className={`${premiumPanel} border-green-500/30 overflow-hidden ${
-                    uploadedFiles.some((f) => f.category === 'freight')
-                      ? 'ring-1 ring-green-500/25'
-                      : ''
+                    hasFreightPhotos ? 'ring-1 ring-green-500/25' : ''
                   }`}
                 >
                   <div className="p-4 border-b border-zinc-800/80 flex items-start justify-between gap-3">
@@ -1897,25 +1927,26 @@ const App: React.FC = () => {
                       </div>
                       <div>
                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-green-400">
-                          Freight on Trailer
+                          Freight Photos
                         </p>
                         <span className="inline-block mt-1 px-2 py-0.5 rounded text-[7px] font-black uppercase tracking-widest bg-green-500/15 text-green-300 border border-green-500/25">
                           Pickup only
                         </span>
                       </div>
                     </div>
-                    {uploadedFiles.some((f) => f.category === 'freight') ? (
+                    {hasFreightPhotos ? (
                       <span className="text-[8px] font-black uppercase text-green-400">
-                        ✓ {uploadedFiles.filter((f) => f.category === 'freight').length}{' '}
-                        image
-                        {uploadedFiles.filter((f) => f.category === 'freight').length === 1
-                          ? ''
-                          : 's'}
+                        ✓ {freightPhotoCount} image{freightPhotoCount === 1 ? '' : 's'}
                       </span>
                     ) : null}
                   </div>
 
                   <div className="p-4 space-y-3">
+                    <p className="text-[8px] text-zinc-500 normal-case">
+                      Upload up to 5 freight photos
+                      {freightPhotoCount > 0 ? ` · ${freightPhotoCount} attached` : ''}
+                    </p>
+
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         type="button"
@@ -1939,7 +1970,7 @@ const App: React.FC = () => {
                       </button>
                     </div>
 
-                    {uploadedFiles.some((f) => f.category === 'freight') ? (
+                    {hasFreightPhotos ? (
                       <div className="flex gap-2 overflow-x-auto">
                         {uploadedFiles
                           .filter((f) => f.category === 'freight')
@@ -1973,6 +2004,14 @@ const App: React.FC = () => {
                           ))}
                       </div>
                     ) : null}
+
+                    <button
+                      type="button"
+                      onClick={() => setShowFreightConfirm(true)}
+                      className="w-full text-center text-[8px] font-black uppercase tracking-widest text-zinc-600 py-1 active:scale-[0.98]"
+                    >
+                      Not Required
+                    </button>
                   </div>
                 </div>
               )
@@ -2262,16 +2301,23 @@ const App: React.FC = () => {
                               <p className="text-[11px] font-bold text-white uppercase tracking-tight truncate mt-0.5">
                                 {card.value}
                               </p>
+                              {card.id === 'carrier' && carrierLockedFromDispatch ? (
+                                <p className="text-[7px] text-zinc-500 normal-case mt-0.5 tracking-normal">
+                                  🔒 From dispatch
+                                </p>
+                              ) : null}
                             </div>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => openReviewEdit(card.id)}
-                            className="shrink-0 w-8 h-8 rounded-lg border border-zinc-700/80 bg-zinc-800/50 text-[10px] text-blue-400 hover:border-blue-500/40 hover:bg-blue-500/10 transition-all active:scale-95"
-                            aria-label={`Edit ${card.label}`}
-                          >
-                            ✎
-                          </button>
+                          {card.id === 'carrier' && carrierLockedFromDispatch ? null : (
+                            <button
+                              type="button"
+                              onClick={() => openReviewEdit(card.id)}
+                              className="shrink-0 w-8 h-8 rounded-lg border border-zinc-700/80 bg-zinc-800/50 text-[10px] text-blue-400 hover:border-blue-500/40 hover:bg-blue-500/10 transition-all active:scale-95"
+                              aria-label={`Edit ${card.label}`}
+                            >
+                              ✎
+                            </button>
+                          )}
                         </div>
                       </div>
 
@@ -2498,21 +2544,44 @@ const App: React.FC = () => {
                 ) : null}
               </div>
 
-              {eventType === 'PICKUP' &&
-              (freightNotRequired ||
-                uploadedFiles.some((f) => f.category === 'freight')) ? (
+              {eventType === 'PICKUP' ? (
                 <div className={`${reviewGlassPanel} border-green-500/25 overflow-hidden`}>
-                  <div className="p-3 border-b border-zinc-800/80 flex items-center justify-between">
-                    <p className="text-[8px] font-black uppercase tracking-[0.2em] text-green-400">
-                      Freight on Trailer
-                    </p>
-                    <span className="text-[7px] font-black uppercase text-green-400">✓ Verified</span>
+                  <div className="p-3 border-b border-zinc-800/80 flex items-center justify-between gap-2">
+                    <div>
+                      <p className="text-[8px] font-black uppercase tracking-[0.2em] text-green-400">
+                        Freight Photos
+                      </p>
+                      {showFreightWaived ? (
+                        <p className="text-[9px] text-amber-400/90 normal-case mt-0.5">
+                          ✓ Waived — confirmed by dispatch
+                        </p>
+                      ) : hasFreightPhotos ? (
+                        <p className="text-[9px] text-zinc-400 normal-case mt-0.5">
+                          {freightPhotoCount} photo{freightPhotoCount === 1 ? '' : 's'} attached
+                        </p>
+                      ) : (
+                        <p className="text-[9px] text-zinc-500 normal-case mt-0.5">
+                          No photos added yet
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {hasFreightPhotos ? (
+                        <span className="text-[7px] font-black uppercase text-green-400">
+                          ✓ Verified
+                        </span>
+                      ) : null}
+                      <button
+                        type="button"
+                        onClick={returnToFreightDocuments}
+                        className="w-8 h-8 rounded-lg border border-green-500/30 bg-green-500/10 text-[10px] text-green-400 active:scale-95"
+                        aria-label="Edit freight photos"
+                      >
+                        ✎
+                      </button>
+                    </div>
                   </div>
-                  {freightNotRequired ? (
-                    <p className="p-3 text-[8px] font-black uppercase tracking-[0.15em] text-green-400/80 text-center">
-                      Not required — dispatch confirmed
-                    </p>
-                  ) : (
+                  {hasFreightPhotos ? (
                     <div className="p-3 flex gap-2 overflow-x-auto">
                       {uploadedFiles
                         .filter((f) => f.category === 'freight')
@@ -2534,7 +2603,7 @@ const App: React.FC = () => {
                           </button>
                         ))}
                     </div>
-                  )}
+                  ) : null}
                 </div>
               ) : null}
             </section>
