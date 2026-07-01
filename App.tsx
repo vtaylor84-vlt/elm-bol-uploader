@@ -1737,7 +1737,7 @@ const App: React.FC = () => {
               : 'bg-zinc-900 text-zinc-700 cursor-not-allowed'
           }`}
         >
-          Review Transmission
+          Review Submission
         </button>
       </div>
 
@@ -1818,76 +1818,306 @@ const App: React.FC = () => {
 
       {showVerification && (
         <div className="fixed inset-0 z-[600] bg-zinc-950 overflow-y-auto animate-in slide-in-from-right">
-          <div className="max-w-xl mx-auto p-10 pb-56 space-y-12">
-            <div className="flex justify-between items-center border-b-2 border-zinc-900 pb-10">
-              <h2 className="text-3xl font-black italic text-white uppercase tracking-tighter">
-                Command Review
-              </h2>
+          <div className="max-w-xl mx-auto px-6 py-8 pb-56 space-y-8">
+            <div className="flex justify-between items-start border-b border-zinc-800/80 pb-6">
+              <div>
+                <p className="text-[8px] font-black uppercase tracking-[0.4em] text-zinc-600 mb-2">
+                  Step 5 · Review
+                </p>
+                <h2 className="text-2xl font-black italic text-white uppercase tracking-tighter">
+                  Review & Submit
+                </h2>
+              </div>
 
               <button
                 onClick={() => {
                   setShowVerification(false);
                   setCurrentStage('EVIDENCE');
                 }}
-                className="bg-zinc-900 text-zinc-400 px-6 py-2 rounded-full font-black text-[9px] uppercase border border-zinc-800"
+                className="bg-zinc-900 text-zinc-400 px-5 py-2 rounded-full font-black text-[9px] uppercase border border-zinc-800 shrink-0"
               >
                 Close
               </button>
             </div>
 
-            <div className="grid grid-cols-1 gap-4">
-              {[
-                { l: 'EVENT', v: eventType, id: 'eventType' },
-                { l: 'OPERATOR', v: driverName, id: 'driverName' },
-                { l: 'LOAD #', v: assignedLoadNumber || 'N/A', id: 'loadNumber' },
-                { l: 'BOL #', v: bolNum || 'N/A', id: 'reference' },
-                { l: 'LOAD ID', v: loadId || 'N/A', id: 'loadId' },
-                { l: 'PICKUP', v: `${puCity}, ${puState}`, id: 'origin' },
-                { l: 'DESTINATION', v: `${delCity}, ${delState}`, id: 'destination' },
-                { l: 'CARRIER', v: effectiveCompany || 'N/A', id: 'company' }
-              ].map((item) => (
-                <div
-                  key={item.l}
-                  onClick={() => {
-                    if (!['eventType', 'loadId', 'reference', 'loadNumber'].includes(item.id)) {
-                      setEditingField(item.id);
-                    }
-                  }}
-                  className="bg-zinc-900/50 p-7 rounded-[2.5rem] border-2 border-zinc-800 active:scale-95 transition-all group"
-                >
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-[10px] font-black text-yellow-500 uppercase tracking-widest">
-                      {item.l}
-                    </span>
+            <div
+              className={`flex items-center gap-2 px-4 py-2 rounded-full border w-fit ${
+                themeMode === 'green'
+                  ? 'border-green-500/30 bg-green-500/10'
+                  : themeMode === 'blue'
+                    ? 'border-blue-500/30 bg-blue-500/10'
+                    : 'border-zinc-700 bg-zinc-900/50'
+              }`}
+            >
+              <span
+                className={`text-[8px] font-black uppercase tracking-[0.3em] ${themeTextClass}`}
+              >
+                Ready to review
+              </span>
+            </div>
 
-                    {!['eventType', 'loadId', 'reference', 'loadNumber'].includes(item.id) ? (
-                      <span className="text-[7px] font-black text-white/30 uppercase border border-white/10 px-2 py-0.5 rounded">
-                        Tap to Edit
+            <section className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-black text-white shrink-0 ${
+                    themeMode === 'green'
+                      ? 'bg-green-600'
+                      : themeMode === 'blue'
+                        ? 'bg-blue-600'
+                        : 'bg-zinc-600'
+                  }`}
+                >
+                  ✓
+                </div>
+                <h3 className="text-[10px] font-black uppercase tracking-[0.35em] text-zinc-400">
+                  Review Submission
+                </h3>
+              </div>
+
+              <div className="space-y-2 border-l-2 border-zinc-800 ml-3 pl-5">
+                {[
+                  { l: 'Event', v: eventType || '—', id: null },
+                  { l: 'Driver', v: driverName || '—', id: 'driverName' },
+                  {
+                    l: 'Pickup',
+                    v: `${puCity || '—'}, ${puState || '—'}`,
+                    id: 'origin'
+                  },
+                  {
+                    l: 'Destination',
+                    v: `${delCity || '—'}, ${delState || '—'}`,
+                    id: 'destination'
+                  },
+                  {
+                    l: 'Carrier',
+                    v:
+                      (selectedLoad ? confirmedCarrierLabel : effectiveCompany) ||
+                      '—',
+                    id: 'company'
+                  }
+                ].map((item) => (
+                  <div
+                    key={item.l}
+                    onClick={() => item.id && setEditingField(item.id)}
+                    className={`bg-zinc-900/40 border border-zinc-800 rounded-2xl px-5 py-4 transition-all ${
+                      item.id ? 'active:scale-[0.99] cursor-pointer' : ''
+                    }`}
+                  >
+                    <div className="flex justify-between items-center gap-2 mb-1">
+                      <span className="text-[9px] font-black text-yellow-500/90 uppercase tracking-widest">
+                        {item.l}
                       </span>
-                    ) : null}
+                      <div className="flex items-center gap-2 shrink-0">
+                        {item.id ? (
+                          <span className="text-[7px] font-black text-white/40 uppercase border border-white/10 px-2 py-0.5 rounded">
+                            Tap to edit
+                          </span>
+                        ) : null}
+                        <span className="text-green-500 text-xs font-black">✓</span>
+                      </div>
+                    </div>
+                    <div className="text-base font-bold text-white uppercase tracking-tight">
+                      {item.v}
+                    </div>
                   </div>
+                ))}
+              </div>
+            </section>
 
-                  <div className="text-xl font-bold text-white uppercase tracking-tight">
-                    {item.v}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              {uploadedFiles.map((f) => (
+            <section className="space-y-3">
+              <div className="flex items-center gap-3">
                 <div
-                  key={f.id}
-                  className="aspect-[3/4] rounded-3xl overflow-hidden border-2 border-zinc-800 relative cursor-zoom-in"
-                  onClick={() => setFullImage(f.preview)}
+                  className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-black text-white shrink-0 ${
+                    hasAssignment
+                      ? themeMode === 'green'
+                        ? 'bg-green-600'
+                        : themeMode === 'blue'
+                          ? 'bg-blue-600'
+                          : 'bg-zinc-600'
+                      : 'bg-zinc-800 text-zinc-600'
+                  }`}
                 >
-                  <img src={f.preview} className="w-full h-full object-cover" />
-                  <div className="absolute top-4 left-4 bg-black/80 px-4 py-1 rounded-full text-[8px] font-black uppercase text-blue-500 border border-blue-500/30">
-                    View {f.category}
+                  {hasAssignment ? '✓' : '·'}
+                </div>
+                <h3 className="text-[10px] font-black uppercase tracking-[0.35em] text-zinc-400">
+                  Load Information
+                </h3>
+              </div>
+
+              <div
+                className={`border-l-2 ml-3 pl-5 py-1 ${
+                  themeMode === 'green'
+                    ? 'border-green-500/40'
+                    : themeMode === 'blue'
+                      ? 'border-blue-500/40'
+                      : 'border-zinc-700'
+                }`}
+              >
+                <div
+                  className={`rounded-[1.75rem] border-2 p-5 ${themeBorderClass} ${themeBgClass}`}
+                >
+                  <div
+                    className={`text-[9px] font-black uppercase tracking-[0.25em] mb-2 ${themeTextClass}`}
+                  >
+                    {selectedLoad
+                      ? 'Load from dispatch board'
+                      : 'Load entered manually'}
+                  </div>
+                  <div className="text-sm font-bold text-white uppercase tracking-tight">
+                    {puCity}, {puState} → {delCity}, {delState}
+                  </div>
+                  <div className="mt-2 text-[10px] font-mono text-zinc-400 uppercase">
+                    {(selectedLoad ? confirmedCarrierLabel : effectiveCompany) ||
+                      'Carrier not listed'}
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            </section>
+
+            <section className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-black text-white shrink-0 ${
+                    hasBolEvidence
+                      ? themeMode === 'green'
+                        ? 'bg-green-600'
+                        : themeMode === 'blue'
+                          ? 'bg-blue-600'
+                          : 'bg-zinc-600'
+                      : 'bg-zinc-800 text-zinc-600'
+                  }`}
+                >
+                  {hasBolEvidence ? '✓' : '·'}
+                </div>
+                <h3 className="text-[10px] font-black uppercase tracking-[0.35em] text-zinc-400">
+                  Uploaded Documents
+                </h3>
+              </div>
+
+              <div className="space-y-3 border-l-2 border-zinc-800 ml-3 pl-5">
+                <div
+                  onClick={() => setEditingField('reference')}
+                  className="bg-zinc-900/40 border border-zinc-800 rounded-2xl px-5 py-4 active:scale-[0.99] cursor-pointer transition-all"
+                >
+                  <div className="flex justify-between items-center gap-2 mb-1">
+                    <span className="text-[9px] font-black text-yellow-500/90 uppercase tracking-widest">
+                      BOL #
+                    </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-[7px] font-black text-white/40 uppercase border border-white/10 px-2 py-0.5 rounded">
+                        Tap to edit
+                      </span>
+                      {bolNum.trim() ? (
+                        <span className="text-green-500 text-xs font-black">✓</span>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="text-base font-bold text-white uppercase tracking-tight">
+                    {bolNum || '—'}
+                  </div>
+                </div>
+
+                {uploadedFiles
+                  .filter((f) => f.category === 'bol')
+                  .map((f) => (
+                    <div key={f.id} className="space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-500">
+                          BOL / Proof of Load
+                        </span>
+                        <span className="text-green-500 text-xs font-black">✓</span>
+                      </div>
+                      <div
+                        className="aspect-[3/4] max-h-56 rounded-2xl overflow-hidden border-2 border-zinc-700 relative cursor-zoom-in"
+                        onClick={() => setFullImage(f.preview)}
+                      >
+                        <img
+                          src={f.preview}
+                          className="w-full h-full object-cover"
+                          alt="BOL proof of load"
+                        />
+                      </div>
+                    </div>
+                  ))}
+
+                {eventType === 'PICKUP' &&
+                (freightNotRequired ||
+                  uploadedFiles.some((f) => f.category === 'freight')) ? (
+                  <div className="space-y-2 pt-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[9px] font-black uppercase tracking-[0.25em] text-orange-500/90">
+                        Freight on Trailer
+                      </span>
+                      <span className="text-green-500 text-xs font-black">✓</span>
+                    </div>
+                    {freightNotRequired ? (
+                      <div className="p-3 rounded-xl border border-orange-500/30 bg-orange-500/10 text-center text-[8px] font-black uppercase tracking-[0.2em] text-orange-400">
+                        Not required — dispatch confirmed
+                      </div>
+                    ) : null}
+                    <div className="grid grid-cols-2 gap-3">
+                      {uploadedFiles
+                        .filter((f) => f.category === 'freight')
+                        .map((f) => (
+                          <div
+                            key={f.id}
+                            className="aspect-square rounded-2xl overflow-hidden border-2 border-orange-900/50 relative cursor-zoom-in"
+                            onClick={() => setFullImage(f.preview)}
+                          >
+                            <img
+                              src={f.preview}
+                              className="w-full h-full object-cover"
+                              alt="Freight on trailer"
+                            />
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </section>
+
+            <section className="space-y-3">
+              <div
+                className={`rounded-[2rem] border-2 p-6 text-center ${
+                  isReady
+                    ? themeMode === 'green'
+                      ? 'border-green-500/40 bg-green-500/10'
+                      : themeMode === 'blue'
+                        ? 'border-blue-500/40 bg-blue-500/10'
+                        : 'border-zinc-600 bg-zinc-900/50'
+                    : 'border-zinc-800 bg-zinc-900/30'
+                }`}
+              >
+                <div className="flex items-center justify-center gap-2 mb-3">
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-black text-white ${
+                      isReady
+                        ? themeMode === 'green'
+                          ? 'bg-green-600'
+                          : themeMode === 'blue'
+                            ? 'bg-blue-600'
+                            : 'bg-zinc-600'
+                        : 'bg-zinc-800'
+                    }`}
+                  >
+                    {isReady ? '✓' : '·'}
+                  </div>
+                  <h3
+                    className={`text-[10px] font-black uppercase tracking-[0.35em] ${
+                      isReady ? themeTextClass : 'text-zinc-500'
+                    }`}
+                  >
+                    Ready to Submit
+                  </h3>
+                </div>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 leading-relaxed">
+                  {isReady
+                    ? 'Everything looks good. Submit when ready.'
+                    : 'Add your documents above before submitting.'}
+                </p>
+              </div>
+            </section>
 
             <button
               onClick={async () => {
@@ -1969,7 +2199,7 @@ const App: React.FC = () => {
                     : 'bg-zinc-700'
               }`}
             >
-              Authorize Uplink
+              Submit to Dispatch
             </button>
 
             <button
@@ -1996,10 +2226,10 @@ const App: React.FC = () => {
           </div>
 
           <h2 className="text-4xl font-black italic text-blue-500 uppercase tracking-tighter mb-4">
-            Uplink Active
+            Submitting to Dispatch
           </h2>
           <p className="text-orange-500 font-bold text-[11px] uppercase tracking-[0.4em] animate-pulse">
-            Warning: Do not exit until handshake complete
+            Please wait. Do not close the app.
           </p>
         </div>
       )}
@@ -2185,7 +2415,7 @@ const App: React.FC = () => {
               {editingField === 'driverName' && (
                 <input
                   type="text"
-                  placeholder="OPERATOR NAME"
+                  placeholder="DRIVER NAME"
                   className={inpStyle(driverName)}
                   value={driverName}
                   onChange={(e) => setDriverName(e.target.value.toUpperCase())}
@@ -2207,6 +2437,16 @@ const App: React.FC = () => {
                   <option value="Greenleaf Xpress">Greenleaf Xpress</option>
                   <option value="Other Carrier">Other Carrier</option>
                 </select>
+              )}
+
+              {editingField === 'reference' && (
+                <input
+                  type="text"
+                  placeholder="BOL #"
+                  className={inpStyle(bolNum)}
+                  value={bolNum}
+                  onChange={(e) => setBolNum(e.target.value.trim())}
+                />
               )}
             </div>
 
