@@ -32,47 +32,140 @@ const WEBP_BLOCK_MESSAGE =
 const VIDEO_BLOCK_MESSAGE =
   'Video files are not supported. Please upload JPG or PNG photos only.';
 
-export const handler = async (event) => {
-  const requestOrigin = getHeader(event, 'origin');
+function getEnvDiagnostics() {
   const allowedOrigins = getAllowedOrigins();
+  return {
+    hasUploadToken: Boolean(process.env.UPLOAD_TOKEN),
+    hasAppsScriptUrl: Boolean(process.env.APPS_SCRIPT_WEB_APP_URL),
+    hasAllowedOrigins: allowedOrigins.length > 0,
+    allowedOrigins,
+  };
+}
+
+function logUploadDiag(validationStage, details = {}) {
+  console.log(
+    '[upload-diag]',
+    JSON.stringify({
+      validationStage,
+      ...details,
+    })
+  );
+}
+
+export const handler = async (event) => {
+  const envDiag = getEnvDiagnostics();
+  const requestOrigin = getHeader(event, 'origin');
+  const allowedOrigins = envDiag.allowedOrigins;
   const corsOrigin = resolveCorsOrigin(requestOrigin, allowedOrigins);
 
+  logUploadDiag('request_received', {
+    httpMethod: event.httpMethod,
+    requestOrigin: requestOrigin || null,
+    allowedOrigins,
+    hasUploadToken: envDiag.hasUploadToken,
+    hasAppsScriptUrl: envDiag.hasAppsScriptUrl,
+    hasAllowedOrigins: envDiag.hasAllowedOrigins,
+  });
+
   if (event.httpMethod === 'OPTIONS') {
+    logUploadDiag('options_preflight');
     return respond(204, '', corsOrigin);
   }
 
   if (event.httpMethod !== 'POST') {
+    logUploadDiag('method_rejected', { httpMethod: event.httpMethod });
     return jsonResponse(405, { success: false, error: 'Method not allowed' }, corsOrigin);
   }
 
+  logUploadDiag('origin_check', {
+    requestOrigin: requestOrigin || null,
+    originAllowed: isOriginAllowed(requestOrigin, allowedOrigins),
+  });
+
   if (!corsOrigin || !isOriginAllowed(requestOrigin, allowedOrigins)) {
+    logUploadDiag('origin_rejected');
     return jsonResponse(403, { success: false, error: 'Forbidden origin' }, null);
   }
 
+  logUploadDiag('config_check');
   const configError = validateServerConfig();
   if (configError) {
-    console.error(configError);
+    logUploadDiag('config_rejected', {
+      configError,
+      hasUploadToken: envDiag.hasUploadToken,
+      hasAppsScriptUrl: envDiag.hasAppsScriptUrl,
+      hasAllowedOrigins: envDiag.hasAllowedOrigins,
+    });
     return jsonResponse(500, { success: false, error: 'Server configuration error' }, corsOrigin);
   }
 
   try {
+    logUploadDiag('parse_body');
     const data = parseJsonBody(event);
+
+    logUploadDiag('validate_submission');
     const validation = validateSubmission(data);
     if (!validation.ok) {
+      logUploadDiag('validation_rejected', {
+        statusCode: validation.statusCode,
+        error: validation.error,
+      });
       return jsonResponse(validation.statusCode, { success: false, error: validation.error }, corsOrigin);
     }
 
+    logUploadDiag('validation_passed', {
+      fileCount: validation.data.files.length,
+      company: validation.data.company,
+      bolProtocol: validation.data.bolProtocol,
+    });
+
     const gasPayload = buildAppsScriptPayload(validation.data);
-    const gasResult = await forwardToAppsScript(gasPayload);
+    logUploadDiag('forward_apps_script');
+
+    const gasResponse = await forwardToAppsScript(gasPayload);
+    const gasResult = gasResponse.result;
+
+    logUploadDiag('apps_script_response', {
+      appsScriptHttpStatus: gasResponse.httpStatus,
+      appsScriptJsonStatus: gasResult.status || null,
+      appsScriptJsonMessage: gasResult.message || null,
+    });
 
     if (gasResult.status === 'success') {
+      logUploadDiag('response_success', { httpStatus: 200 });
       return jsonResponse(200, { success: true, url: gasResult.url || null }, corsOrigin);
     }
 
     const statusCode = gasResult.message === 'Unauthorized' ? 401 : 400;
+
+    if (statusCode === 401) {
+      logUploadDiag('response_401', {
+        unauthorizedSource: envDiag.hasUploadToken
+          ? 'apps_script_unauthorized'
+          : 'netlify_missing_upload_token',
+        netlifyConfigComplete:
+          envDiag.hasUploadToken &&
+          envDiag.hasAppsScriptUrl &&
+          envDiag.hasAllowedOrigins,
+        appsScriptHttpStatus: gasResponse.httpStatus,
+        appsScriptJsonStatus: gasResult.status || null,
+        appsScriptJsonMessage: gasResult.message || null,
+      });
+    } else {
+      logUploadDiag('response_error', {
+        httpStatus: statusCode,
+        appsScriptHttpStatus: gasResponse.httpStatus,
+        appsScriptJsonStatus: gasResult.status || null,
+        appsScriptJsonMessage: gasResult.message || null,
+      });
+    }
+
     return jsonResponse(statusCode, { success: false, error: gasResult.message || 'Upload failed' }, corsOrigin);
   } catch (err) {
-    console.error('Upload handler error:', err);
+    logUploadDiag('handler_exception', {
+      errorName: err?.name || 'Error',
+      errorMessage: err?.message || 'Unknown error',
+    });
     return jsonResponse(500, { success: false, error: 'Internal server error' }, corsOrigin);
   }
 };
@@ -279,9 +372,18 @@ async function forwardToAppsScript(payload) {
 
   const raw = await response.text();
   try {
-    return JSON.parse(raw);
+    return {
+      httpStatus: response.status,
+      result: JSON.parse(raw),
+    };
   } catch {
-    console.error('Apps Script returned non-JSON response:', raw.slice(0, 500));
-    return { status: 'error', message: 'Invalid Apps Script response' };
+    logUploadDiag('apps_script_non_json_response', {
+      appsScriptHttpStatus: response.status,
+      responsePreviewLength: raw.length,
+    });
+    return {
+      httpStatus: response.status,
+      result: { status: 'error', message: 'Invalid Apps Script response' },
+    };
   }
 }
