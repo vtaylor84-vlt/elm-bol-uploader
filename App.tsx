@@ -400,6 +400,17 @@ const App: React.FC = () => {
   const [uploadSavedLocally, setUploadSavedLocally] = useState(false);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [fullImage, setFullImage] = useState<string | null>(null);
+  type ReviewEditCard = 'event' | 'carrier' | 'pickup' | 'destination' | 'bol' | null;
+  const [reviewEditCard, setReviewEditCard] = useState<ReviewEditCard>(null);
+  const [reviewDraft, setReviewDraft] = useState({
+    eventType: '' as EventType,
+    manualCarrier: '' as ManualCarrierOption,
+    puCity: '',
+    puState: '',
+    delCity: '',
+    delState: '',
+    bolNum: '',
+  });
 
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -574,6 +585,52 @@ const App: React.FC = () => {
   const confirmedFieldStyle = solarMode
     ? 'w-full p-5 rounded-2xl font-mono text-sm border-2 outline-none bg-zinc-50 border-zinc-900 text-black shadow-sm'
     : 'w-full p-5 rounded-2xl font-mono text-sm border-2 outline-none bg-black border-zinc-600 text-white shadow-lg';
+
+  const reviewCarrierDisplay =
+    (selectedLoad ? confirmedCarrierLabel : effectiveCompany) || 'Carrier not listed';
+
+  const openReviewEdit = (card: Exclude<ReviewEditCard, null>) => {
+    setReviewDraft({
+      eventType: (eventType || 'PICKUP') as EventType,
+      manualCarrier: (manualCarrier || reviewCarrierDisplay || '') as ManualCarrierOption,
+      puCity,
+      puState,
+      delCity,
+      delState,
+      bolNum,
+    });
+    setReviewEditCard((current) => (current === card ? null : card));
+  };
+
+  const cancelReviewEdit = () => setReviewEditCard(null);
+
+  const confirmReviewEdit = () => {
+    if (reviewEditCard === 'event' && reviewDraft.eventType) {
+      setEventType(reviewDraft.eventType);
+      setBolProtocol(reviewDraft.eventType);
+    }
+    if (reviewEditCard === 'carrier' && reviewDraft.manualCarrier) {
+      setManualCarrier(reviewDraft.manualCarrier);
+      setCompany(reviewDraft.manualCarrier);
+    }
+    if (reviewEditCard === 'pickup') {
+      setPuCity(reviewDraft.puCity.toUpperCase());
+      setPuState(reviewDraft.puState.toUpperCase());
+    }
+    if (reviewEditCard === 'destination') {
+      setDelCity(reviewDraft.delCity.toUpperCase());
+      setDelState(reviewDraft.delState.toUpperCase());
+    }
+    if (reviewEditCard === 'bol') {
+      setBolNum(reviewDraft.bolNum.trim());
+    }
+    setReviewEditCard(null);
+  };
+
+  const reviewGlassPanel = 'bg-zinc-900/70 backdrop-blur-md border border-zinc-700/60 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.35)]';
+  const reviewCompactInput = solarMode
+    ? 'w-full p-3 rounded-xl font-mono text-sm border border-zinc-300 bg-white text-black outline-none focus:ring-2 focus:ring-blue-500/40'
+    : 'w-full p-3 rounded-xl font-mono text-sm border border-zinc-700 bg-black/80 text-white outline-none focus:ring-2 focus:ring-blue-500/40';
 
   const resetFlowFromEvent = (nextEvent: EventType) => {
     logUiDiag('resetFlowFromEvent', { nextEvent, clearsSelectedLoad: true });
@@ -1737,7 +1794,7 @@ const App: React.FC = () => {
               : 'bg-zinc-900 text-zinc-700 cursor-not-allowed'
           }`}
         >
-          Review Submission
+          Review & Confirm
         </button>
       </div>
 
@@ -1817,400 +1874,542 @@ const App: React.FC = () => {
       )}
 
       {showVerification && (
-        <div className="fixed inset-0 z-[600] bg-zinc-950 overflow-y-auto animate-in slide-in-from-right">
-          <div className="max-w-xl mx-auto px-6 py-8 pb-56 space-y-8">
-            <div className="flex justify-between items-start border-b border-zinc-800/80 pb-6">
-              <div>
-                <p className="text-[8px] font-black uppercase tracking-[0.4em] text-zinc-600 mb-2">
-                  Step 5 · Review
-                </p>
-                <h2 className="text-2xl font-black italic text-white uppercase tracking-tighter">
-                  Review & Submit
-                </h2>
+        <div className="fixed inset-0 z-[600] bg-[#050508] overflow-y-auto animate-in slide-in-from-right">
+          <div className="max-w-xl mx-auto px-4 py-5 pb-36 space-y-5">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-green-500/30 bg-green-500/10">
+                <span className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]" />
+                <span className="text-[8px] font-black uppercase tracking-[0.25em] text-green-400">
+                  Connected
+                </span>
               </div>
-
               <button
                 onClick={() => {
+                  setReviewEditCard(null);
                   setShowVerification(false);
                   setCurrentStage('EVIDENCE');
                 }}
-                className="bg-zinc-900 text-zinc-400 px-5 py-2 rounded-full font-black text-[9px] uppercase border border-zinc-800 shrink-0"
+                className="text-zinc-500 font-black uppercase text-[9px] tracking-widest px-3 py-2 border border-zinc-800 rounded-full hover:border-zinc-600 transition-colors"
               >
-                Close
+                Close ✕
               </button>
             </div>
 
-            <div
-              className={`flex items-center gap-2 px-4 py-2 rounded-full border w-fit ${
-                themeMode === 'green'
-                  ? 'border-green-500/30 bg-green-500/10'
-                  : themeMode === 'blue'
-                    ? 'border-blue-500/30 bg-blue-500/10'
-                    : 'border-zinc-700 bg-zinc-900/50'
-              }`}
-            >
-              <span
-                className={`text-[8px] font-black uppercase tracking-[0.3em] ${themeTextClass}`}
-              >
-                Ready to review
-              </span>
+            <div>
+              <p className="text-[8px] font-black uppercase tracking-[0.45em] text-zinc-600 mb-1">
+                Step 4 of 4
+              </p>
+              <h2 className="text-2xl font-black italic text-white uppercase tracking-tighter">
+                Review & Confirm
+              </h2>
+              <p className="mt-1 text-[10px] text-zinc-500 normal-case tracking-normal">
+                Review everything below and submit to dispatch.
+              </p>
             </div>
 
-            <section className="space-y-3">
-              <div className="flex items-center gap-3">
-                <div
-                  className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-black text-white shrink-0 ${
-                    themeMode === 'green'
-                      ? 'bg-green-600'
-                      : themeMode === 'blue'
-                        ? 'bg-blue-600'
-                        : 'bg-zinc-600'
-                  }`}
-                >
-                  ✓
-                </div>
-                <h3 className="text-[10px] font-black uppercase tracking-[0.35em] text-zinc-400">
-                  Review Submission
-                </h3>
-              </div>
-
-              <div className="space-y-2 border-l-2 border-zinc-800 ml-3 pl-5">
-                {[
-                  { l: 'Event', v: eventType || '—', id: null },
-                  { l: 'Driver', v: driverName || '—', id: 'driverName' },
-                  {
-                    l: 'Pickup',
-                    v: `${puCity || '—'}, ${puState || '—'}`,
-                    id: 'origin'
-                  },
-                  {
-                    l: 'Destination',
-                    v: `${delCity || '—'}, ${delState || '—'}`,
-                    id: 'destination'
-                  },
-                  {
-                    l: 'Carrier',
-                    v:
-                      (selectedLoad ? confirmedCarrierLabel : effectiveCompany) ||
-                      '—',
-                    id: 'company'
-                  }
-                ].map((item) => (
-                  <div
-                    key={item.l}
-                    onClick={() => item.id && setEditingField(item.id)}
-                    className={`bg-zinc-900/40 border border-zinc-800 rounded-2xl px-5 py-4 transition-all ${
-                      item.id ? 'active:scale-[0.99] cursor-pointer' : ''
+            <div className="flex items-center justify-between gap-1 px-1">
+              {[
+                { label: 'Event', done: true },
+                { label: 'Assignment', done: true },
+                { label: 'Documents', done: hasBolEvidence },
+                { label: 'Review', done: false, active: true },
+              ].map((step, idx) => (
+                <div key={step.label} className="flex-1 flex flex-col items-center gap-1.5 min-w-0">
+                  <div className="flex items-center w-full">
+                    {idx > 0 ? (
+                      <div
+                        className={`h-px flex-1 ${
+                          step.done || step.active ? 'bg-blue-500/50' : 'bg-zinc-800'
+                        }`}
+                      />
+                    ) : (
+                      <div className="flex-1" />
+                    )}
+                    <div
+                      className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 transition-all ${
+                        step.active
+                          ? 'bg-blue-600 text-white shadow-[0_0_16px_rgba(59,130,246,0.55)] ring-2 ring-blue-400/40'
+                          : step.done
+                            ? 'bg-blue-600/20 text-blue-400 border border-blue-500/40'
+                            : 'bg-zinc-900 text-zinc-600 border border-zinc-800'
+                      }`}
+                    >
+                      {step.done && !step.active ? '✓' : step.active ? '●' : ''}
+                    </div>
+                    {idx < 3 ? (
+                      <div
+                        className={`h-px flex-1 ${
+                          step.done ? 'bg-blue-500/50' : 'bg-zinc-800'
+                        }`}
+                      />
+                    ) : (
+                      <div className="flex-1" />
+                    )}
+                  </div>
+                  <span
+                    className={`text-[7px] font-black uppercase tracking-[0.15em] truncate w-full text-center ${
+                      step.active ? 'text-blue-400' : step.done ? 'text-zinc-500' : 'text-zinc-700'
                     }`}
                   >
-                    <div className="flex justify-between items-center gap-2 mb-1">
-                      <span className="text-[9px] font-black text-yellow-500/90 uppercase tracking-widest">
-                        {item.l}
-                      </span>
-                      <div className="flex items-center gap-2 shrink-0">
-                        {item.id ? (
-                          <span className="text-[7px] font-black text-white/40 uppercase border border-white/10 px-2 py-0.5 rounded">
-                            Tap to edit
-                          </span>
-                        ) : null}
-                        <span className="text-green-500 text-xs font-black">✓</span>
+                    {step.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <section className="space-y-2">
+              <h3 className="text-[9px] font-black uppercase tracking-[0.35em] text-zinc-500 px-1">
+                Load Overview
+              </h3>
+
+              <div className="grid grid-cols-2 gap-2">
+                {(
+                  [
+                    {
+                      id: 'event' as const,
+                      label: 'Event',
+                      value: eventType || '—',
+                      icon: '📦',
+                    },
+                    {
+                      id: 'carrier' as const,
+                      label: 'Carrier',
+                      value: reviewCarrierDisplay,
+                      icon: '🚛',
+                    },
+                    {
+                      id: 'pickup' as const,
+                      label: 'Pickup Location',
+                      value: `${puCity || '—'}, ${puState || '—'}`,
+                      icon: '📍',
+                    },
+                    {
+                      id: 'destination' as const,
+                      label: 'Destination',
+                      value: `${delCity || '—'}, ${delState || '—'}`,
+                      icon: '🏁',
+                    },
+                  ] as const
+                ).map((card) => {
+                  const isOpen = reviewEditCard === card.id;
+                  return (
+                    <div
+                      key={card.id}
+                      className={`${reviewGlassPanel} overflow-hidden transition-all duration-300 ${
+                        isOpen ? 'col-span-2 ring-1 ring-blue-500/30' : ''
+                      }`}
+                    >
+                      <div className="p-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-start gap-2 min-w-0 flex-1">
+                            <span className="text-base leading-none opacity-80">{card.icon}</span>
+                            <div className="min-w-0">
+                              <p className="text-[7px] font-black uppercase tracking-[0.2em] text-zinc-500">
+                                {card.label}
+                              </p>
+                              <p className="text-[11px] font-bold text-white uppercase tracking-tight truncate mt-0.5">
+                                {card.value}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => openReviewEdit(card.id)}
+                            className="shrink-0 w-8 h-8 rounded-lg border border-zinc-700/80 bg-zinc-800/50 text-[10px] text-blue-400 hover:border-blue-500/40 hover:bg-blue-500/10 transition-all active:scale-95"
+                            aria-label={`Edit ${card.label}`}
+                          >
+                            ✎
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                    <div className="text-base font-bold text-white uppercase tracking-tight">
-                      {item.v}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
 
-            <section className="space-y-3">
-              <div className="flex items-center gap-3">
-                <div
-                  className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-black text-white shrink-0 ${
-                    hasAssignment
-                      ? themeMode === 'green'
-                        ? 'bg-green-600'
-                        : themeMode === 'blue'
-                          ? 'bg-blue-600'
-                          : 'bg-zinc-600'
-                      : 'bg-zinc-800 text-zinc-600'
-                  }`}
-                >
-                  {hasAssignment ? '✓' : '·'}
-                </div>
-                <h3 className="text-[10px] font-black uppercase tracking-[0.35em] text-zinc-400">
-                  Load Information
-                </h3>
-              </div>
+                      {isOpen ? (
+                        <div className="px-3 pb-3 pt-0 border-t border-zinc-800/80 animate-in slide-in-from-top-2 duration-300">
+                          {card.id === 'event' ? (
+                            <div className="grid grid-cols-2 gap-2 mt-3">
+                              {(['PICKUP', 'DELIVERY'] as const).map((opt) => (
+                                <button
+                                  key={opt}
+                                  type="button"
+                                  onClick={() =>
+                                    setReviewDraft((d) => ({ ...d, eventType: opt }))
+                                  }
+                                  className={`py-3 rounded-xl border text-[9px] font-black uppercase tracking-widest transition-all ${
+                                    reviewDraft.eventType === opt
+                                      ? 'bg-blue-600 border-blue-500 text-white shadow-[0_0_12px_rgba(59,130,246,0.35)]'
+                                      : 'bg-zinc-950 border-zinc-800 text-zinc-500'
+                                  }`}
+                                >
+                                  {opt}
+                                </button>
+                              ))}
+                            </div>
+                          ) : null}
 
-              <div
-                className={`border-l-2 ml-3 pl-5 py-1 ${
-                  themeMode === 'green'
-                    ? 'border-green-500/40'
-                    : themeMode === 'blue'
-                      ? 'border-blue-500/40'
-                      : 'border-zinc-700'
-                }`}
-              >
-                <div
-                  className={`rounded-[1.75rem] border-2 p-5 ${themeBorderClass} ${themeBgClass}`}
-                >
-                  <div
-                    className={`text-[9px] font-black uppercase tracking-[0.25em] mb-2 ${themeTextClass}`}
-                  >
-                    {selectedLoad
-                      ? 'Load from dispatch board'
-                      : 'Load entered manually'}
-                  </div>
-                  <div className="text-sm font-bold text-white uppercase tracking-tight">
-                    {puCity}, {puState} → {delCity}, {delState}
-                  </div>
-                  <div className="mt-2 text-[10px] font-mono text-zinc-400 uppercase">
-                    {(selectedLoad ? confirmedCarrierLabel : effectiveCompany) ||
-                      'Carrier not listed'}
-                  </div>
-                </div>
-              </div>
-            </section>
+                          {card.id === 'carrier' ? (
+                            <select
+                              className={`${reviewCompactInput} mt-3`}
+                              value={reviewDraft.manualCarrier}
+                              onChange={(e) =>
+                                setReviewDraft((d) => ({
+                                  ...d,
+                                  manualCarrier: e.target.value as ManualCarrierOption,
+                                }))
+                              }
+                            >
+                              <option value="">Select carrier</option>
+                              <option value="BST Expedite Inc">BST Expedite Inc</option>
+                              <option value="Greenleaf Xpress">Greenleaf Xpress</option>
+                              <option value="Other Carrier">Other Carrier</option>
+                            </select>
+                          ) : null}
 
-            <section className="space-y-3">
-              <div className="flex items-center gap-3">
-                <div
-                  className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-black text-white shrink-0 ${
-                    hasBolEvidence
-                      ? themeMode === 'green'
-                        ? 'bg-green-600'
-                        : themeMode === 'blue'
-                          ? 'bg-blue-600'
-                          : 'bg-zinc-600'
-                      : 'bg-zinc-800 text-zinc-600'
-                  }`}
-                >
-                  {hasBolEvidence ? '✓' : '·'}
-                </div>
-                <h3 className="text-[10px] font-black uppercase tracking-[0.35em] text-zinc-400">
-                  Uploaded Documents
-                </h3>
-              </div>
+                          {card.id === 'pickup' ? (
+                            <div className="grid grid-cols-4 gap-2 mt-3">
+                              <input
+                                className={`${reviewCompactInput} col-span-3`}
+                                placeholder="City"
+                                value={reviewDraft.puCity}
+                                onChange={(e) =>
+                                  setReviewDraft((d) => ({
+                                    ...d,
+                                    puCity: e.target.value.toUpperCase(),
+                                  }))
+                                }
+                              />
+                              <select
+                                className={reviewCompactInput}
+                                value={reviewDraft.puState}
+                                onChange={(e) =>
+                                  setReviewDraft((d) => ({
+                                    ...d,
+                                    puState: e.target.value.toUpperCase(),
+                                  }))
+                                }
+                              >
+                                <option value="">ST</option>
+                                {states.map((s) => (
+                                  <option key={s} value={s}>
+                                    {s}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          ) : null}
 
-              <div className="space-y-3 border-l-2 border-zinc-800 ml-3 pl-5">
-                <div
-                  onClick={() => setEditingField('reference')}
-                  className="bg-zinc-900/40 border border-zinc-800 rounded-2xl px-5 py-4 active:scale-[0.99] cursor-pointer transition-all"
-                >
-                  <div className="flex justify-between items-center gap-2 mb-1">
-                    <span className="text-[9px] font-black text-yellow-500/90 uppercase tracking-widest">
-                      BOL #
-                    </span>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-[7px] font-black text-white/40 uppercase border border-white/10 px-2 py-0.5 rounded">
-                        Tap to edit
-                      </span>
-                      {bolNum.trim() ? (
-                        <span className="text-green-500 text-xs font-black">✓</span>
+                          {card.id === 'destination' ? (
+                            <div className="grid grid-cols-4 gap-2 mt-3">
+                              <input
+                                className={`${reviewCompactInput} col-span-3`}
+                                placeholder="City"
+                                value={reviewDraft.delCity}
+                                onChange={(e) =>
+                                  setReviewDraft((d) => ({
+                                    ...d,
+                                    delCity: e.target.value.toUpperCase(),
+                                  }))
+                                }
+                              />
+                              <select
+                                className={reviewCompactInput}
+                                value={reviewDraft.delState}
+                                onChange={(e) =>
+                                  setReviewDraft((d) => ({
+                                    ...d,
+                                    delState: e.target.value.toUpperCase(),
+                                  }))
+                                }
+                              >
+                                <option value="">ST</option>
+                                {states.map((s) => (
+                                  <option key={s} value={s}>
+                                    {s}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          ) : null}
+
+                          <div className="flex gap-2 mt-3">
+                            <button
+                              type="button"
+                              onClick={cancelReviewEdit}
+                              className="flex-1 py-2.5 rounded-xl border border-zinc-700 text-[8px] font-black uppercase tracking-widest text-zinc-500 active:scale-95"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              onClick={confirmReviewEdit}
+                              className="flex-1 py-2.5 rounded-xl bg-blue-600 text-[8px] font-black uppercase tracking-widest text-white shadow-[0_0_12px_rgba(59,130,246,0.35)] active:scale-95"
+                            >
+                              Confirm
+                            </button>
+                          </div>
+                        </div>
                       ) : null}
                     </div>
-                  </div>
-                  <div className="text-base font-bold text-white uppercase tracking-tight">
-                    {bolNum || '—'}
-                  </div>
-                </div>
+                  );
+                })}
+              </div>
 
-                {uploadedFiles
-                  .filter((f) => f.category === 'bol')
-                  .map((f) => (
-                    <div key={f.id} className="space-y-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-500">
-                          BOL / Proof of Load
-                        </span>
-                        <span className="text-green-500 text-xs font-black">✓</span>
-                      </div>
-                      <div
-                        className="aspect-[3/4] max-h-56 rounded-2xl overflow-hidden border-2 border-zinc-700 relative cursor-zoom-in"
-                        onClick={() => setFullImage(f.preview)}
+              <p className="text-center text-[7px] font-black uppercase tracking-[0.3em] text-zinc-700 pt-1">
+                ↑ Tap any field above to edit ↓
+              </p>
+            </section>
+
+            <section className="space-y-2">
+              <div className="flex items-center justify-between px-1">
+                <h3 className="text-[9px] font-black uppercase tracking-[0.35em] text-zinc-500">
+                  Documents & Photos
+                </h3>
+                <span className="text-[7px] font-black uppercase tracking-widest text-green-400 flex items-center gap-1">
+                  <span className="text-green-500">✓</span>
+                  {uploadedFiles.length} item{uploadedFiles.length === 1 ? '' : 's'} uploaded
+                </span>
+              </div>
+
+              <div className={`${reviewGlassPanel} border-blue-500/25 overflow-hidden`}>
+                <div className="p-3 border-b border-zinc-800/80">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <p className="text-[8px] font-black uppercase tracking-[0.2em] text-blue-400">
+                        BOL (Proof of Load)
+                      </p>
+                      <p className="text-[10px] font-bold text-white mt-0.5">
+                        BOL # {bolNum || '—'}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[7px] font-black uppercase text-green-400">✓ Verified</span>
+                      <button
+                        type="button"
+                        onClick={() => openReviewEdit('bol')}
+                        className="w-8 h-8 rounded-lg border border-blue-500/30 bg-blue-500/10 text-[10px] text-blue-400 active:scale-95"
+                        aria-label="Edit BOL number"
                       >
-                        <img
-                          src={f.preview}
-                          className="w-full h-full object-cover"
-                          alt="BOL proof of load"
-                        />
+                        ✎
+                      </button>
+                    </div>
+                  </div>
+                  {reviewEditCard === 'bol' ? (
+                    <div className="mt-3 pt-3 border-t border-zinc-800/80 animate-in slide-in-from-top-2">
+                      <input
+                        className={reviewCompactInput}
+                        placeholder="BOL #"
+                        value={reviewDraft.bolNum}
+                        onChange={(e) =>
+                          setReviewDraft((d) => ({ ...d, bolNum: e.target.value.trim() }))
+                        }
+                      />
+                      <div className="flex gap-2 mt-2">
+                        <button
+                          type="button"
+                          onClick={cancelReviewEdit}
+                          className="flex-1 py-2 rounded-xl border border-zinc-700 text-[8px] font-black uppercase text-zinc-500"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={confirmReviewEdit}
+                          className="flex-1 py-2 rounded-xl bg-blue-600 text-[8px] font-black uppercase text-white"
+                        >
+                          Confirm
+                        </button>
                       </div>
                     </div>
-                  ))}
+                  ) : null}
+                </div>
+                {uploadedFiles.some((f) => f.category === 'bol') ? (
+                  <div className="p-3 flex gap-2 overflow-x-auto">
+                    {uploadedFiles
+                      .filter((f) => f.category === 'bol')
+                      .map((f) => (
+                        <button
+                          key={f.id}
+                          type="button"
+                          onClick={() => setFullImage(f.preview)}
+                          className="shrink-0 w-20 h-20 rounded-xl overflow-hidden border border-blue-500/30 relative group"
+                        >
+                          <img
+                            src={f.preview}
+                            className="w-full h-full object-cover"
+                            alt="BOL"
+                          />
+                          <span className="absolute inset-x-0 bottom-0 bg-black/70 text-[6px] font-black uppercase text-blue-300 py-0.5">
+                            Tap to view
+                          </span>
+                        </button>
+                      ))}
+                  </div>
+                ) : null}
+              </div>
 
-                {eventType === 'PICKUP' &&
-                (freightNotRequired ||
-                  uploadedFiles.some((f) => f.category === 'freight')) ? (
-                  <div className="space-y-2 pt-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-[9px] font-black uppercase tracking-[0.25em] text-orange-500/90">
-                        Freight on Trailer
-                      </span>
-                      <span className="text-green-500 text-xs font-black">✓</span>
-                    </div>
-                    {freightNotRequired ? (
-                      <div className="p-3 rounded-xl border border-orange-500/30 bg-orange-500/10 text-center text-[8px] font-black uppercase tracking-[0.2em] text-orange-400">
-                        Not required — dispatch confirmed
-                      </div>
-                    ) : null}
-                    <div className="grid grid-cols-2 gap-3">
+              {eventType === 'PICKUP' &&
+              (freightNotRequired ||
+                uploadedFiles.some((f) => f.category === 'freight')) ? (
+                <div className={`${reviewGlassPanel} border-green-500/25 overflow-hidden`}>
+                  <div className="p-3 border-b border-zinc-800/80 flex items-center justify-between">
+                    <p className="text-[8px] font-black uppercase tracking-[0.2em] text-green-400">
+                      Freight on Trailer
+                    </p>
+                    <span className="text-[7px] font-black uppercase text-green-400">✓ Verified</span>
+                  </div>
+                  {freightNotRequired ? (
+                    <p className="p-3 text-[8px] font-black uppercase tracking-[0.15em] text-green-400/80 text-center">
+                      Not required — dispatch confirmed
+                    </p>
+                  ) : (
+                    <div className="p-3 flex gap-2 overflow-x-auto">
                       {uploadedFiles
                         .filter((f) => f.category === 'freight')
                         .map((f) => (
-                          <div
+                          <button
                             key={f.id}
-                            className="aspect-square rounded-2xl overflow-hidden border-2 border-orange-900/50 relative cursor-zoom-in"
+                            type="button"
                             onClick={() => setFullImage(f.preview)}
+                            className="shrink-0 w-20 h-20 rounded-xl overflow-hidden border border-green-500/30 relative"
                           >
                             <img
                               src={f.preview}
                               className="w-full h-full object-cover"
-                              alt="Freight on trailer"
+                              alt="Freight"
                             />
-                          </div>
+                            <span className="absolute inset-x-0 bottom-0 bg-black/70 text-[6px] font-black uppercase text-green-300 py-0.5">
+                              Tap to view
+                            </span>
+                          </button>
                         ))}
                     </div>
-                  </div>
-                ) : null}
-              </div>
+                  )}
+                </div>
+              ) : null}
             </section>
 
-            <section className="space-y-3">
-              <div
-                className={`rounded-[2rem] border-2 p-6 text-center ${
-                  isReady
-                    ? themeMode === 'green'
-                      ? 'border-green-500/40 bg-green-500/10'
-                      : themeMode === 'blue'
-                        ? 'border-blue-500/40 bg-blue-500/10'
-                        : 'border-zinc-600 bg-zinc-900/50'
-                    : 'border-zinc-800 bg-zinc-900/30'
-                }`}
-              >
-                <div className="flex items-center justify-center gap-2 mb-3">
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-black text-white ${
-                      isReady
-                        ? themeMode === 'green'
-                          ? 'bg-green-600'
-                          : themeMode === 'blue'
-                            ? 'bg-blue-600'
-                            : 'bg-zinc-600'
-                        : 'bg-zinc-800'
-                    }`}
-                  >
-                    {isReady ? '✓' : '·'}
-                  </div>
-                  <h3
-                    className={`text-[10px] font-black uppercase tracking-[0.35em] ${
-                      isReady ? themeTextClass : 'text-zinc-500'
+            <div
+              className={`${reviewGlassPanel} p-4 space-y-3 ${
+                isReady
+                  ? 'border-blue-500/40 shadow-[0_0_24px_rgba(59,130,246,0.15)]'
+                  : 'border-zinc-800'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-black shrink-0 ${
+                    isReady
+                      ? 'bg-green-600/20 text-green-400 border border-green-500/40'
+                      : 'bg-zinc-800 text-zinc-600 border border-zinc-700'
+                  }`}
+                >
+                  {isReady ? '✓' : '·'}
+                </div>
+                <div className="min-w-0">
+                  <p
+                    className={`text-[10px] font-black uppercase tracking-[0.25em] ${
+                      isReady ? 'text-white' : 'text-zinc-500'
                     }`}
                   >
                     Ready to Submit
-                  </h3>
+                  </p>
+                  <p className="text-[9px] text-zinc-500 normal-case tracking-normal mt-0.5">
+                    {isReady
+                      ? 'Everything has been verified.'
+                      : 'Complete your documents before submitting.'}
+                  </p>
                 </div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 leading-relaxed">
-                  {isReady
-                    ? 'Everything looks good. Submit when ready.'
-                    : 'Add your documents above before submitting.'}
-                </p>
               </div>
-            </section>
 
-            <button
-              onClick={async () => {
-                setIsSubmitting(true);
-                setShowUploadFailure(false);
-                setUploadFailureMessage('');
-                setUploadSavedLocally(false);
+              <button
+                type="button"
+                disabled={!isReady || isSubmitting}
+                onClick={async () => {
+                  setIsSubmitting(true);
+                  setShowUploadFailure(false);
+                  setUploadFailureMessage('');
+                  setUploadSavedLocally(false);
 
-                const base64 = await Promise.all(
-                  uploadedFiles.map(async (f) => {
-                    return {
-                      category: f.category,
-                      base64: await new Promise((res) => {
-                        const r = new FileReader();
-                        r.onload = () => res(r.result);
-                        r.readAsDataURL(f.file);
-                      })
-                    };
-                  })
-                );
+                  const base64 = await Promise.all(
+                    uploadedFiles.map(async (f) => {
+                      return {
+                        category: f.category,
+                        base64: await new Promise((res) => {
+                          const r = new FileReader();
+                          r.onload = () => res(r.result);
+                          r.readAsDataURL(f.file);
+                        }),
+                      };
+                    })
+                  );
 
-                const payload = buildSubmissionPayload(base64);
-
-                try {
-                  const response = await fetch('/.netlify/functions/upload', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                  });
-
-                  let result: { success?: boolean; error?: string } = {};
-                  try {
-                    result = await response.json();
-                  } catch {
-                    throw new Error('Upload failed: invalid server response');
-                  }
-
-                  if (!response.ok || !result.success) {
-                    throw new Error(result.error || 'Upload failed');
-                  }
-
-                  setShowSuccess(true);
-                } catch (e) {
-                  const message =
-                    e instanceof Error ? e.message : 'Upload failed. Please try again.';
+                  const payload = buildSubmissionPayload(base64);
 
                   try {
-                    const currentVault: VaultEntry[] = JSON.parse(
-                      localStorage.getItem('multi_vault') || '[]'
-                    );
+                    const response = await fetch('/.netlify/functions/upload', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify(payload),
+                    });
 
-                    localStorage.setItem(
-                      'multi_vault',
-                      JSON.stringify([
-                        ...currentVault,
-                        {
-                          id: Math.random().toString(),
-                          timestamp: Date.now(),
-                          payload
-                        }
-                      ])
-                    );
-                    setUploadSavedLocally(true);
-                  } catch {
-                    setUploadSavedLocally(false);
+                    let result: { success?: boolean; error?: string } = {};
+                    try {
+                      result = await response.json();
+                    } catch {
+                      throw new Error('Upload failed: invalid server response');
+                    }
+
+                    if (!response.ok || !result.success) {
+                      throw new Error(result.error || 'Upload failed');
+                    }
+
+                    setShowSuccess(true);
+                  } catch (e) {
+                    const message =
+                      e instanceof Error ? e.message : 'Upload failed. Please try again.';
+
+                    try {
+                      const currentVault: VaultEntry[] = JSON.parse(
+                        localStorage.getItem('multi_vault') || '[]'
+                      );
+
+                      localStorage.setItem(
+                        'multi_vault',
+                        JSON.stringify([
+                          ...currentVault,
+                          {
+                            id: Math.random().toString(),
+                            timestamp: Date.now(),
+                            payload,
+                          },
+                        ])
+                      );
+                      setUploadSavedLocally(true);
+                    } catch {
+                      setUploadSavedLocally(false);
+                    }
+
+                    setUploadFailureMessage(message);
+                    setShowUploadFailure(true);
+                  } finally {
+                    setIsSubmitting(false);
                   }
+                }}
+                className={`w-full py-4 rounded-2xl font-black uppercase tracking-[0.35em] text-[11px] text-white transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed ${
+                  themeMode === 'green'
+                    ? 'bg-green-600 shadow-[0_0_20px_rgba(34,197,94,0.25)]'
+                    : themeMode === 'blue'
+                      ? 'bg-blue-600 shadow-[0_0_20px_rgba(59,130,246,0.35)]'
+                      : 'bg-zinc-700'
+                }`}
+              >
+                Submit to Dispatch →
+              </button>
+            </div>
 
-                  setUploadFailureMessage(message);
-                  setShowUploadFailure(true);
-                } finally {
-                  setIsSubmitting(false);
-                }
-              }}
-              className={`w-full py-8 rounded-[2.5rem] font-black uppercase tracking-[1.2em] shadow-xl text-white ${
-                themeMode === 'green'
-                  ? 'bg-green-600'
-                  : themeMode === 'blue'
-                    ? 'bg-blue-600'
-                    : 'bg-zinc-700'
-              }`}
-            >
-              Submit to Dispatch
-            </button>
-
-            <button
-              onClick={() => {
-                setShowVerification(false);
-                setCurrentStage('EVIDENCE');
-              }}
-              className="w-full text-zinc-500 font-black uppercase text-[10px] tracking-widest py-4"
-            >
-              Back to Edit
-            </button>
+            <p className="text-center text-[8px] text-zinc-600 normal-case tracking-normal flex items-center justify-center gap-1.5 pb-2">
+              <span>🔒</span>
+              Your documents are secure and will be sent to dispatch.
+            </p>
           </div>
         </div>
       )}
