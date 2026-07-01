@@ -1,0 +1,136 @@
+# ELM CONNECT — Cursor Agent Rules
+
+Read `AGENTS.md` and `docs/ELM_CONNECT_Enterprise_Platform_Standards_v1.0.md` before architectural, security, or multi-tenant changes.
+
+---
+
+## 1. Project identity
+
+- **ELM CONNECT** is a multi-company transportation operating platform.
+- **GLX** and **BST** are tenants / company contexts — not casually mixed systems.
+- Preserve **company isolation**: scope records by `companyId`, `tenantId`, and `carrierCode`.
+- Never trust `companyId` from React alone; the authenticated session determines allowed companies.
+- GLX data must stay isolated from BST data unless explicit cross-company permission exists.
+- Platform name in UI: **ELM CONNECT**. GLX/BST appear as company context inside the platform.
+
+---
+
+## 2. Current stack
+
+| Layer | Technology |
+|-------|------------|
+| Frontend | React + Vite (`App.tsx`, `utils/`) |
+| Hosting | Netlify (`netlify.toml`, publishes `dist`) |
+| API gateway | Netlify Functions (`netlify/functions/`) |
+| Backend | Google Apps Script (`gas/`) |
+| Data | Google Sheets (`Driver_Master`, `DB_Docs`, loads, etc.) |
+| Files | Google Drive (per-tenant folders in `gas/00_App_Config.js`) |
+| Notifications | Email + SMS gateway |
+| Version control | GitHub |
+| GAS sync | **clasp** — local `gas/` ↔ live Apps Script project |
+
+---
+
+## 3. Source-of-truth workflow
+
+- **Local repo** is the development source of truth for code.
+- **Apps Script live project** must stay synced with local `gas/` via **clasp**.
+- After editing files in `gas/`, run **`clasp push`** unless the user explicitly says not to.
+- Do **not** leave GAS changes only in local files without clearly reporting that live Apps Script was not updated.
+- **New Web App deployments** in Google Apps Script require care (URL/version changes). Always report when a deploy or URL change is needed or was performed.
+- If clasp is not configured in the repo, tell Vernon what must be set up before push/deploy.
+
+---
+
+## 4. Security rules
+
+- **Never** put `UPLOAD_TOKEN` in React, client bundles, git, or public URLs.
+- **React must not call Apps Script directly for upload.** Upload path: Netlify Function → GAS only.
+- **Netlify** is the secure gateway (CORS, validation, token injection).
+- **Apps Script** validates `UPLOAD_TOKEN` before privileged actions.
+- Secrets live in **Netlify env** and **GAS Script Properties** only.
+- **Do not log** tokens, secrets, base64 file payloads, phone numbers, or passwords.
+- **Do not weaken auth**, CORS, company allow lists, or roster checks to make something work.
+- Manual fallback must remain **logged and reviewable** — not anonymous.
+- Do not claim cosmetic splash / UI lock screens are real authentication unless wired to verified login.
+
+---
+
+## 5. Upload pipeline
+
+```
+React (App.tsx)
+  → Netlify Function (upload.js)
+      — origin allowlist, company map, file validation, field limits
+      — inject uploadToken server-side
+  → Apps Script (02_App_UploadHandler.js)
+      — UPLOAD_TOKEN + company allow list
+  → Drive (per-tenant folders)
+  → DB_Docs (04_App_DocIntakeWriter.js)
+  → Email / SMS (05_App_Notifications.js)
+  → truthful JSON response → React
+```
+
+Gateway limits (align client + server): 20 files max, 10 MB/file, 50 MB total, JPG/PNG (HEIC blocked at gateway).
+
+---
+
+## 6. Critical data rules
+
+These fields are **different** — never merge them again:
+
+| Field | Meaning | DB_Docs column |
+|-------|---------|----------------|
+| `loadNum` | Assigned Load # | `Load #` |
+| `bolNum` | Driver-entered BOL # | `BOLNumber` |
+| `loadId` | Internal load identifier | `Load ID` |
+
+- Do **not** use `loadNum \|\| bolNum` or similar fallbacks in upload/intake code.
+- Manual fallback: `ReviewRequired = TRUE`, company from verified session — not free client input.
+
+---
+
+## 7. UI rules
+
+- **Driver Terminal** visual identity is the production design language.
+- Preserve the futuristic dark / electric blue **ELM CONNECT** style.
+- **Do not redesign** the UI unless explicitly asked.
+- **Do not add** dark/light mode toggles unless explicitly asked.
+- Minimize unrelated UI churn; match existing patterns in `App.tsx`.
+
+---
+
+## 8. Deployment safety
+
+- **Do not auto-deploy production** (Netlify or GAS Web App) unless explicitly instructed.
+- **Build and test** before deploy (`npm run build` for frontend).
+- Use **git commits** for stable milestones.
+- Report **manual dashboard steps** clearly (Netlify env vars, GAS Script Properties, clasp push, new deployment URL).
+- Never commit secrets (`.env`, tokens, credentials).
+
+---
+
+## 9. Communication style
+
+- Give **Vernon** step-by-step instructions.
+- Be clear, practical, and conservative.
+- Explain blockers plainly — what failed, why, and the next action.
+- Do not overwhelm with unnecessary options; recommend one sensible path.
+- When GAS or Netlify live state may differ from repo, say so honestly.
+
+---
+
+## Key paths
+
+| Path | Role |
+|------|------|
+| `App.tsx` | Driver portal UI |
+| `utils/uploadFileRules.ts` | Client file validation |
+| `netlify/functions/upload.js` | Upload gateway |
+| `gas/00_App_Config.js` | SETTINGS — spreadsheet, folders, emails |
+| `gas/01_App_routes.js` | `doGet` / `doPost` routing |
+| `gas/02_App_UploadHandler.js` | Upload handler |
+| `gas/03__App_DriverLookup.js` | Driver roster |
+| `gas/04_App_DocIntakeWriter.js` | DB_Docs intake |
+| `gas/05_App_Notifications.js` | Email + SMS |
+| `gas/06_App_Utils.js` | Auth helpers, company allow list |
