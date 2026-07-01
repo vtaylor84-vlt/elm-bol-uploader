@@ -104,13 +104,7 @@ body::before {
 }
 
 .terminal-login-root::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  border: 1px solid rgba(59, 130, 246, 0.12);
-  pointer-events: none;
-  z-index: 50;
-  box-shadow: inset 0 0 80px rgba(59, 130, 246, 0.05);
+  content: none;
 }
 
 .terminal-login-frame {
@@ -324,6 +318,49 @@ body::before {
 .login-card-enter { animation: login-fade-up 0.75s ease-out 0.25s both; }
 .login-badge-enter { animation: login-fade-up 0.6s ease-out 0.35s both; }
 .login-globe-glow { animation: login-globe-pulse 4s ease-in-out infinite; }
+.login-cord-glow {
+  filter: drop-shadow(0 0 4px rgba(56, 189, 248, 0.6));
+}
+
+/* Reference login — crop brand asset to logo/globe region only */
+.login-brand-crop {
+  display: block;
+  height: 168px;
+  object-fit: cover;
+  object-position: center top;
+}
+
+.login-reference-card {
+  backdrop-filter: blur(8px);
+}
+
+.login-connect-btn {
+  background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 55%, #1e3a8a 100%);
+  border: 1px solid rgba(96, 165, 250, 0.35);
+  box-shadow: 0 4px 20px rgba(37, 99, 235, 0.45);
+}
+
+.login-connect-btn:hover:not(:disabled) {
+  box-shadow: 0 6px 28px rgba(37, 99, 235, 0.55);
+}
+
+.login-remember-checkbox {
+  appearance: none;
+  display: grid;
+  place-content: center;
+}
+
+.login-remember-checkbox:checked::before {
+  content: '✓';
+  font-size: 10px;
+  font-weight: 900;
+  color: white;
+}
+
+.login-remember-checkbox:checked {
+  background: #2563eb;
+  border-color: #3b82f6;
+}
 .login-orbit-slow { animation: terminal-orbit 28s linear infinite; }
 .login-orbit-reverse { animation: terminal-orbit-reverse 20s linear infinite; }
 
