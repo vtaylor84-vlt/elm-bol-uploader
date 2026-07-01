@@ -582,45 +582,51 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const scanForLoads = async () => {
-      if (driverName && eventType && !manualMode) {
-        setIsScanning(true);
-        setLoadSelectionError(false);
-        setAvailableLoads([]);
-        setCurrentStage('ASSIGNMENT');
+      if (!driverName || !eventType || manualMode || selectedLoad) {
+        return;
+      }
 
-        try {
-          const response = await fetch(
-            `${GOOGLE_SCRIPT_URL}?action=getDriverLoads&driver=${encodeURIComponent(
-              driverName
-            )}&type=${eventType}`
-          );
-          const data = await response.json();
+      setIsScanning(true);
+      setLoadSelectionError(false);
+      setAvailableLoads([]);
+      setCurrentStage('ASSIGNMENT');
 
-          if (Array.isArray(data)) {
-            setAvailableLoads(data);
-            if (data.length === 0) setLoadSelectionError(true);
-          } else {
-            setAvailableLoads([]);
-            setLoadSelectionError(true);
-          }
-        } catch (err) {
-          console.error('Radar Link Failure', err);
+      try {
+        const response = await fetch(
+          `${GOOGLE_SCRIPT_URL}?action=getDriverLoads&driver=${encodeURIComponent(
+            driverName
+          )}&type=${eventType}`
+        );
+        const data = await response.json();
+
+        if (Array.isArray(data)) {
+          setAvailableLoads(data);
+          if (data.length === 0) setLoadSelectionError(true);
+        } else {
           setAvailableLoads([]);
           setLoadSelectionError(true);
-        } finally {
-          setIsScanning(false);
         }
+      } catch (err) {
+        console.error('Radar Link Failure', err);
+        setAvailableLoads([]);
+        setLoadSelectionError(true);
+      } finally {
+        setIsScanning(false);
       }
     };
 
     scanForLoads();
-  }, [driverName, eventType, manualMode]);
+  }, [driverName, eventType, manualMode, selectedLoad]);
 
   useEffect(() => {
-    if (hasManualAssignmentData && !selectedLoad) {
+    if (
+      (manualMode || loadSelectionError) &&
+      hasManualAssignmentData &&
+      !selectedLoad
+    ) {
       setCurrentStage('EVIDENCE');
     }
-  }, [hasManualAssignmentData, selectedLoad]);
+  }, [manualMode, loadSelectionError, hasManualAssignmentData, selectedLoad]);
 
   const handleLoadSelection = (load: AvailableLoad) => {
     const carrierName = getCarrierDisplayName(load.companyCode || load.company);
@@ -985,6 +991,15 @@ const App: React.FC = () => {
                 onClick={() => {
                   setManualMode(false);
                   setLoadSelectionError(false);
+                  setSelectedLoad(null);
+                  setLoadNum('');
+                  setLoadId('');
+                  setPuCity('');
+                  setPuState('');
+                  setDelCity('');
+                  setDelState('');
+                  setCompany('');
+                  setManualCarrier('');
                   setAvailableLoads([]);
                   setCurrentStage('ASSIGNMENT');
                 }}
