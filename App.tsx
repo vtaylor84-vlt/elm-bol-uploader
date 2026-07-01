@@ -428,6 +428,13 @@ const App: React.FC = () => {
       : manualCarrier
     : selectedLoadCarrier || company;
 
+  const confirmedCarrierLabel =
+    getCarrierDisplayName(
+      selectedLoad?.companyCode || selectedLoad?.company || company
+    ) ||
+    company ||
+    'Carrier not listed';
+
   const selectedCarrierCode = String(
     selectedLoad?.companyCode || selectedLoad?.company || effectiveCompany || ''
   )
@@ -563,6 +570,10 @@ const App: React.FC = () => {
           ? 'bg-black border-zinc-600 text-white shadow-lg'
           : 'bg-zinc-900 border-zinc-800 text-zinc-500'
     }`;
+
+  const confirmedFieldStyle = solarMode
+    ? 'w-full p-5 rounded-2xl font-mono text-sm border-2 outline-none bg-zinc-50 border-zinc-900 text-black shadow-sm'
+    : 'w-full p-5 rounded-2xl font-mono text-sm border-2 outline-none bg-black border-zinc-600 text-white shadow-lg';
 
   const resetFlowFromEvent = (nextEvent: EventType) => {
     logUiDiag('resetFlowFromEvent', { nextEvent, clearsSelectedLoad: true });
@@ -969,51 +980,63 @@ const App: React.FC = () => {
           </div>
         ) : selectedLoad ? (
           <div className="space-y-4 animate-in fade-in duration-500">
-            {assignedLoadNumber || loadId ? (
-              <div className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-500">
-                {assignedLoadNumber ? `Assigned load #: ${assignedLoadNumber}` : null}
-                {loadId
-                  ? `${assignedLoadNumber ? ' · ' : ''}Load ID: ${loadId}`
-                  : null}
+            <div
+              className={`p-6 rounded-[2rem] border-2 space-y-4 ${themeBorderClass} ${themeBgClass}`}
+            >
+              <div
+                className={`text-[10px] font-black uppercase tracking-[0.3em] ${themeTextClass}`}
+              >
+                Assigned Load Selected
               </div>
-            ) : null}
 
-            <div className="grid grid-cols-4 gap-4">
+              {assignedLoadNumber || loadId ? (
+                <div className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-500">
+                  {assignedLoadNumber
+                    ? `Assigned load #: ${assignedLoadNumber}`
+                    : null}
+                  {loadId
+                    ? `${assignedLoadNumber ? ' · ' : ''}Load ID: ${loadId}`
+                    : null}
+                </div>
+              ) : null}
+
+              <div className="grid grid-cols-4 gap-4">
+                <input
+                  readOnly
+                  className={`${confirmedFieldStyle} col-span-3`}
+                  value={puCity}
+                  aria-label="Pickup city"
+                />
+                <input
+                  readOnly
+                  className={confirmedFieldStyle}
+                  value={puState}
+                  aria-label="Pickup state"
+                />
+              </div>
+
+              <div className="grid grid-cols-4 gap-4">
+                <input
+                  readOnly
+                  className={`${confirmedFieldStyle} col-span-3`}
+                  value={delCity}
+                  aria-label="Delivery city"
+                />
+                <input
+                  readOnly
+                  className={confirmedFieldStyle}
+                  value={delState}
+                  aria-label="Delivery state"
+                />
+              </div>
+
               <input
                 readOnly
-                className={`${inpStyle(puCity)} col-span-3`}
-                value={puCity}
-                aria-label="Pickup city"
-              />
-              <input
-                readOnly
-                className={inpStyle(puState)}
-                value={puState}
-                aria-label="Pickup state"
+                className={confirmedFieldStyle}
+                value={confirmedCarrierLabel}
+                aria-label="Carrier"
               />
             </div>
-
-            <div className="grid grid-cols-4 gap-4">
-              <input
-                readOnly
-                className={`${inpStyle(delCity)} col-span-3`}
-                value={delCity}
-                aria-label="Delivery city"
-              />
-              <input
-                readOnly
-                className={inpStyle(delState)}
-                value={delState}
-                aria-label="Delivery state"
-              />
-            </div>
-
-            <input
-              readOnly
-              className={inpStyle(effectiveCompany)}
-              value={effectiveCompany}
-              aria-label="Carrier"
-            />
 
             <button
               onClick={clearSelectedLoadButKeepDriver}
