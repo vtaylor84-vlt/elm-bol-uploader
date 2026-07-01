@@ -241,6 +241,16 @@ function mapCompanyCode(company) {
 }
 
 function validateSubmission(data) {
+  const submissionType = String(data.submissionType || 'BOL_POD').trim().toUpperCase();
+
+  if (submissionType === 'EXPENSE_RECEIPT') {
+    return validateExpenseSubmission(data);
+  }
+
+  return validateBolPodSubmission(data);
+}
+
+function validateBolPodSubmission(data) {
   const companyCode = mapCompanyCode(data.company);
   if (!companyCode) {
     return { ok: false, statusCode: 400, error: 'Invalid company' };
@@ -325,6 +335,7 @@ function validateSubmission(data) {
   return {
     ok: true,
     data: {
+      submissionType: 'BOL_POD',
       company: companyCode,
       driverName,
       loadNum,
@@ -341,14 +352,131 @@ function validateSubmission(data) {
   };
 }
 
+function validateExpenseSubmission(data) {
+  const companyCode = mapCompanyCode(data.company);
+  if (!companyCode) {
+    return { ok: false, statusCode: 400, error: 'Invalid company' };
+  }
+
+  const driverName = String(data.driverName || '').trim();
+  if (!driverName) {
+    return { ok: false, statusCode: 400, error: 'Driver name is required' };
+  }
+  if (driverName.length > MAX_FIELD_LENGTH) {
+    return { ok: false, statusCode: 400, error: 'Driver name is too long' };
+  }
+
+  const expense = data.expense || {};
+  const category = String(expense.category || '').trim().toLowerCase();
+  const allowedCategories = new Set([
+    'fuel', 'tolls', 'parking', 'lumper', 'repairs', 'meals', 'other',
+  ]);
+  if (!allowedCategories.has(category)) {
+    return { ok: false, statusCode: 400, error: 'Invalid expense category' };
+  }
+
+  const amount = Number(expense.amount);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return { ok: false, statusCode: 400, error: 'Invalid expense amount' };
+  }
+
+  const expenseDate = String(expense.expenseDate || '').trim();
+  if (!expenseDate) {
+    return { ok: false, statusCode: 400, error: 'Expense date is required' };
+  }
+
+  const files = Array.isArray(data.files) ? data.files : [];
+  if (!files.length) {
+    return { ok: false, statusCode: 400, error: 'At least one receipt image is required' };
+  }
+  if (files.length > MAX_FILES) {
+    return { ok: false, statusCode: 400, error: `No more than ${MAX_FILES} files allowed` };
+  }
+
+  let totalBytes = 0;
+  const sanitizedFiles = [];
+
+  for (const file of files) {
+    const categoryFile = String(file.category || '').trim().toLowerCase();
+    if (categoryFile !== 'expense_receipt') {
+      return { ok: false, statusCode: 400, error: 'Invalid file category' };
+    }
+
+    const base64 = String(file.base64 || '');
+    const mimeType = getDataUrlMime(base64);
+
+    if (BLOCKED_HEIC_MIMES.has(mimeType) || /\.(heic|heif)(\?|$)/i.test(base64)) {
+      return { ok: false, statusCode: 400, error: HEIC_BLOCK_MESSAGE };
+    }
+    if (mimeType === 'application/pdf' || /\.pdf(\?|$)/i.test(base64)) {
+      return { ok: false, statusCode: 400, error: PDF_BLOCK_MESSAGE };
+    }
+    if (mimeType === 'image/webp' || /\.webp(\?|$)/i.test(base64)) {
+      return { ok: false, statusCode: 400, error: WEBP_BLOCK_MESSAGE };
+    }
+    if (mimeType.startsWith('video/')) {
+      return { ok: false, statusCode: 400, error: VIDEO_BLOCK_MESSAGE };
+    }
+    if (!ALLOWED_DATA_URL_MIMES.has(mimeType)) {
+      return { ok: false, statusCode: 400, error: 'Only JPG and PNG photos are supported.' };
+    }
+
+    const encoded = base64.split(',')[1] || '';
+    const size = Buffer.from(encoded, 'base64').length;
+    if (size === 0) {
+      return { ok: false, statusCode: 400, error: 'Empty files are not allowed' };
+    }
+    if (size > MAX_FILE_BYTES) {
+      return { ok: false, statusCode: 400, error: 'File exceeds maximum size' };
+    }
+
+    totalBytes += size;
+    sanitizedFiles.push({ category: categoryFile, base64 });
+  }
+
+  if (totalBytes > MAX_TOTAL_BYTES) {
+    return { ok: false, statusCode: 400, error: 'Total upload size exceeds limit' };
+  }
+
+  return {
+    ok: true,
+    data: {
+      submissionType: 'EXPENSE_RECEIPT',
+      company: companyCode,
+      driverName,
+      expense: {
+        category,
+        amount,
+        expenseDate,
+        loadNum: String(expense.loadNum || '').trim(),
+        bolNum: String(expense.bolNum || '').trim(),
+        notes: String(expense.notes || '').trim().slice(0, MAX_FIELD_LENGTH),
+      },
+      files: sanitizedFiles,
+    },
+  };
+}
+
 function getDataUrlMime(dataUrl) {
   const match = String(dataUrl || '').match(/^data:([^;]+);/i);
   return match ? match[1].toLowerCase() : '';
 }
 
 function buildAppsScriptPayload(data) {
+  if (data.submissionType === 'EXPENSE_RECEIPT') {
+    return {
+      uploadToken: process.env.UPLOAD_TOKEN,
+      submissionType: 'EXPENSE_RECEIPT',
+      company: data.company,
+      driverName: data.driverName,
+      expense: data.expense,
+      files: data.files,
+    };
+  }
+
   return {
     uploadToken: process.env.UPLOAD_TOKEN,
+    submissionType: 'BOL_POD',
     company: data.company,
     driverName: data.driverName,
     loadNum: data.loadNum,

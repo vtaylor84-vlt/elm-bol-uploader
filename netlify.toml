@@ -7,6 +7,13 @@
     # Disable false-positive secrets scanning from Firebase type files
     SECRETS_SCAN_SMART_DETECTION_ENABLED = "false"
 
+# --- SPA routing ---
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
 # --- Optimal Caching Headers ---
 
 [[headers]]
