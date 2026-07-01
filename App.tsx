@@ -1,4 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import TerminalLogin from './components/TerminalLogin.tsx';
+import {
+  clearDriverSession,
+  readDriverSession,
+  type DriverSessionProfile,
+} from './utils/driverSession.ts';
 import {
   getFileRejectionReason,
   isHeicFile,
@@ -355,10 +361,14 @@ const ConnectingGlyph = ({ accentClass }: { accentClass: string }) => (
 );
 
 const App: React.FC = () => {
+  // Auth (bridge email login — sessionStorage MVP)
+  const [authSession, setAuthSession] = useState<DriverSessionProfile | null>(() =>
+    readDriverSession()
+  );
+  const [isAuthenticated, setIsAuthenticated] = useState(() => !!readDriverSession());
+
   // Core
-  const [isLocked, setIsLocked] = useState(true);
   const [solarMode, setSolarMode] = useState(false);
-  const [authStage, setAuthStage] = useState(0);
 
   // Flow
   const [eventType, setEventType] = useState<EventType>('');
@@ -413,6 +423,64 @@ const App: React.FC = () => {
     delState: '',
     bolNum: '',
   });
+
+  const isAdminUploadMode = authSession?.authRole === 'admin';
+  const canSelectAnyDriver = authSession?.canSelectAnyDriver ?? false;
+
+  const applyLoggedInDriver = (profile: DriverSessionProfile) => {
+    if (profile.authRole === 'driver' && profile.driverName) {
+      setDriverName(profile.driverName.toUpperCase());
+      if (profile.companyCode) {
+        const carrier = getCarrierDisplayName(profile.companyCode);
+        if (carrier) setCompany(carrier);
+      }
+    }
+  };
+
+  const handleLogin = (profile: DriverSessionProfile) => {
+    setAuthSession(profile);
+    setIsAuthenticated(true);
+    applyLoggedInDriver(profile);
+    playOpenSound();
+  };
+
+  const resetFlowState = () => {
+    setEventType('');
+    setBolProtocol('');
+    setCurrentStage('EVENT');
+    setManualMode(false);
+    setAvailableLoads([]);
+    setSelectedLoad(null);
+    setIsScanning(false);
+    setIsConnecting(false);
+    setLoadSelectionError(false);
+    setCompany('');
+    setManualCarrier('');
+    setBolNum('');
+    setLoadId('');
+    setPuCity('');
+    setPuState('');
+    setDelCity('');
+    setDelState('');
+    setUploadedFiles([]);
+    setShowFreightPrompt(false);
+    setShowFreightConfirm(false);
+    setFreightNotRequired(false);
+    setShowVerification(false);
+    setEditingField(null);
+    setFullImage(null);
+    setBolNumAcknowledged(false);
+    setBolEditOpen(false);
+    setReviewEditCard(null);
+  };
+
+  const handleLogout = () => {
+    clearDriverSession();
+    setAuthSession(null);
+    setIsAuthenticated(false);
+    setDriverName('');
+    resetFlowState();
+  };
 
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -910,7 +978,11 @@ const App: React.FC = () => {
     setBolProtocol(nextEvent);
     setCurrentStage('OPERATOR');
 
-    setDriverName('');
+    if (authSession?.authRole === 'driver' && authSession.driverName) {
+      setDriverName(authSession.driverName.toUpperCase());
+    } else {
+      setDriverName('');
+    }
     setManualMode(false);
 
     setAvailableLoads([]);
@@ -984,6 +1056,26 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
+    if (authSession?.authRole === 'driver') {
+      applyLoggedInDriver(authSession);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (
+      eventType &&
+      driverName &&
+      !canSelectAnyDriver &&
+      currentStage === 'OPERATOR'
+    ) {
+      setCurrentStage('ASSIGNMENT');
+    }
+  }, [eventType, driverName, canSelectAnyDriver, currentStage]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !canSelectAnyDriver) return;
+
     const fetchDrivers = async () => {
       try {
         const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getDrivers`);
@@ -1004,7 +1096,7 @@ const App: React.FC = () => {
     };
 
     fetchDrivers();
-  }, []);
+  }, [isAuthenticated, canSelectAnyDriver]);
 
   useEffect(() => {
     const scanForLoads = async () => {
@@ -1626,64 +1718,8 @@ const App: React.FC = () => {
     );
   };
 
-  if (isLocked) {
-    return (
-      <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 text-white font-sans overflow-hidden">
-        <div className="absolute top-12 flex flex-col items-center opacity-40">
-          <div className="w-1 h-12 bg-blue-500 animate-pulse"></div>
-          <div className="text-[10px] font-black tracking-[0.5em] mt-4">
-            ELMCONNECT
-          </div>
-        </div>
-
-        <button
-          onClick={() => {
-            playOpenSound();
-            let s = 0;
-            const inv = setInterval(() => {
-              s++;
-              setAuthStage(s);
-              if (s >= 5) {
-                clearInterval(inv);
-                setTimeout(() => setIsLocked(false), 600);
-              }
-            }, 350);
-          }}
-          className="w-64 h-64 border-4 border-blue-500/10 rounded-full flex flex-col items-center justify-center bg-zinc-950 shadow-[0_0_120px_rgba(59,130,246,0.2)] active:scale-95 transition-all z-10 group"
-        >
-          <div
-            className={`absolute inset-0 border-t-4 border-blue-500 rounded-full ${
-              authStage > 0 ? 'animate-spin' : ''
-            }`}
-          />
-          <span className="text-8xl mb-4 group-active:scale-110 transition-transform italic font-black text-white">
-            GO
-          </span>
-          <span className="text-[12px] font-black tracking-[0.3em] uppercase text-blue-500 animate-pulse">
-            Engage Terminal
-          </span>
-        </button>
-
-        <div className="mt-16 space-y-3 w-64 font-mono text-[9px] text-zinc-800 uppercase">
-          {[
-            'Establishing_Link',
-            'Roster_Pull_Success',
-            'Network_Stable',
-            'Encryption_Handshake',
-            'Terminal_Active'
-          ].map((l, i) => (
-            <div
-              key={i}
-              className={`flex items-center gap-3 ${
-                authStage > i ? 'text-green-500' : ''
-              }`}
-            >
-              <span>[{authStage > i ? 'OK' : '..'}]</span> {l}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
+  if (!isAuthenticated) {
+    return <TerminalLogin onLogin={handleLogin} />;
   }
 
   return (
@@ -1702,9 +1738,19 @@ const App: React.FC = () => {
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_#22c55e]"></div>
           <span className="tracking-widest uppercase italic">Connected</span>
+          {isAdminUploadMode ? (
+            <span className="ml-2 px-2.5 py-1 rounded-full text-[7px] font-black uppercase tracking-[0.2em] border border-amber-500/50 bg-amber-500/15 text-amber-300">
+              Admin Upload Mode
+            </span>
+          ) : null}
         </div>
 
         <div className="flex items-center gap-3">
+          {authSession?.maskedEmail ? (
+            <span className="hidden sm:inline text-[8px] font-mono text-zinc-500 truncate max-w-[140px]">
+              {authSession.maskedEmail}
+            </span>
+          ) : null}
           {eventType ? (
             <span className="px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.25em] border border-zinc-600 bg-zinc-900/60 text-zinc-200">
               {eventType}
@@ -1718,6 +1764,13 @@ const App: React.FC = () => {
               {effectiveCompany}
             </span>
           ) : null}
+
+          <button
+            onClick={handleLogout}
+            className="px-4 py-2 border border-zinc-700 rounded-lg uppercase text-[8px] font-black text-zinc-400 hover:text-red-400 hover:border-red-500/40 transition-colors"
+          >
+            Switch User
+          </button>
 
           <button
             onClick={() => setSolarMode(!solarMode)}
@@ -1852,7 +1905,24 @@ const App: React.FC = () => {
               )
             ) : (
               <div className={`${premiumPanel} p-4 space-y-3`}>
-                {!manualMode ? (
+                {!canSelectAnyDriver && authSession ? (
+                  <div className="rounded-2xl border border-blue-500/30 bg-blue-500/5 p-4 space-y-2">
+                    <p className="text-[8px] font-black uppercase tracking-[0.35em] text-blue-400">
+                      Logged in driver
+                    </p>
+                    <p className="text-lg font-black uppercase tracking-tight text-white">
+                      {authSession.driverName}
+                    </p>
+                    {authSession.maskedEmail ? (
+                      <p className="text-[10px] font-mono text-zinc-500">{authSession.maskedEmail}</p>
+                    ) : null}
+                    {authSession.companyCode ? (
+                      <span className="inline-block px-2 py-0.5 rounded text-[7px] font-black uppercase tracking-widest border border-zinc-700 bg-zinc-900 text-zinc-400">
+                        {authSession.companyCode}
+                      </span>
+                    ) : null}
+                  </div>
+                ) : !manualMode ? (
                   <select
                     className={inpStyle(driverName)}
                     value={driverName}
