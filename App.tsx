@@ -205,6 +205,18 @@ const getLoadIdentity = (load: AvailableLoad) => {
   ].join('|');
 };
 
+const selectedLoadDiag = (load: AvailableLoad | null) => {
+  if (!load) return null;
+  return {
+    loadId: String(load.loadId || '').trim() || null,
+    loadNumber: String(load.loadNumber || '').trim() || null,
+  };
+};
+
+const logUiDiag = (label: string, details: Record<string, unknown> = {}) => {
+  console.log('[ui-diag]', label, JSON.stringify(details));
+};
+
 // ----------------------------
 // BRANDING
 // ----------------------------
@@ -483,6 +495,32 @@ const App: React.FC = () => {
     hasBolEvidence
   );
 
+  useEffect(() => {
+    logUiDiag('state_changed', {
+      currentStage,
+      isScanning,
+      isConnecting,
+      manualMode,
+      loadSelectionError,
+      selectedLoad: selectedLoadDiag(selectedLoad),
+      availableLoadsLength: availableLoads.length,
+      hasManualAssignmentData,
+      hasAssignment,
+      isReady,
+    });
+  }, [
+    currentStage,
+    isScanning,
+    isConnecting,
+    manualMode,
+    loadSelectionError,
+    selectedLoad,
+    availableLoads.length,
+    hasManualAssignmentData,
+    hasAssignment,
+    isReady,
+  ]);
+
   const stageOrder: Stage[] = [
     'EVENT',
     'OPERATOR',
@@ -513,6 +551,7 @@ const App: React.FC = () => {
     }`;
 
   const resetFlowFromEvent = (nextEvent: EventType) => {
+    logUiDiag('resetFlowFromEvent', { nextEvent, clearsSelectedLoad: true });
     setEventType(nextEvent);
     setBolProtocol(nextEvent);
     setCurrentStage('OPERATOR');
@@ -543,6 +582,10 @@ const App: React.FC = () => {
   };
 
   const clearSelectedLoadButKeepDriver = () => {
+    logUiDiag('clearSelectedLoadButKeepDriver', {
+      clearsSelectedLoad: true,
+      setsCurrentStage: 'ASSIGNMENT',
+    });
     setSelectedLoad(null);
     setLoadNum('');
     setLoadId('');
@@ -582,7 +625,18 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const scanForLoads = async () => {
-      if (!driverName || !eventType || manualMode || selectedLoad) {
+      const skipped =
+        !driverName || !eventType || manualMode || Boolean(selectedLoad);
+
+      logUiDiag('scanForLoads_start', {
+        driverNameSet: Boolean(driverName),
+        eventType: eventType || null,
+        manualMode,
+        selectedLoad: selectedLoadDiag(selectedLoad),
+        skipped,
+      });
+
+      if (skipped) {
         return;
       }
 
@@ -602,14 +656,31 @@ const App: React.FC = () => {
         if (Array.isArray(data)) {
           setAvailableLoads(data);
           if (data.length === 0) setLoadSelectionError(true);
+          logUiDiag('scanForLoads_end', {
+            success: true,
+            availableLoadsLength: data.length,
+            loadSelectionError: data.length === 0,
+          });
         } else {
           setAvailableLoads([]);
           setLoadSelectionError(true);
+          logUiDiag('scanForLoads_end', {
+            success: false,
+            reason: 'non_array_response',
+            availableLoadsLength: 0,
+            loadSelectionError: true,
+          });
         }
       } catch (err) {
         console.error('Radar Link Failure', err);
         setAvailableLoads([]);
         setLoadSelectionError(true);
+        logUiDiag('scanForLoads_end', {
+          success: false,
+          reason: 'fetch_failed',
+          availableLoadsLength: 0,
+          loadSelectionError: true,
+        });
       } finally {
         setIsScanning(false);
       }
@@ -619,16 +690,34 @@ const App: React.FC = () => {
   }, [driverName, eventType, manualMode, selectedLoad]);
 
   useEffect(() => {
-    if (
+    const willAdvanceToEvidence =
       (manualMode || loadSelectionError) &&
       hasManualAssignmentData &&
-      !selectedLoad
-    ) {
+      !selectedLoad;
+
+    logUiDiag('manual_fallback_effect', {
+      manualMode,
+      loadSelectionError,
+      hasManualAssignmentData,
+      selectedLoad: selectedLoadDiag(selectedLoad),
+      willAdvanceToEvidence,
+    });
+
+    if (willAdvanceToEvidence) {
       setCurrentStage('EVIDENCE');
     }
   }, [manualMode, loadSelectionError, hasManualAssignmentData, selectedLoad]);
 
   const handleLoadSelection = (load: AvailableLoad) => {
+    logUiDiag('handleLoadSelection', {
+      load: selectedLoadDiag(load),
+      currentStage,
+      isScanning,
+      isConnecting,
+      manualMode,
+      loadSelectionError,
+    });
+
     const carrierName = getCarrierDisplayName(load.companyCode || load.company);
     const puParts = String(load.origin || '')
       .split(',')
@@ -650,6 +739,10 @@ const App: React.FC = () => {
     setIsConnecting(true);
 
     window.setTimeout(() => {
+      logUiDiag('handleLoadSelection_timeout', {
+        action: 'set_evidence',
+        load: selectedLoadDiag(load),
+      });
       setIsConnecting(false);
       setCurrentStage('EVIDENCE');
     }, 1200);
@@ -892,6 +985,10 @@ const App: React.FC = () => {
 
             <button
               onClick={() => {
+                logUiDiag('manual_override_click', {
+                  clearsSelectedLoad: true,
+                  setsCurrentStage: 'ASSIGNMENT',
+                });
                 setManualMode(true);
                 setSelectedLoad(null);
                 setLoadNum('');
@@ -989,6 +1086,10 @@ const App: React.FC = () => {
             {manualMode && (
               <button
                 onClick={() => {
+                  logUiDiag('back_to_auto_scan_click', {
+                    clearsSelectedLoad: true,
+                    setsCurrentStage: 'ASSIGNMENT',
+                  });
                   setManualMode(false);
                   setLoadSelectionError(false);
                   setSelectedLoad(null);
@@ -1254,10 +1355,17 @@ const App: React.FC = () => {
                   value={driverName}
                   onChange={(e) => {
                     if (e.target.value === 'MANUAL') {
+                      logUiDiag('driver_select_manual_entry', {
+                        setsCurrentStage: 'ASSIGNMENT',
+                      });
                       setManualMode(true);
                       setDriverName('');
                       setCurrentStage('ASSIGNMENT');
                     } else {
+                      logUiDiag('driver_select_change', {
+                        clearsSelectedLoad: true,
+                        setsCurrentStage: 'ASSIGNMENT',
+                      });
                       setDriverName(e.target.value.toUpperCase());
                       setSelectedLoad(null);
                       setLoadNum('');
@@ -1393,6 +1501,9 @@ const App: React.FC = () => {
               {manualMode ? (
                 <button
                   onClick={() => {
+                    logUiDiag('edit_manual_entry_click', {
+                      setsCurrentStage: 'ASSIGNMENT',
+                    });
                     setCurrentStage('ASSIGNMENT');
                   }}
                   className="flex-1 py-4 rounded-2xl border border-zinc-700 text-[9px] font-black uppercase tracking-[0.25em] text-zinc-400"
