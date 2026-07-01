@@ -254,13 +254,15 @@ function validateSubmission(data) {
     return { ok: false, statusCode: 400, error: 'Driver name is too long' };
   }
 
-  const bolNum = String(data.bolNum || data.loadNum || '').trim();
+  const bolNum = String(data.bolNum || '').trim();
   if (!bolNum) {
     return { ok: false, statusCode: 400, error: 'BOL number is required' };
   }
   if (bolNum.length > MAX_FIELD_LENGTH) {
     return { ok: false, statusCode: 400, error: 'BOL number is too long' };
   }
+
+  const loadNum = String(data.loadNum || '').trim() || 'NA';
 
   const bolProtocol = String(data.bolProtocol || '').trim().toUpperCase();
   if (bolProtocol !== 'PICKUP' && bolProtocol !== 'DELIVERY') {
@@ -325,7 +327,7 @@ function validateSubmission(data) {
     data: {
       company: companyCode,
       driverName,
-      loadNum: bolNum,
+      loadNum,
       bolNum,
       bolProtocol,
       puCity: String(data.puCity || '').trim(),

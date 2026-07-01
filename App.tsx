@@ -22,6 +22,7 @@ interface FileWithPreview {
   preview: string;
   id: string;
   category: 'bol' | 'freight';
+  fingerprint: string;
 }
 
 interface VaultEntry {
@@ -205,6 +206,9 @@ const getLoadIdentity = (load: AvailableLoad) => {
   ].join('|');
 };
 
+const getFileFingerprint = (file: File) =>
+  `${file.name}|${file.size}|${file.lastModified}`;
+
 const selectedLoadDiag = (load: AvailableLoad | null) => {
   if (!load) return null;
   return {
@@ -386,6 +390,8 @@ const App: React.FC = () => {
   // Evidence / submission
   const [uploadedFiles, setUploadedFiles] = useState<FileWithPreview[]>([]);
   const [showFreightPrompt, setShowFreightPrompt] = useState(false);
+  const [showFreightConfirm, setShowFreightConfirm] = useState(false);
+  const [freightNotRequired, setFreightNotRequired] = useState(false);
   const [showVerification, setShowVerification] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -488,7 +494,7 @@ const App: React.FC = () => {
   const hasBolEvidence = uploadedFiles.some((f) => f.category === 'bol');
 
   const hasRouteData = !!(
-    (selectedLoad && (puCity || puState || delCity || delState)) ||
+    selectedLoad ||
     (puCity && puState && delCity && delState)
   );
 
@@ -584,6 +590,8 @@ const App: React.FC = () => {
 
     setUploadedFiles([]);
     setShowFreightPrompt(false);
+    setShowFreightConfirm(false);
+    setFreightNotRequired(false);
     setShowVerification(false);
     setEditingField(null);
     setFullImage(null);
@@ -604,6 +612,8 @@ const App: React.FC = () => {
     setCompany('');
     setUploadedFiles([]);
     setShowFreightPrompt(false);
+    setShowFreightConfirm(false);
+    setFreightNotRequired(false);
     setIsConnecting(false);
     setCurrentStage('ASSIGNMENT');
   };
@@ -782,6 +792,7 @@ const App: React.FC = () => {
     setDelState((delParts[1] || '').toUpperCase());
 
     setCompany(carrierName || '');
+    setLoadSelectionError(false);
     setIsConnecting(false);
     setCurrentStage('EVIDENCE');
   };
@@ -800,17 +811,35 @@ const App: React.FC = () => {
           continue;
         }
 
+        const fingerprint = getFileFingerprint(f);
+        if (uploadedFiles.some((item) => item.fingerprint === fingerprint)) {
+          window.alert('This photo is already attached.');
+          continue;
+        }
+
         try {
           const enh = await compressImage(f);
-          setUploadedFiles((prev) => [
-            ...prev,
-            {
-              file: enh,
-              preview: URL.createObjectURL(enh),
-              id: Math.random().toString(),
-              category: cat
+          let duplicateAfterCompress = false;
+          setUploadedFiles((prev) => {
+            if (prev.some((item) => item.fingerprint === fingerprint)) {
+              duplicateAfterCompress = true;
+              return prev;
             }
-          ]);
+            return [
+              ...prev,
+              {
+                file: enh,
+                preview: URL.createObjectURL(enh),
+                id: Math.random().toString(),
+                category: cat,
+                fingerprint,
+              },
+            ];
+          });
+          if (duplicateAfterCompress) {
+            window.alert('This photo is already attached.');
+            continue;
+          }
         } catch {
           window.alert(isHeicFile(f) ? HEIC_BLOCK_MESSAGE : 'Could not process this photo. Use JPG or PNG.');
         }
@@ -1713,10 +1742,40 @@ const App: React.FC = () => {
               </button>
 
               <button
-                onClick={() => setShowFreightPrompt(false)}
+                onClick={() => {
+                  setShowFreightPrompt(false);
+                  setShowFreightConfirm(true);
+                }}
                 className="text-zinc-700 font-black uppercase text-[10px] tracking-widest py-4"
               >
                 Not Required
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showFreightConfirm && (
+        <div className="fixed inset-0 z-[550] bg-black/95 backdrop-blur-2xl flex items-center justify-center p-6 animate-in fade-in">
+          <div className="bg-zinc-950 border-4 border-orange-500/40 rounded-[3.5rem] p-12 text-center max-w-sm">
+            <p className="text-zinc-300 text-sm normal-case tracking-normal leading-relaxed mb-10">
+              Please confirm: Dispatch has told me that freight photos are not required for this load.
+            </p>
+            <div className="flex flex-col gap-4">
+              <button
+                onClick={() => {
+                  setFreightNotRequired(true);
+                  setShowFreightConfirm(false);
+                }}
+                className="bg-orange-600 text-white py-6 rounded-2xl font-black uppercase tracking-widest active:scale-95 shadow-xl"
+              >
+                Confirm
+              </button>
+              <button
+                onClick={() => setShowFreightConfirm(false)}
+                className="bg-zinc-800 text-white py-6 rounded-2xl font-black uppercase tracking-widest active:scale-95 shadow-xl border border-zinc-700"
+              >
+                Cancel
               </button>
             </div>
           </div>
