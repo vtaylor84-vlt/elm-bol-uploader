@@ -184,7 +184,7 @@ const TerminalLogin: React.FC<TerminalLoginProps> = ({ onLogin }) => {
                     type="email"
                     inputMode="email"
                     autoComplete="email"
-                    placeholder="driver@company.com"
+                    placeholder="Enter your email address"
                     value={email}
                     onChange={(ev) => setEmail(ev.target.value)}
                     disabled={isSubmitting}
