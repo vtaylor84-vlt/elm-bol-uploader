@@ -617,10 +617,10 @@ const App: React.FC = () => {
   }, [driverName, eventType, manualMode]);
 
   useEffect(() => {
-    if (manualMode && hasManualAssignmentData) {
+    if (hasManualAssignmentData && !selectedLoad) {
       setCurrentStage('EVIDENCE');
     }
-  }, [manualMode, hasManualAssignmentData]);
+  }, [hasManualAssignmentData, selectedLoad]);
 
   const handleLoadSelection = (load: AvailableLoad) => {
     const carrierName = getCarrierDisplayName(load.companyCode || load.company);
@@ -906,8 +906,13 @@ const App: React.FC = () => {
         ) : (
           <div className="space-y-4">
             {loadSelectionError && !manualMode && (
-              <div className="p-4 bg-orange-500/10 border border-orange-500/30 rounded-2xl text-center text-[9px] font-black text-orange-500 uppercase">
-                No active loads found for this operator.
+              <div className="space-y-2">
+                <div className="p-4 bg-orange-500/10 border border-orange-500/30 rounded-2xl text-center text-[9px] font-black text-orange-500 uppercase">
+                  No active loads found for this operator.
+                </div>
+                <p className="text-center text-[9px] text-zinc-500 normal-case tracking-normal px-2">
+                  No active load was found. You may manually enter the load details below.
+                </p>
               </div>
             )}
 
