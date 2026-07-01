@@ -392,6 +392,8 @@ const App: React.FC = () => {
   const [showFreightPrompt, setShowFreightPrompt] = useState(false);
   const [showFreightConfirm, setShowFreightConfirm] = useState(false);
   const [freightNotRequired, setFreightNotRequired] = useState(false);
+  const [bolNumAcknowledged, setBolNumAcknowledged] = useState(false);
+  const [bolEditOpen, setBolEditOpen] = useState(false);
   const [showVerification, setShowVerification] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -414,6 +416,7 @@ const App: React.FC = () => {
 
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const bolNumInputRef = useRef<HTMLInputElement>(null);
   const freightCamRef = useRef<HTMLInputElement>(null);
   const freightFileRef = useRef<HTMLInputElement>(null);
   const selectedLoadRef = useRef<AvailableLoad | null>(null);
@@ -510,6 +513,10 @@ const App: React.FC = () => {
   const hasAssignment = !!(selectedLoad || hasManualAssignmentData);
 
   const hasBolEvidence = uploadedFiles.some((f) => f.category === 'bol');
+  const hasBolNumber = !!bolNum.trim();
+  const bolNumberStepDone = bolNumAcknowledged && hasBolNumber;
+  const bolDocumentComplete = hasBolNumber && hasBolEvidence;
+  const bolGuideCollapsed = bolDocumentComplete && !bolEditOpen;
 
   const hasRouteData = !!(
     selectedLoad ||
@@ -657,6 +664,9 @@ const App: React.FC = () => {
   const documentProgressDone =
     (hasBolEvidence && bolNum.trim() ? 1 : 0) +
     (eventType === 'PICKUP' && freightDocumentComplete ? 1 : 0);
+  const documentsReadyForReview =
+    bolDocumentComplete &&
+    (eventType === 'DELIVERY' || freightDocumentComplete);
   const carrierLockedFromDispatch = Boolean(selectedLoad);
 
   const returnToFreightDocuments = () => {
@@ -668,6 +678,123 @@ const App: React.FC = () => {
   const reopenFreightWaiverChoice = () => {
     setFreightNotRequired(false);
   };
+
+  const evidenceGuideSteps =
+    eventType === 'PICKUP'
+      ? [
+          { label: 'BOL #', done: bolNumberStepDone },
+          { label: 'BOL photos', done: bolDocumentComplete },
+          { label: 'Freight', done: freightDocumentComplete },
+          { label: 'Review', done: documentsReadyForReview && isReady },
+        ]
+      : [
+          { label: 'BOL #', done: bolNumberStepDone },
+          { label: 'BOL photos', done: bolDocumentComplete },
+          { label: 'Review', done: documentsReadyForReview && isReady },
+        ];
+
+  const evidenceActiveStepIndex = evidenceGuideSteps.findIndex((step) => !step.done);
+
+  const renderEvidenceGuideStepper = () => (
+    <div className="flex items-center gap-1 overflow-x-auto pb-1">
+      {evidenceGuideSteps.map((step, idx) => {
+        const isActive = idx === evidenceActiveStepIndex;
+        const isDone = step.done;
+        return (
+          <React.Fragment key={step.label}>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <div
+                className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-black shrink-0 transition-all ${
+                  isDone
+                    ? 'bg-green-600/20 text-green-400 border border-green-500/50'
+                    : isActive
+                      ? 'bg-blue-600 text-white shadow-[0_0_12px_rgba(59,130,246,0.5)] ring-2 ring-blue-400/40'
+                      : 'bg-zinc-900 text-zinc-600 border border-zinc-800'
+                }`}
+              >
+                {isDone ? '✓' : idx + 1}
+              </div>
+              <span
+                className={`text-[7px] font-black uppercase tracking-[0.12em] ${
+                  isDone ? 'text-green-500' : isActive ? 'text-blue-400' : 'text-zinc-700'
+                }`}
+              >
+                {step.label}
+              </span>
+            </div>
+            {idx < evidenceGuideSteps.length - 1 ? (
+              <div
+                className={`h-px w-4 shrink-0 mx-0.5 ${isDone ? 'bg-green-500/40' : 'bg-zinc-800'}`}
+              />
+            ) : null}
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+
+  const renderBolPhotoButtons = (highlighted: boolean) => (
+    <div className="grid grid-cols-2 gap-2">
+      <button
+        type="button"
+        onClick={() => cameraInputRef.current?.click()}
+        className={`py-4 rounded-xl border border-dashed bg-blue-500/5 active:scale-[0.98] transition-all ${
+          highlighted
+            ? 'border-blue-400/70 ring-2 ring-blue-500/40 shadow-[0_0_20px_rgba(59,130,246,0.2)] animate-pulse'
+            : 'border-blue-500/35'
+        }`}
+      >
+        <div className="text-xl mb-1">📸</div>
+        <div className="text-[8px] font-black uppercase tracking-[0.15em] text-blue-300">
+          Take Photo
+        </div>
+      </button>
+      <button
+        type="button"
+        onClick={() => fileInputRef.current?.click()}
+        className={`py-4 rounded-xl border border-dashed bg-blue-500/5 active:scale-[0.98] transition-all ${
+          highlighted
+            ? 'border-blue-400/70 ring-2 ring-blue-500/40 shadow-[0_0_20px_rgba(59,130,246,0.2)] animate-pulse'
+            : 'border-blue-500/35'
+        }`}
+      >
+        <div className="text-xl mb-1">🖼️</div>
+        <div className="text-[8px] font-black uppercase tracking-[0.15em] text-blue-300">
+          Choose Existing
+        </div>
+      </button>
+    </div>
+  );
+
+  const renderBolThumbnails = () =>
+    bolPhotoCount > 0 ? (
+      <div className="flex gap-2 overflow-x-auto pt-1">
+        {uploadedFiles
+          .filter((f) => f.category === 'bol')
+          .map((f) => (
+            <div
+              key={f.id}
+              className="relative shrink-0 w-20 h-24 rounded-xl overflow-hidden border border-blue-500/40"
+            >
+              <img src={f.preview} className="w-full h-full object-cover" alt="BOL" />
+              <button
+                type="button"
+                onClick={() => setFullImage(f.preview)}
+                className="absolute inset-x-0 bottom-0 bg-black/75 text-[6px] font-black uppercase text-blue-200 py-0.5"
+              >
+                View
+              </button>
+              <button
+                type="button"
+                onClick={() => setUploadedFiles((p) => p.filter((i) => i.id !== f.id))}
+                className="absolute top-1 right-1 bg-red-600 w-5 h-5 rounded-full text-[10px]"
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+      </div>
+    ) : null;
 
   const accentRing =
     themeMode === 'green'
@@ -981,6 +1108,19 @@ const App: React.FC = () => {
       setCurrentStage('EVIDENCE');
     }
   }, [manualMode, loadSelectionError, hasManualAssignmentData, selectedLoad]);
+
+  useEffect(() => {
+    if (hasAssignment && currentStage === 'EVIDENCE' && !bolNumberStepDone && !bolGuideCollapsed) {
+      const timer = window.setTimeout(() => bolNumInputRef.current?.focus(), 350);
+      return () => window.clearTimeout(timer);
+    }
+  }, [hasAssignment, currentStage, bolNumberStepDone, bolGuideCollapsed]);
+
+  useEffect(() => {
+    if (bolDocumentComplete) {
+      setBolEditOpen(false);
+    }
+  }, [bolDocumentComplete]);
 
   const handleLoadSelection = (load: AvailableLoad) => {
     logUiDiag('handleLoadSelection', {
@@ -1787,111 +1927,158 @@ const App: React.FC = () => {
               </span>
             </div>
 
-            <div
-              className={`${premiumPanel} border-blue-500/30 overflow-hidden ${
-                hasBolEvidence && bolNum.trim() ? 'ring-1 ring-blue-500/25' : ''
-              }`}
-            >
-              <div className="p-4 border-b border-zinc-800/80 flex items-start justify-between gap-3">
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-blue-600/15 border border-blue-500/30 flex items-center justify-center text-lg">
-                    📄
+            {renderEvidenceGuideStepper()}
+
+            {bolGuideCollapsed ? (
+              renderVerifiedSummary(
+                'BOL complete',
+                `BOL # ${bolNum} · ${bolPhotoCount} photo${bolPhotoCount === 1 ? '' : 's'}`,
+                () => setBolEditOpen(true)
+              )
+            ) : (
+              <div
+                className={`${premiumPanel} border-blue-500/30 overflow-hidden ${
+                  bolDocumentComplete ? 'ring-1 ring-blue-500/25' : 'ring-2 ring-blue-500/35'
+                }`}
+              >
+                <div className="p-4 border-b border-zinc-800/80 flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-blue-600/15 border border-blue-500/30 flex items-center justify-center text-lg">
+                      📄
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">
+                        Bill of Lading
+                      </p>
+                      <span className="inline-block mt-1 px-2 py-0.5 rounded text-[7px] font-black uppercase tracking-widest bg-blue-500/15 text-blue-300 border border-blue-500/25">
+                        Required
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">
-                      Bill of Lading
-                    </p>
-                    <span className="inline-block mt-1 px-2 py-0.5 rounded text-[7px] font-black uppercase tracking-widest bg-blue-500/15 text-blue-300 border border-blue-500/25">
-                      Required
+                  {bolDocumentComplete ? (
+                    <span className="text-[8px] font-black uppercase text-green-400 flex items-center gap-1">
+                      ✓ Complete
                     </span>
-                  </div>
-                </div>
-                {hasBolEvidence && bolNum.trim() ? (
-                  <span className="text-[8px] font-black uppercase text-green-400 flex items-center gap-1">
-                    ✓ Uploaded
-                  </span>
-                ) : null}
-              </div>
-
-              <div className="p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <input
-                    className={`${inpStyle(bolNum)} flex-1`}
-                    placeholder="BOL number"
-                    value={bolNum}
-                    onChange={(e) => setBolNum(e.target.value.trim())}
-                  />
-                </div>
-                <p className="text-[8px] text-zinc-600 normal-case">{UPLOAD_FORMAT_HINT}</p>
-                <p className="text-[8px] text-zinc-500 normal-case">
-                  Upload up to 5 BOL photos
-                  {bolPhotoCount > 0 ? ` · ${bolPhotoCount} attached` : ''}
-                </p>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => cameraInputRef.current?.click()}
-                    className="py-4 rounded-xl border border-dashed border-blue-500/35 bg-blue-500/5 active:scale-[0.98] transition-all"
-                  >
-                    <div className="text-xl mb-1">📸</div>
-                    <div className="text-[8px] font-black uppercase tracking-[0.15em] text-blue-300">
-                      Take Photo
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="py-4 rounded-xl border border-dashed border-blue-500/35 bg-blue-500/5 active:scale-[0.98] transition-all"
-                  >
-                    <div className="text-xl mb-1">🖼️</div>
-                    <div className="text-[8px] font-black uppercase tracking-[0.15em] text-blue-300">
-                      Choose Existing
-                    </div>
-                  </button>
+                  ) : bolNumberStepDone ? (
+                    <span className="text-[8px] font-black uppercase text-blue-400 flex items-center gap-1">
+                      Step 2 of 2
+                    </span>
+                  ) : (
+                    <span className="text-[8px] font-black uppercase text-amber-400 flex items-center gap-1 animate-pulse">
+                      Step 1 of 2
+                    </span>
+                  )}
                 </div>
 
-                {uploadedFiles.some((f) => f.category === 'bol') ? (
-                  <div className="flex gap-2 overflow-x-auto pt-1">
-                    {uploadedFiles
-                      .filter((f) => f.category === 'bol')
-                      .map((f) => (
-                        <div
-                          key={f.id}
-                          className="relative shrink-0 w-20 h-24 rounded-xl overflow-hidden border border-blue-500/40"
-                        >
-                          <img
-                            src={f.preview}
-                            className="w-full h-full object-cover"
-                            alt="BOL"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setFullImage(f.preview)}
-                            className="absolute inset-x-0 bottom-0 bg-black/75 text-[6px] font-black uppercase text-blue-200 py-0.5"
-                          >
-                            View
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setUploadedFiles((p) => p.filter((i) => i.id !== f.id))
+                <div className="p-4 space-y-3">
+                  {!bolNumberStepDone ? (
+                    <div className="space-y-3 animate-in fade-in duration-300">
+                      <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-3">
+                        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-300">
+                          First — enter your BOL number
+                        </p>
+                        <p className="text-[10px] text-zinc-400 normal-case mt-1">
+                          Type the number from your Bill of Lading paperwork.
+                        </p>
+                      </div>
+                      <div>
+                        <label className="block text-[8px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-2">
+                          BOL number <span className="text-red-400">*</span>
+                        </label>
+                        <input
+                          ref={bolNumInputRef}
+                          className={`${inpStyle(bolNum)} flex-1 ring-2 ring-blue-500/50 border-blue-500/60 shadow-[0_0_24px_rgba(59,130,246,0.2)]`}
+                          placeholder="e.g. 12345678"
+                          value={bolNum}
+                          onChange={(e) => {
+                            const next = e.target.value.trim();
+                            setBolNum(next);
+                            if (!next) setBolNumAcknowledged(false);
+                          }}
+                          onBlur={() => {
+                            if (bolNum.trim()) setBolNumAcknowledged(true);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && bolNum.trim()) {
+                              setBolNumAcknowledged(true);
+                              (e.target as HTMLInputElement).blur();
                             }
-                            className="absolute top-1 right-1 bg-red-600 w-5 h-5 rounded-full text-[10px]"
-                          >
-                            ✕
-                          </button>
+                          }}
+                          autoComplete="off"
+                        />
+                      </div>
+                      {hasBolNumber && !bolNumAcknowledged ? (
+                        <p className="text-[9px] text-blue-400/90 normal-case text-center">
+                          Tap outside the field when you&apos;re done →
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <div className="space-y-3 animate-in fade-in duration-300">
+                      <div className={`${premiumPanel} p-3 flex items-center justify-between gap-3 ring-1 ${accentRing}`}>
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-8 h-8 rounded-full bg-green-600/15 border border-green-500/40 flex items-center justify-center text-green-400 text-xs font-black shrink-0">
+                            ✓
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-[7px] font-black uppercase tracking-[0.2em] text-zinc-500">
+                              BOL number entered
+                            </p>
+                            <p className="text-sm font-bold text-white font-mono tracking-tight truncate">
+                              {bolNum}
+                            </p>
+                          </div>
                         </div>
-                      ))}
-                  </div>
-                ) : null}
-              </div>
-            </div>
+                        <button
+                          type="button"
+                          onClick={() => setBolNumAcknowledged(false)}
+                          className="shrink-0 text-[7px] font-black uppercase tracking-widest text-blue-400 px-2 py-1.5 rounded-lg border border-blue-500/30 bg-blue-500/10"
+                        >
+                          Edit
+                        </button>
+                      </div>
 
-            {eventType === 'PICKUP' ? (
+                      <div
+                        className={`rounded-xl border px-4 py-3 transition-all ${
+                          !bolDocumentComplete
+                            ? 'border-blue-500/40 bg-blue-500/10'
+                            : 'border-zinc-800 bg-zinc-950/50'
+                        }`}
+                      >
+                        <p
+                          className={`text-[9px] font-black uppercase tracking-[0.2em] ${
+                            !bolDocumentComplete ? 'text-blue-300' : 'text-zinc-500'
+                          }`}
+                        >
+                          {bolDocumentComplete
+                            ? 'BOL photos attached'
+                            : 'Next — add your BOL photos'}
+                        </p>
+                        {!bolDocumentComplete ? (
+                          <p className="text-[10px] text-zinc-400 normal-case mt-1">
+                            Take a clear photo of your Bill of Lading, or choose from your camera roll.
+                          </p>
+                        ) : null}
+                      </div>
+
+                      <p className="text-[8px] text-zinc-600 normal-case">{UPLOAD_FORMAT_HINT}</p>
+                      <p className="text-[8px] text-zinc-500 normal-case">
+                        Upload up to 5 BOL photos
+                        {bolPhotoCount > 0 ? ` · ${bolPhotoCount} attached` : ''}
+                      </p>
+
+                      {renderBolPhotoButtons(!bolDocumentComplete)}
+                      {renderBolThumbnails()}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {bolDocumentComplete && eventType === 'PICKUP' ? (
               showFreightWaived ? (
                 <div
-                  className={`${premiumPanel} p-4 border-amber-500/25`}
+                  className={`${premiumPanel} p-4 border-amber-500/25 space-y-3 animate-in fade-in duration-300`}
                 >
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-lg shrink-0">
@@ -1913,6 +2100,16 @@ const App: React.FC = () => {
                       Edit
                     </button>
                   </div>
+                  {documentsReadyForReview && isReady ? (
+                    <div className="rounded-xl border border-green-500/40 bg-green-500/10 px-4 py-3 text-center">
+                      <p className="text-[9px] font-black uppercase tracking-[0.2em] text-green-400">
+                        ✓ Documents complete
+                      </p>
+                      <p className="text-[10px] text-zinc-300 normal-case mt-1">
+                        Scroll down and tap <span className="text-white font-bold">Ready for review</span> to continue.
+                      </p>
+                    </div>
+                  ) : null}
                 </div>
               ) : (
                 <div
@@ -1942,6 +2139,16 @@ const App: React.FC = () => {
                   </div>
 
                   <div className="p-4 space-y-3">
+                    {!freightDocumentComplete ? (
+                      <div className="rounded-xl border border-green-500/30 bg-green-500/10 px-4 py-3">
+                        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-green-300">
+                          Next — freight photos
+                        </p>
+                        <p className="text-[10px] text-zinc-400 normal-case mt-1">
+                          Document freight on the trailer, or tap Not Required if dispatch waived it.
+                        </p>
+                      </div>
+                    ) : null}
                     <p className="text-[8px] text-zinc-500 normal-case">
                       Upload up to 5 freight photos
                       {freightPhotoCount > 0 ? ` · ${freightPhotoCount} attached` : ''}
@@ -2045,40 +2252,92 @@ const App: React.FC = () => {
               </div>
             )}
 
-            <div className={`${premiumPanel} p-4 flex items-center gap-4`}>
+            {documentsReadyForReview && isReady ? (
               <div
-                className="relative w-12 h-12 shrink-0 rounded-full border-2 border-blue-500/40 flex items-center justify-center"
-                style={{
-                  background: `conic-gradient(#3b82f6 ${(documentProgressDone / documentProgressTotal) * 360}deg, #27272a 0deg)`,
-                }}
+                className={`${premiumPanel} p-5 border-green-500/45 ring-2 ring-green-500/30 space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500`}
               >
-                <div className="w-9 h-9 rounded-full bg-zinc-950 flex items-center justify-center text-[9px] font-black text-white">
-                  {documentProgressDone}/{documentProgressTotal}
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-full bg-green-600/20 border border-green-500/50 flex items-center justify-center text-green-400 text-lg font-black shrink-0 shadow-[0_0_16px_rgba(34,197,94,0.35)]">
+                    ✓
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-green-400">
+                      You&apos;re all set
+                    </p>
+                    <p className="text-[10px] text-zinc-400 normal-case mt-0.5 leading-relaxed">
+                      {showFreightWaived
+                        ? 'BOL complete and freight photos waived.'
+                        : eventType === 'DELIVERY'
+                          ? 'Your BOL number and photos are complete.'
+                          : 'Your BOL and freight documents are complete.'}{' '}
+                      Tap below to review before sending.
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-400">
-                  {documentProgressDone} of {documentProgressTotal} documents complete
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  if (isReady) {
+                <button
+                  type="button"
+                  onClick={() => {
                     setCurrentStage('REVIEW');
                     setShowVerification(true);
-                  }
-                }}
-                disabled={!isReady}
-                className={`shrink-0 px-5 py-3 rounded-xl font-black uppercase tracking-[0.2em] text-[9px] text-white transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed ${
-                  themeMode === 'green'
-                    ? 'bg-green-600 shadow-[0_0_16px_rgba(34,197,94,0.3)]'
-                    : 'bg-blue-600 shadow-[0_0_16px_rgba(59,130,246,0.35)]'
-                }`}
-              >
-                Ready for review →
-              </button>
-            </div>
+                  }}
+                  className={`w-full py-4 rounded-xl font-black uppercase tracking-[0.25em] text-[10px] text-white transition-all active:scale-[0.98] animate-pulse ${
+                    themeMode === 'green'
+                      ? 'bg-green-600 shadow-[0_0_24px_rgba(34,197,94,0.45)]'
+                      : 'bg-blue-600 shadow-[0_0_24px_rgba(59,130,246,0.45)]'
+                  }`}
+                >
+                  Ready for review →
+                </button>
+              </div>
+            ) : (
+              <div className={`${premiumPanel} p-4 flex items-center gap-4`}>
+                <div
+                  className="relative w-12 h-12 shrink-0 rounded-full border-2 border-blue-500/40 flex items-center justify-center"
+                  style={{
+                    background: `conic-gradient(#3b82f6 ${(documentProgressDone / documentProgressTotal) * 360}deg, #27272a 0deg)`,
+                  }}
+                >
+                  <div className="w-9 h-9 rounded-full bg-zinc-950 flex items-center justify-center text-[9px] font-black text-white">
+                    {documentProgressDone}/{documentProgressTotal}
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-400">
+                    {documentProgressDone} of {documentProgressTotal} documents complete
+                  </p>
+                  {!bolNumberStepDone ? (
+                    <p className="text-[9px] text-blue-400/80 normal-case mt-0.5">
+                      Enter your BOL number to continue
+                    </p>
+                  ) : !bolDocumentComplete ? (
+                    <p className="text-[9px] text-blue-400/80 normal-case mt-0.5">
+                      Add BOL photos to continue
+                    </p>
+                  ) : eventType === 'PICKUP' && !freightDocumentComplete ? (
+                    <p className="text-[9px] text-zinc-500 normal-case mt-0.5">
+                      Add freight photos or mark not required
+                    </p>
+                  ) : null}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isReady) {
+                      setCurrentStage('REVIEW');
+                      setShowVerification(true);
+                    }
+                  }}
+                  disabled={!isReady}
+                  className={`shrink-0 px-5 py-3 rounded-xl font-black uppercase tracking-[0.2em] text-[9px] text-white transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed ${
+                    themeMode === 'green'
+                      ? 'bg-green-600 shadow-[0_0_16px_rgba(34,197,94,0.3)]'
+                      : 'bg-blue-600 shadow-[0_0_16px_rgba(59,130,246,0.35)]'
+                  }`}
+                >
+                  Ready for review →
+                </button>
+              </div>
+            )}
 
             <p className="text-center text-[8px] text-zinc-600 normal-case flex items-center justify-center gap-1.5">
               <span>🔒</span>
