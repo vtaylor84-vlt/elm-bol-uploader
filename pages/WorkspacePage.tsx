@@ -76,10 +76,10 @@ const WorkspacePage: React.FC = () => {
             Driver Workspace
           </p>
           <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-            Good to see you, {driverName}
+            Welcome, {driverName}
           </h1>
           <p className="text-sm text-zinc-400 normal-case">
-            Choose what you need to submit today.
+            What would you like to do?
           </p>
         </section>
 
@@ -92,8 +92,8 @@ const WorkspacePage: React.FC = () => {
             onClick={openBolPod}
           />
           <WorkspaceCard
-            title="Receipt / Expense"
-            description="Submit a receipt for reimbursement."
+            title="Expense Submission"
+            description="Submit an expense with receipt for reimbursement or tracking."
             icon="🧾"
             accent="border-cyan-500/25 hover:border-cyan-500/50"
             onClick={openReceipt}

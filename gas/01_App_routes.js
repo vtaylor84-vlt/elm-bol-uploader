@@ -10,6 +10,10 @@ function doGet(e) {
     if (action === "getDrivers") {
       return getDriversData(); // Logic moved to 03_App_DriverLookup.gs
     }
+
+    if (action === "getTrucks") {
+      return getTrucksData();
+    }
   
     return ContentService
       .createTextOutput(JSON.stringify({ status: "ELM_UPLOADER Active" }))

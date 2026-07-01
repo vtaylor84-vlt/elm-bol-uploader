@@ -15,21 +15,26 @@ export type ExpenseCategory =
   | 'meals'
   | 'other';
 
+export interface ExpenseRecord {
+  category: ExpenseCategory;
+  amount: number;
+  expenseDate: string;
+  truckNumber?: string;
+  vendor?: string;
+  paidWith?: string;
+  paidWithOther?: string;
+  expenseType?: string;
+  expenseTypeOther?: string;
+  reimbursementForDriver?: boolean;
+  notes?: string;
+}
+
 export interface DocumentRecord {
   id: string;
   documentType: DocumentType;
   fileCategory: DocumentFileCategory;
   fileName?: string;
   previewUrl?: string;
-}
-
-export interface ExpenseRecord {
-  category: ExpenseCategory;
-  amount: number;
-  expenseDate: string;
-  loadNum?: string;
-  bolNum?: string;
-  notes?: string;
 }
 
 export interface BolPodSubmissionData {

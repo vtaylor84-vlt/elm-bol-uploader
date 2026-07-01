@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AuthenticatedShell from '../components/terminal/AuthenticatedShell.tsx';
+import ExpenseStepper from '../components/expense/ExpenseStepper.tsx';
+import ExpenseSummaryCard from '../components/expense/ExpenseSummaryCard.tsx';
 import { useSubmissionDraft } from '../context/SubmissionDraftContext.tsx';
-import { EXPENSE_CATEGORY_LABELS } from '../types/submission.ts';
 import {
   buildExpenseUploadPayload,
   filesToBase64Payload,
@@ -51,7 +52,10 @@ const SubmissionReviewPage: React.FC = () => {
       await submitDocumentUpload(payload);
       navigate('/submissions/success', {
         replace: true,
-        state: { submissionType: 'EXPENSE_RECEIPT' },
+        state: {
+          submissionType: 'EXPENSE_RECEIPT',
+          submissionId: draft.submissionId,
+        },
       });
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Upload failed';
@@ -77,84 +81,54 @@ const SubmissionReviewPage: React.FC = () => {
   };
 
   return (
-    <AuthenticatedShell title="Review Submission" showBack onBack={() => navigate('/submissions/receipt')}>
-      <div className="max-w-lg mx-auto py-4 space-y-6">
-        <section className="text-center space-y-1">
-          <p className="text-[9px] font-black uppercase tracking-[0.4em] text-blue-400/80">
+    <AuthenticatedShell
+      title="Expense Submission"
+      showBack
+      onBack={() => navigate('/submissions/receipt')}
+    >
+      <div className="max-w-lg mx-auto py-4 sm:py-6 space-y-6 expense-page-enter">
+        <header className="text-center space-y-1">
+          <p className="text-[9px] font-black uppercase tracking-[0.42em] text-blue-400/85">
             Review
           </p>
-          <h1 className="text-xl font-black text-white">Confirm your expense</h1>
-        </section>
+          <h1 className="text-xl sm:text-2xl font-black text-white">Confirm & submit</h1>
+          <p className="text-sm text-zinc-500 normal-case">
+            Verify everything looks correct before transmitting.
+          </p>
+        </header>
 
-        <section className="terminal-glass-panel rounded-2xl border border-blue-500/20 p-5 space-y-4">
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <div>
-              <p className="text-[8px] font-black uppercase tracking-widest text-zinc-500">Type</p>
-              <p className="text-white font-semibold mt-1">
-                {EXPENSE_CATEGORY_LABELS[expense.category]}
-              </p>
-            </div>
-            <div>
-              <p className="text-[8px] font-black uppercase tracking-widest text-zinc-500">Amount</p>
-              <p className="text-white font-semibold mt-1">${expense.amount.toFixed(2)}</p>
-            </div>
-            <div>
-              <p className="text-[8px] font-black uppercase tracking-widest text-zinc-500">Date</p>
-              <p className="text-white font-semibold mt-1">{expense.expenseDate}</p>
-            </div>
-            <div>
-              <p className="text-[8px] font-black uppercase tracking-widest text-zinc-500">Driver</p>
-              <p className="text-white font-semibold mt-1 truncate">{draft.driverName}</p>
-            </div>
-            {expense.loadNum ? (
-              <div>
-                <p className="text-[8px] font-black uppercase tracking-widest text-zinc-500">Load #</p>
-                <p className="text-white font-semibold mt-1">{expense.loadNum}</p>
-              </div>
-            ) : null}
-            {expense.bolNum ? (
-              <div>
-                <p className="text-[8px] font-black uppercase tracking-widest text-zinc-500">BOL #</p>
-                <p className="text-white font-semibold mt-1">{expense.bolNum}</p>
-              </div>
-            ) : null}
-          </div>
+        <ExpenseStepper current="Review" />
 
-          {expense.notes ? (
-            <div>
-              <p className="text-[8px] font-black uppercase tracking-widest text-zinc-500">Notes</p>
-              <p className="text-sm text-zinc-300 normal-case mt-1">{expense.notes}</p>
-            </div>
-          ) : null}
+        <ExpenseSummaryCard
+          expense={expense}
+          receiptPreview={preview}
+          driverName={draft.driverName}
+        />
 
-          {preview ? (
-            <div>
-              <p className="text-[8px] font-black uppercase tracking-widest text-zinc-500 mb-2">
-                Receipt
-              </p>
-              <img
-                src={preview}
-                alt="Receipt"
-                className="w-full max-h-64 object-contain rounded-xl border border-zinc-800"
-              />
-            </div>
-          ) : null}
+        {error ? (
+          <p className="text-[12px] text-red-400 normal-case text-center" role="alert">
+            {error}
+          </p>
+        ) : null}
 
-          {error ? (
-            <p className="text-[11px] text-red-400 normal-case" role="alert">
-              {error}
-            </p>
-          ) : null}
-
+        <div className="flex flex-col gap-3 pt-2">
           <button
             type="button"
             disabled={isSubmitting}
             onClick={handleSubmit}
-            className="terminal-btn-primary w-full py-4 rounded-xl font-black uppercase tracking-[0.25em] text-sm text-white disabled:opacity-60"
+            className="terminal-btn-primary w-full min-h-[52px] py-4 rounded-xl font-black uppercase tracking-[0.28em] text-sm text-white disabled:opacity-60"
           >
             {isSubmitting ? 'Submitting...' : 'Submit Expense ›'}
           </button>
-        </section>
+          <button
+            type="button"
+            disabled={isSubmitting}
+            onClick={() => navigate('/submissions/receipt')}
+            className="w-full min-h-[48px] py-3 rounded-xl border border-zinc-700/80 text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:border-zinc-600 hover:text-zinc-200 transition-colors"
+          >
+            Back to edit
+          </button>
+        </div>
       </div>
     </AuthenticatedShell>
   );
