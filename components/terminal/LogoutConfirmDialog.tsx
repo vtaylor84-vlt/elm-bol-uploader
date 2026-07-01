@@ -41,7 +41,7 @@ const LogoutConfirmDialog: React.FC<LogoutConfirmDialogProps> = ({
             Session
           </p>
           <h2 id="logout-dialog-title" className="text-lg font-black uppercase tracking-tight text-white">
-            Switch user?
+            Logout?
           </h2>
           <p className="mt-2 text-sm text-zinc-400 normal-case">
             Are you sure you want to log out? Your session will be cleared and you will return to
@@ -62,7 +62,7 @@ const LogoutConfirmDialog: React.FC<LogoutConfirmDialogProps> = ({
             onClick={onConfirm}
             className="flex-1 py-3 rounded-xl bg-gradient-to-r from-red-600/90 to-red-500/90 border border-red-400/40 text-[9px] font-black uppercase tracking-widest text-white hover:shadow-[0_0_20px_rgba(239,68,68,0.35)] transition-all active:scale-[0.98]"
           >
-            Log out
+            Logout
           </button>
         </div>
       </div>

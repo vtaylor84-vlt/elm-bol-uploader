@@ -62,6 +62,20 @@ interface DriverOption {
 
 type EventType = 'PICKUP' | 'DELIVERY' | '';
 type Stage = 'EVENT' | 'OPERATOR' | 'ASSIGNMENT' | 'EVIDENCE' | 'REVIEW';
+
+type ManualPodPickupMatchStatus =
+  | 'PICKUP_MATCHES_BOL'
+  | 'PICKUP_DOES_NOT_MATCH_BOL'
+  | '';
+
+const VISIBLE_FLOW_STEP_COUNT = 4;
+
+const VISIBLE_FLOW_STEPS = [
+  { label: 'Event Selected', short: 'Event' },
+  { label: 'Logistics Path', short: 'Route' },
+  { label: 'BOL & Photos', short: 'Documents' },
+  { label: 'Review & Submit', short: 'Review' },
+] as const;
 type ManualCarrierOption = '' | 'BST Expedite Inc' | 'Greenleaf Xpress' | 'Other Carrier';
 
 const GOOGLE_SCRIPT_URL =
@@ -411,6 +425,8 @@ const App: React.FC = () => {
   const [showFreightConfirm, setShowFreightConfirm] = useState(false);
   const [freightNotRequired, setFreightNotRequired] = useState(false);
   const [bolNumAcknowledged, setBolNumAcknowledged] = useState(false);
+  const [manualPodPickupMatchStatus, setManualPodPickupMatchStatus] =
+    useState<ManualPodPickupMatchStatus>('');
   const [bolEditOpen, setBolEditOpen] = useState(false);
   const [showVerification, setShowVerification] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -484,6 +500,7 @@ const App: React.FC = () => {
     setBolNumAcknowledged(false);
     setBolEditOpen(false);
     setReviewEditCard(null);
+    setManualPodPickupMatchStatus('');
   };
 
   const handleLogout = () => {
@@ -608,6 +625,21 @@ const App: React.FC = () => {
 
   const hasAssignment = !!(selectedLoad || hasManualAssignmentData);
 
+  const needsManualPodPickupConfirm =
+    eventType === 'DELIVERY' && !selectedLoad && (manualMode || loadSelectionError);
+
+  const isManualPodPickupConfirmed =
+    !needsManualPodPickupConfirm ||
+    manualPodPickupMatchStatus === 'PICKUP_MATCHES_BOL' ||
+    manualPodPickupMatchStatus === 'PICKUP_DOES_NOT_MATCH_BOL';
+
+  const manualPodPickupReviewLabel =
+    manualPodPickupMatchStatus === 'PICKUP_MATCHES_BOL'
+      ? 'Pickup city/state matches BOL shipper'
+      : manualPodPickupMatchStatus === 'PICKUP_DOES_NOT_MATCH_BOL'
+        ? 'Pickup city/state does not match BOL shipper'
+        : '';
+
   const hasBolEvidence = uploadedFiles.some((f) => f.category === 'bol');
   const hasBolNumber = !!bolNum.trim();
   const bolNumberStepDone = bolNumAcknowledged && hasBolNumber;
@@ -674,17 +706,24 @@ const App: React.FC = () => {
 
   const currentStageIndex = stageOrder.indexOf(currentStage);
 
-  const headerStepLabels: Record<Stage, string> = {
-    EVENT: 'Select Event',
-    OPERATOR: 'Identify Driver',
-    ASSIGNMENT: 'Select Load',
-    EVIDENCE: 'Capture Documents',
-    REVIEW: 'Review & Submit',
+  const getVisibleFlowIndex = (): number => {
+    if (showVerification) return 3;
+    if (currentStage === 'EVIDENCE') return 2;
+    if (currentStage === 'REVIEW') return 3;
+    if (currentStage === 'ASSIGNMENT' || currentStage === 'OPERATOR') return 1;
+    return 0;
   };
 
-  const headerStepIndex = showVerification ? stageOrder.length - 1 : currentStageIndex;
-  const headerStepLabel =
-    showVerification ? 'Review & Submit' : headerStepLabels[currentStage] || 'Workflow';
+  const headerStepLabelsByVisible: Record<number, string> = {
+    0: 'Select Document Event',
+    1: 'Logistics Path',
+    2: 'BOL Number + Document Photos',
+    3: 'Review & Submit',
+  };
+
+  const headerStepIndex = getVisibleFlowIndex();
+  const headerStepLabel = headerStepLabelsByVisible[headerStepIndex] || 'Workflow';
+  const headerStepTotal = VISIBLE_FLOW_STEP_COUNT;
 
   const inpStyle = (v: string) =>
     `w-full p-5 rounded-2xl font-mono text-sm border-2 transition-all outline-none terminal-input ${
@@ -754,15 +793,7 @@ const App: React.FC = () => {
     ? 'rounded-[1.75rem] border border-zinc-200/90 bg-white/95 backdrop-blur-sm shadow-[0_12px_40px_rgba(0,0,0,0.08)]'
     : 'terminal-module-panel';
 
-  const driverFlowSteps: { stage: Stage; label: string }[] = [
-    { stage: 'EVENT', label: 'Event' },
-    { stage: 'OPERATOR', label: 'Driver' },
-    { stage: 'ASSIGNMENT', label: 'Load' },
-    { stage: 'EVIDENCE', label: 'Documents' },
-    { stage: 'REVIEW', label: 'Review' },
-  ];
-
-  const activeFlowIndex = showVerification ? 4 : currentStageIndex;
+  const activeFlowIndex = getVisibleFlowIndex();
   const bolPhotoCount = uploadedFiles.filter((f) => f.category === 'bol').length;
   const freightPhotoCount = uploadedFiles.filter((f) => f.category === 'freight').length;
   const hasFreightPhotos = freightPhotoCount > 0;
@@ -786,60 +817,6 @@ const App: React.FC = () => {
   const reopenFreightWaiverChoice = () => {
     setFreightNotRequired(false);
   };
-
-  const evidenceGuideSteps =
-    eventType === 'PICKUP'
-      ? [
-          { label: 'BOL #', done: bolNumberStepDone },
-          { label: 'BOL photos', done: bolDocumentComplete },
-          { label: 'Freight', done: freightDocumentComplete },
-          { label: 'Review', done: documentsReadyForReview && isReady },
-        ]
-      : [
-          { label: 'BOL #', done: bolNumberStepDone },
-          { label: 'BOL photos', done: bolDocumentComplete },
-          { label: 'Review', done: documentsReadyForReview && isReady },
-        ];
-
-  const evidenceActiveStepIndex = evidenceGuideSteps.findIndex((step) => !step.done);
-
-  const renderEvidenceGuideStepper = () => (
-    <div className="flex items-center gap-1 overflow-x-auto pb-1">
-      {evidenceGuideSteps.map((step, idx) => {
-        const isActive = idx === evidenceActiveStepIndex;
-        const isDone = step.done;
-        return (
-          <React.Fragment key={step.label}>
-            <div className="flex items-center gap-1.5 shrink-0">
-              <div
-                className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-black shrink-0 transition-all ${
-                  isDone
-                    ? 'bg-green-600/20 text-green-400 border border-green-500/50'
-                    : isActive
-                      ? 'bg-blue-600 text-white shadow-[0_0_12px_rgba(59,130,246,0.5)] ring-2 ring-blue-400/40'
-                      : 'bg-zinc-900 text-zinc-600 border border-zinc-800'
-                }`}
-              >
-                {isDone ? '✓' : idx + 1}
-              </div>
-              <span
-                className={`text-[7px] font-black uppercase tracking-[0.12em] ${
-                  isDone ? 'text-green-500' : isActive ? 'text-blue-400' : 'text-zinc-700'
-                }`}
-              >
-                {step.label}
-              </span>
-            </div>
-            {idx < evidenceGuideSteps.length - 1 ? (
-              <div
-                className={`h-px w-4 shrink-0 mx-0.5 ${isDone ? 'bg-green-500/40' : 'bg-zinc-800'}`}
-              />
-            ) : null}
-          </React.Fragment>
-        );
-      })}
-    </div>
-  );
 
   const renderBolPhotoButtons = (highlighted: boolean) => (
     <div className="grid grid-cols-2 gap-2">
@@ -914,11 +891,11 @@ const App: React.FC = () => {
   const renderFlowStepper = () => (
     <div className={`${premiumPanel} p-4 sm:p-5 lg:p-6`}>
       <div className="flex items-center justify-between gap-1">
-        {driverFlowSteps.map((step, idx) => {
+        {VISIBLE_FLOW_STEPS.map((step, idx) => {
           const done = idx < activeFlowIndex;
           const active = idx === activeFlowIndex;
           return (
-            <div key={step.stage} className="flex-1 flex flex-col items-center gap-1.5 min-w-0">
+            <div key={step.label} className="flex-1 flex flex-col items-center gap-1.5 min-w-0">
               <div className="flex items-center w-full">
                 {idx > 0 ? (
                   <div
@@ -928,7 +905,7 @@ const App: React.FC = () => {
                   <div className="flex-1" />
                 )}
                 <div
-                  className={`w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-black shrink-0 transition-all ${
+                  className={`w-7 h-7 lg:w-8 lg:h-8 rounded-full flex items-center justify-center text-[8px] lg:text-[9px] font-black shrink-0 transition-all ${
                     active
                       ? `bg-blue-600 text-white ${accentRing} ring-2`
                       : done
@@ -936,9 +913,9 @@ const App: React.FC = () => {
                         : 'bg-zinc-950 text-zinc-600 border border-zinc-800'
                   }`}
                 >
-                  {done ? '✓' : active ? idx + 1 : idx + 1}
+                  {done ? '✓' : String(idx + 1).padStart(2, '0')}
                 </div>
-                {idx < driverFlowSteps.length - 1 ? (
+                {idx < VISIBLE_FLOW_STEPS.length - 1 ? (
                   <div
                     className={`h-px flex-1 ${done ? (themeMode === 'green' ? 'bg-green-500/50' : 'bg-blue-500/50') : 'bg-zinc-800'}`}
                   />
@@ -947,11 +924,11 @@ const App: React.FC = () => {
                 )}
               </div>
               <span
-                className={`text-[7px] font-black uppercase tracking-[0.12em] truncate w-full text-center ${
+                className={`text-[7px] lg:text-[8px] font-black uppercase tracking-[0.1em] truncate w-full text-center ${
                   active ? themeTextClass : done ? 'text-zinc-500' : 'text-zinc-700'
                 }`}
               >
-                {step.label}
+                {step.short}
               </span>
             </div>
           );
@@ -959,6 +936,83 @@ const App: React.FC = () => {
       </div>
     </div>
   );
+
+  const renderWorkflowSectionHeader = (
+    stepNum: number,
+    badge: string,
+    title: string,
+    subtitle?: string
+  ) => (
+    <div className="px-1">
+      <p className="text-[8px] font-black uppercase tracking-[0.4em] text-zinc-600">
+        [0{stepNum}] {badge}
+      </p>
+      <h3 className="text-lg lg:text-xl font-black uppercase tracking-tight text-white">
+        {title}
+      </h3>
+      {subtitle ? (
+        <p className="text-[10px] lg:text-sm text-zinc-500 normal-case mt-1">{subtitle}</p>
+      ) : null}
+    </div>
+  );
+
+  const renderManualPodPickupConfirm = () => {
+    if (!needsManualPodPickupConfirm || !hasManualAssignmentData) return null;
+
+    return (
+      <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 sm:p-5 space-y-4 animate-in fade-in duration-300">
+        <div>
+          <p className="text-[9px] font-black uppercase tracking-[0.2em] text-amber-400">
+            POD pickup reference
+          </p>
+          <p className="text-sm text-zinc-400 normal-case mt-2 leading-relaxed">
+            For this manual delivery, confirm how the pickup city/state below relates to the BOL
+            shipper.
+          </p>
+          <p className="text-xs font-mono text-zinc-300 mt-2">
+            {puCity}, {puState} → {delCity}, {delState}
+          </p>
+        </div>
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={() => setManualPodPickupMatchStatus('PICKUP_MATCHES_BOL')}
+            className={`w-full text-left p-4 rounded-xl border-2 transition-all min-h-[52px] ${
+              manualPodPickupMatchStatus === 'PICKUP_MATCHES_BOL'
+                ? 'border-green-500/50 bg-green-500/10 text-green-300'
+                : 'border-zinc-700 bg-zinc-950/50 text-zinc-400 hover:border-zinc-600'
+            }`}
+          >
+            <span className="text-[10px] font-bold normal-case leading-snug">
+              The pickup city/state listed here matches the BOL.
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setManualPodPickupMatchStatus('PICKUP_DOES_NOT_MATCH_BOL')}
+            className={`w-full text-left p-4 rounded-xl border-2 transition-all min-h-[52px] ${
+              manualPodPickupMatchStatus === 'PICKUP_DOES_NOT_MATCH_BOL'
+                ? 'border-amber-500/50 bg-amber-500/10 text-amber-300'
+                : 'border-zinc-700 bg-zinc-950/50 text-zinc-400 hover:border-zinc-600'
+            }`}
+          >
+            <span className="text-[10px] font-bold normal-case leading-snug">
+              The pickup city/state listed here is not the shipper on the BOL.
+            </span>
+          </button>
+        </div>
+        {isManualPodPickupConfirmed ? (
+          <p className="text-[9px] font-black uppercase tracking-widest text-green-400 text-center">
+            ✓ Confirmed — continue to BOL entry below
+          </p>
+        ) : (
+          <p className="text-[9px] text-zinc-600 normal-case text-center">
+            Select one option to continue.
+          </p>
+        )}
+      </div>
+    );
+  };
 
   const renderVerifiedSummary = (
     title: string,
@@ -1040,6 +1094,8 @@ const App: React.FC = () => {
     setDelCity('');
     setDelState('');
 
+    setBolNumAcknowledged(false);
+    setManualPodPickupMatchStatus('');
     setUploadedFiles([]);
     setShowFreightPrompt(false);
     setShowFreightConfirm(false);
@@ -1236,10 +1292,16 @@ const App: React.FC = () => {
       willAdvanceToEvidence,
     });
 
-    if (willAdvanceToEvidence) {
+    if (willAdvanceToEvidence && isManualPodPickupConfirmed) {
       setCurrentStage('EVIDENCE');
     }
-  }, [manualMode, loadSelectionError, hasManualAssignmentData, selectedLoad]);
+  }, [
+    manualMode,
+    loadSelectionError,
+    hasManualAssignmentData,
+    selectedLoad,
+    isManualPodPickupConfirmed,
+  ]);
 
   useEffect(() => {
     if (hasAssignment && currentStage === 'EVIDENCE' && !bolNumberStepDone && !bolGuideCollapsed) {
@@ -1247,6 +1309,10 @@ const App: React.FC = () => {
       return () => window.clearTimeout(timer);
     }
   }, [hasAssignment, currentStage, bolNumberStepDone, bolGuideCollapsed]);
+
+  useEffect(() => {
+    setManualPodPickupMatchStatus('');
+  }, [puCity, puState, delCity, delState, eventType]);
 
   useEffect(() => {
     if (bolDocumentComplete) {
@@ -1285,6 +1351,7 @@ const App: React.FC = () => {
     setLoadSelectionError(false);
     setIsConnecting(false);
     setAssignmentEditReturnStage(null);
+    setManualPodPickupMatchStatus('');
   };
 
   const onFileSelect = async (
@@ -1385,18 +1452,19 @@ const App: React.FC = () => {
     if (hasAssignment && currentStage !== 'ASSIGNMENT' && !isScanning && !isConnecting) {
       return (
         <section className="space-y-3">
-          <div className="px-1">
-            <p className="text-[8px] font-black uppercase tracking-[0.4em] text-zinc-600">
-              Step 3 of 5
-            </p>
-          </div>
+          {renderWorkflowSectionHeader(2, 'Logistics Path', 'Logistics Path')}
           {renderVerifiedSummary(
-            'Load confirmed',
+            'Route confirmed',
             `${puCity}, ${puState} → ${delCity}, ${delState}`,
             () => openAssignmentEdit('EVIDENCE')
           )}
           <div className="text-center space-y-1 px-2">
             {renderAssignmentLoadRef()}
+            {String(loadId || '').trim() && selectedLoad ? (
+              <p className="text-[9px] font-mono text-zinc-600 normal-case">
+                Load ID: <span className="text-zinc-400">{String(loadId).trim()}</span>
+              </p>
+            ) : null}
             <p className="text-[9px] text-zinc-500 normal-case">{reviewCarrierDisplay}</p>
           </div>
         </section>
@@ -1405,14 +1473,12 @@ const App: React.FC = () => {
 
     return (
       <section className={panelBase}>
-        <div className="px-1">
-          <p className="text-[8px] font-black uppercase tracking-[0.4em] text-zinc-600">
-            Step 3 of 5
-          </p>
-          <h3 className="text-lg font-black uppercase tracking-tight text-white">
-            Select Your Load
-          </h3>
-        </div>
+        {renderWorkflowSectionHeader(
+          2,
+          'Logistics Path',
+          'Logistics Path',
+          'Confirm pickup and delivery for this stop.'
+        )}
 
         <div className={`${premiumPanel} p-5 sm:p-6 lg:p-8`}>
         <div className="flex justify-end items-center mb-4 gap-4 min-h-[1.25rem]">
@@ -1488,8 +1554,11 @@ const App: React.FC = () => {
               <div
                 className={`text-[10px] font-black uppercase tracking-[0.3em] ${themeTextClass}`}
               >
-                Load confirmed
+                Route confirmed
               </div>
+              <p className="text-base font-bold text-white font-mono">
+                {puCity}, {puState} → {delCity}, {delState}
+              </p>
 
               <div className="grid grid-cols-4 gap-4">
                 <input
@@ -1528,9 +1597,18 @@ const App: React.FC = () => {
                 aria-label="Carrier"
               />
 
-              {assignedLoadNumber ? (
-                <div className="pt-2 border-t border-zinc-800/60">
-                  {renderAssignmentLoadRef()}
+              {assignedLoadNumber || String(loadId || '').trim() ? (
+                <div className="pt-2 border-t border-zinc-800/60 space-y-1">
+                  {assignedLoadNumber ? (
+                    <p className="text-[9px] font-mono text-zinc-500 normal-case">
+                      Load # <span className="text-zinc-300">{assignedLoadNumber}</span>
+                    </p>
+                  ) : null}
+                  {String(loadId || '').trim() ? (
+                    <p className="text-[9px] font-mono text-zinc-500 normal-case">
+                      Load ID <span className="text-zinc-300">{String(loadId).trim()}</span>
+                    </p>
+                  ) : null}
                 </div>
               ) : null}
             </div>
@@ -1645,6 +1723,7 @@ const App: React.FC = () => {
                 setDelState('');
                 setCompany('');
                 setManualCarrier('');
+                setManualPodPickupMatchStatus('');
                 setCurrentStage('ASSIGNMENT');
               }}
               className="w-full py-4 rounded-xl border border-dashed border-zinc-700/80 bg-zinc-950/40 text-[9px] font-black text-zinc-500 uppercase tracking-[0.25em] hover:border-blue-500/40 hover:text-blue-400 transition-colors lg:col-span-2"
@@ -1734,6 +1813,32 @@ const App: React.FC = () => {
               <option value="Other Carrier">Other Carrier</option>
             </select>
 
+            {hasManualAssignmentData ? (
+              <div className="rounded-xl border border-green-500/25 bg-green-500/5 px-4 py-3 animate-in fade-in duration-300">
+                <p className="text-[8px] font-black uppercase tracking-widest text-green-400">
+                  Route entered
+                </p>
+                <p className="text-sm font-bold text-white mt-1 font-mono">
+                  {puCity}, {puState} → {delCity}, {delState}
+                </p>
+                {isManualPodPickupConfirmed ? (
+                  <p className="text-[10px] text-zinc-400 normal-case mt-2">
+                    Logistics path saved — continue to BOL entry when ready.
+                  </p>
+                ) : needsManualPodPickupConfirm ? (
+                  <p className="text-[10px] text-zinc-500 normal-case mt-2">
+                    Confirm the POD pickup reference below to continue.
+                  </p>
+                ) : (
+                  <p className="text-[10px] text-zinc-500 normal-case mt-2">
+                    Your route is ready — continue to BOL entry below.
+                  </p>
+                )}
+              </div>
+            ) : null}
+
+            {renderManualPodPickupConfirm()}
+
             {manualMode && (
               <button
                 onClick={() => {
@@ -1781,7 +1886,7 @@ const App: React.FC = () => {
         solarMode={solarMode}
         stepLabel={headerStepLabel}
         stepIndex={headerStepIndex}
-        stepTotal={stageOrder.length}
+        stepTotal={headerStepTotal}
         isAdmin={isAdminUploadMode}
         maskedEmail={authSession?.maskedEmail}
         eventType={eventType || undefined}
@@ -1835,27 +1940,93 @@ const App: React.FC = () => {
       <div className={`${TERMINAL_SHELL} mb-6`}>{renderFlowStepper()}</div>
 
       <div className={`${TERMINAL_SHELL} space-y-5 lg:space-y-6`}>
-        <section className="space-y-3">
-          <div className="flex items-center justify-between px-1">
-            <div>
-              <p className="text-[8px] font-black uppercase tracking-[0.4em] text-zinc-600">
-                Step 1 of 5
+        {!canSelectAnyDriver && authSession?.driverName ? (
+          <section className={`${premiumPanel} p-5 sm:p-6 lg:p-8 border-blue-500/15`}>
+            <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-white tracking-tight">
+              Good to see you, {authSession.driverName}
+            </h2>
+            <p className="text-sm lg:text-base text-zinc-400 normal-case mt-2">
+              Let&apos;s get your paperwork submitted.
+            </p>
+          </section>
+        ) : null}
+
+        {canSelectAnyDriver ? (
+          <section className="space-y-3">
+            <div className={`${premiumPanel} p-4 sm:p-5 lg:p-6 space-y-3`}>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="px-2.5 py-1 rounded-full text-[7px] font-black uppercase tracking-[0.15em] border border-amber-500/50 bg-amber-500/15 text-amber-300">
+                  Admin Upload Mode
+                </span>
+              </div>
+              <p className="text-[10px] text-zinc-500 normal-case">
+                Select the driver you are submitting paperwork for.
               </p>
-              <h3 className="text-lg font-black uppercase tracking-tight text-white">
-                What are you doing?
-              </h3>
+              {!manualMode ? (
+                <select
+                  className={inpStyle(driverName)}
+                  value={driverName}
+                  onChange={(e) => {
+                    if (e.target.value === 'MANUAL') {
+                      logUiDiag('driver_select_manual_entry', {
+                        setsCurrentStage: 'ASSIGNMENT',
+                      });
+                      setManualMode(true);
+                      setDriverName('');
+                      setManualPodPickupMatchStatus('');
+                      setCurrentStage('ASSIGNMENT');
+                    } else {
+                      logUiDiag('driver_select_change', {
+                        clearsSelectedLoad: true,
+                        setsCurrentStage: 'ASSIGNMENT',
+                      });
+                      setDriverName(e.target.value.toUpperCase());
+                      setSelectedLoad(null);
+                      setBolNum('');
+                      setLoadId('');
+                      setPuCity('');
+                      setPuState('');
+                      setDelCity('');
+                      setDelState('');
+                      setCompany('');
+                      setManualCarrier('');
+                      setManualPodPickupMatchStatus('');
+                      setCurrentStage('ASSIGNMENT');
+                    }
+                  }}
+                >
+                  <option value="">Select driver</option>
+                  {driverList.map((d) => (
+                    <option key={d.value} value={d.value}>
+                      {d.label}
+                    </option>
+                  ))}
+                  <option value="MANUAL">+ Manual entry</option>
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  placeholder="Type full name"
+                  className={inpStyle(driverName)}
+                  value={driverName}
+                  onChange={(e) => setDriverName(e.target.value.toUpperCase())}
+                />
+              )}
             </div>
-          </div>
+          </section>
+        ) : null}
+
+        <section className="space-y-3">
+          {renderWorkflowSectionHeader(1, 'Event Selected', 'Select Document Event')}
 
           {eventType && currentStageIndex > 0 ? (
-            renderVerifiedSummary('Event verified', eventType, () =>
-              setCurrentStage('EVENT')
+            renderVerifiedSummary(
+              'Event selected',
+              eventType === 'DELIVERY' ? 'Delivery / POD' : 'Pickup',
+              () => setCurrentStage('EVENT')
             )
           ) : (
             <div className={`${premiumPanel} p-4 sm:p-5 lg:p-6`}>
-              <p className="text-[9px] sm:text-[10px] text-zinc-500 normal-case mb-4 lg:mb-6">
-                Select pickup or delivery for this stop.
-              </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4">
                 <button
                   onClick={() => resetFlowFromEvent('PICKUP')}
@@ -1875,124 +2046,23 @@ const App: React.FC = () => {
                       : 'bg-zinc-950/80 border-zinc-700 text-zinc-400 hover:border-zinc-600'
                   }`}
                 >
-                  Delivery
+                  Delivery / POD
                 </button>
               </div>
             </div>
           )}
         </section>
 
-        {eventType && (
-          <section className="space-y-3">
-            <div className="px-1">
-              <p className="text-[8px] font-black uppercase tracking-[0.4em] text-zinc-600">
-                Step 2 of 5
-              </p>
-              <h3 className="text-lg font-black uppercase tracking-tight text-white">
-                Who are you?
-              </h3>
-            </div>
-
-            {driverName && currentStage !== 'OPERATOR' ? (
-              renderVerifiedSummary('Driver verified', driverName, () =>
-                setCurrentStage('OPERATOR')
-              )
-            ) : (
-              <div className={`${premiumPanel} p-4 sm:p-5 lg:p-6 space-y-3 lg:space-y-4`}>
-                {!canSelectAnyDriver && authSession ? (
-                  <div className="rounded-2xl border border-blue-500/30 bg-blue-500/5 p-4 space-y-2">
-                    <p className="text-[8px] font-black uppercase tracking-[0.35em] text-blue-400">
-                      Logged in driver
-                    </p>
-                    <p className="text-lg font-black uppercase tracking-tight text-white">
-                      {authSession.driverName}
-                    </p>
-                    {authSession.maskedEmail ? (
-                      <p className="text-[10px] font-mono text-zinc-500">{authSession.maskedEmail}</p>
-                    ) : null}
-                    {authSession.companyCode ? (
-                      <span className="inline-block px-2 py-0.5 rounded text-[7px] font-black uppercase tracking-widest border border-zinc-700 bg-zinc-900 text-zinc-400">
-                        {authSession.companyCode}
-                      </span>
-                    ) : null}
-                  </div>
-                ) : !manualMode ? (
-                  <select
-                    className={inpStyle(driverName)}
-                    value={driverName}
-                    onChange={(e) => {
-                      if (e.target.value === 'MANUAL') {
-                        logUiDiag('driver_select_manual_entry', {
-                          setsCurrentStage: 'ASSIGNMENT',
-                        });
-                        setManualMode(true);
-                        setDriverName('');
-                        setCurrentStage('ASSIGNMENT');
-                      } else {
-                        logUiDiag('driver_select_change', {
-                          clearsSelectedLoad: true,
-                          setsCurrentStage: 'ASSIGNMENT',
-                        });
-                        setDriverName(e.target.value.toUpperCase());
-                        setSelectedLoad(null);
-                        setBolNum('');
-                        setLoadId('');
-                        setPuCity('');
-                        setPuState('');
-                        setDelCity('');
-                        setDelState('');
-                        setCompany('');
-                        setManualCarrier('');
-                        setCurrentStage('ASSIGNMENT');
-                      }
-                    }}
-                  >
-                    <option value="">Select driver</option>
-                    {driverList.map((d) => (
-                      <option key={d.value} value={d.value}>
-                        {d.label}
-                      </option>
-                    ))}
-                    <option value="MANUAL">+ Manual entry</option>
-                  </select>
-                ) : (
-                  <input
-                    type="text"
-                    placeholder="Type full name"
-                    className={inpStyle(driverName)}
-                    value={driverName}
-                    onChange={(e) => setDriverName(e.target.value.toUpperCase())}
-                    autoFocus
-                  />
-                )}
-              </div>
-            )}
-          </section>
-        )}
-
         {driverName && renderAssignmentPanel()}
 
-        {hasAssignment && currentStage !== 'ASSIGNMENT' && !isConnecting && (
+        {hasAssignment && currentStage !== 'ASSIGNMENT' && !isConnecting && isManualPodPickupConfirmed && (
           <section className="space-y-4">
-            <div className="flex items-start justify-between gap-3 px-1">
-              <div>
-                <p className="text-[8px] font-black uppercase tracking-[0.4em] text-zinc-600">
-                  Step 4 of 5
-                </p>
-                <h3 className="text-lg font-black uppercase tracking-tight text-white">
-                  What documents do you need?
-                </h3>
-                <p className="text-[10px] text-zinc-500 normal-case mt-1">
-                  Let&apos;s collect your documents.
-                </p>
-              </div>
-              <span className="shrink-0 px-2.5 py-1 rounded-full border border-zinc-700 bg-zinc-900 text-[7px] font-black uppercase tracking-widest text-zinc-400">
-                Step 4 of 5
-              </span>
-            </div>
-
-            {renderEvidenceGuideStepper()}
-
+            {renderWorkflowSectionHeader(
+              3,
+              'BOL Number + Document Photos',
+              'BOL Number + Document Photos',
+              'Enter your BOL number, then add photos of the paperwork.'
+            )}
             {bolGuideCollapsed ? (
               renderVerifiedSummary(
                 'BOL complete',
@@ -2001,141 +2071,86 @@ const App: React.FC = () => {
               )
             ) : (
               <div
-                className={`${premiumPanel} border-blue-500/30 overflow-hidden ${
-                  bolDocumentComplete ? 'ring-1 ring-blue-500/25' : 'ring-2 ring-blue-500/35'
+                className={`${premiumPanel} p-5 sm:p-6 lg:p-8 space-y-4 ${
+                  bolNumberStepDone && !bolDocumentComplete
+                    ? 'ring-2 ring-blue-500/40 shadow-[0_0_32px_rgba(59,130,246,0.12)] animate-in slide-in-from-bottom-4 duration-500'
+                    : ''
                 }`}
               >
-                <div className="p-4 border-b border-zinc-800/80 flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-blue-600/15 border border-blue-500/30 flex items-center justify-center text-lg">
-                      📄
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">
-                        Bill of Lading
+                {!bolNumberStepDone ? (
+                  <div className="space-y-3">
+                    <label
+                      htmlFor="bol-number-input"
+                      className="block text-[9px] font-black uppercase tracking-[0.2em] text-zinc-400"
+                    >
+                      BOL Number <span className="text-red-400">*</span>
+                    </label>
+                    <input
+                      id="bol-number-input"
+                      ref={bolNumInputRef}
+                      className={`${inpStyle(bolNum)} ring-2 ring-blue-500/50 border-blue-500/60 shadow-[0_0_24px_rgba(59,130,246,0.15)]`}
+                      placeholder="Enter the BOL number from your paperwork (not the load number)"
+                      value={bolNum}
+                      onChange={(e) => {
+                        const next = e.target.value.trim();
+                        setBolNum(next);
+                        if (!next) setBolNumAcknowledged(false);
+                      }}
+                      onBlur={() => {
+                        if (bolNum.trim()) setBolNumAcknowledged(true);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && bolNum.trim()) {
+                          setBolNumAcknowledged(true);
+                          (e.target as HTMLInputElement).blur();
+                        }
+                      }}
+                      autoComplete="off"
+                    />
+                    {hasBolNumber && !bolNumAcknowledged ? (
+                      <p className="text-[10px] text-blue-400/90 normal-case">
+                        Tap outside the field when finished entering your BOL number.
                       </p>
-                      <span className="inline-block mt-1 px-2 py-0.5 rounded text-[7px] font-black uppercase tracking-widest bg-blue-500/15 text-blue-300 border border-blue-500/25">
-                        Required
-                      </span>
-                    </div>
+                    ) : null}
                   </div>
-                  {bolDocumentComplete ? (
-                    <span className="text-[8px] font-black uppercase text-green-400 flex items-center gap-1">
-                      ✓ Complete
-                    </span>
-                  ) : bolNumberStepDone ? (
-                    <span className="text-[8px] font-black uppercase text-blue-400 flex items-center gap-1">
-                      Step 2 of 2
-                    </span>
-                  ) : (
-                    <span className="text-[8px] font-black uppercase text-amber-400 flex items-center gap-1 animate-pulse">
-                      Step 1 of 2
-                    </span>
-                  )}
-                </div>
+                ) : (
+                  <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                    <div className="flex items-center justify-between gap-3 pb-3 border-b border-zinc-800/80">
+                      <div className="min-w-0">
+                        <p className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-500">
+                          BOL Number
+                        </p>
+                        <p className="text-lg font-bold text-white font-mono tracking-tight truncate">
+                          {bolNum}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setBolNumAcknowledged(false)}
+                        className="shrink-0 text-[8px] font-black uppercase tracking-widest text-blue-400 px-3 py-2 rounded-lg border border-blue-500/30 bg-blue-500/10"
+                      >
+                        Edit
+                      </button>
+                    </div>
 
-                <div className="p-4 space-y-3">
-                  {!bolNumberStepDone ? (
-                    <div className="space-y-3 animate-in fade-in duration-300">
-                      <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-3">
-                        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-300">
-                          First — enter your BOL number
-                        </p>
-                        <p className="text-[10px] text-zinc-400 normal-case mt-1">
-                          Type the number from your Bill of Lading paperwork.
-                        </p>
-                      </div>
-                      <div>
-                        <label className="block text-[8px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-2">
-                          BOL number <span className="text-red-400">*</span>
-                        </label>
-                        <input
-                          ref={bolNumInputRef}
-                          className={`${inpStyle(bolNum)} flex-1 ring-2 ring-blue-500/50 border-blue-500/60 shadow-[0_0_24px_rgba(59,130,246,0.2)]`}
-                          placeholder="e.g. 12345678"
-                          value={bolNum}
-                          onChange={(e) => {
-                            const next = e.target.value.trim();
-                            setBolNum(next);
-                            if (!next) setBolNumAcknowledged(false);
-                          }}
-                          onBlur={() => {
-                            if (bolNum.trim()) setBolNumAcknowledged(true);
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' && bolNum.trim()) {
-                              setBolNumAcknowledged(true);
-                              (e.target as HTMLInputElement).blur();
-                            }
-                          }}
-                          autoComplete="off"
-                        />
-                      </div>
-                      {hasBolNumber && !bolNumAcknowledged ? (
-                        <p className="text-[9px] text-blue-400/90 normal-case text-center">
-                          Tap outside the field when you&apos;re done →
+                    <div className="space-y-3">
+                      <p className="text-sm text-zinc-300 normal-case leading-relaxed">
+                        Take a clear photo of your Bill of Lading, or choose from your camera roll.
+                      </p>
+                      <p className="text-[10px] text-zinc-500 normal-case">
+                        You can add up to 5 images.
+                      </p>
+                      <p className="text-[8px] text-zinc-600 normal-case">{UPLOAD_FORMAT_HINT}</p>
+                      {bolPhotoCount > 0 ? (
+                        <p className="text-[9px] text-blue-400/90 normal-case">
+                          {bolPhotoCount} of 5 image{bolPhotoCount === 1 ? '' : 's'} attached
                         </p>
                       ) : null}
-                    </div>
-                  ) : (
-                    <div className="space-y-3 animate-in fade-in duration-300">
-                      <div className={`${premiumPanel} p-3 flex items-center justify-between gap-3 ring-1 ${accentRing}`}>
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-8 h-8 rounded-full bg-green-600/15 border border-green-500/40 flex items-center justify-center text-green-400 text-xs font-black shrink-0">
-                            ✓
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-[7px] font-black uppercase tracking-[0.2em] text-zinc-500">
-                              BOL number entered
-                            </p>
-                            <p className="text-sm font-bold text-white font-mono tracking-tight truncate">
-                              {bolNum}
-                            </p>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setBolNumAcknowledged(false)}
-                          className="shrink-0 text-[7px] font-black uppercase tracking-widest text-blue-400 px-2 py-1.5 rounded-lg border border-blue-500/30 bg-blue-500/10"
-                        >
-                          Edit
-                        </button>
-                      </div>
-
-                      <div
-                        className={`rounded-xl border px-4 py-3 transition-all ${
-                          !bolDocumentComplete
-                            ? 'border-blue-500/40 bg-blue-500/10'
-                            : 'border-zinc-800 bg-zinc-950/50'
-                        }`}
-                      >
-                        <p
-                          className={`text-[9px] font-black uppercase tracking-[0.2em] ${
-                            !bolDocumentComplete ? 'text-blue-300' : 'text-zinc-500'
-                          }`}
-                        >
-                          {bolDocumentComplete
-                            ? 'BOL photos attached'
-                            : 'Next — add your BOL photos'}
-                        </p>
-                        {!bolDocumentComplete ? (
-                          <p className="text-[10px] text-zinc-400 normal-case mt-1">
-                            Take a clear photo of your Bill of Lading, or choose from your camera roll.
-                          </p>
-                        ) : null}
-                      </div>
-
-                      <p className="text-[8px] text-zinc-600 normal-case">{UPLOAD_FORMAT_HINT}</p>
-                      <p className="text-[8px] text-zinc-500 normal-case">
-                        Upload up to 5 BOL photos
-                        {bolPhotoCount > 0 ? ` · ${bolPhotoCount} attached` : ''}
-                      </p>
-
                       {renderBolPhotoButtons(!bolDocumentComplete)}
                       {renderBolThumbnails()}
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -2502,23 +2517,17 @@ const App: React.FC = () => {
               </button>
             </div>
 
-            <div>
-              <p className="text-[8px] font-black uppercase tracking-[0.45em] text-zinc-600 mb-1">
-                Step 5 of 5
-              </p>
-              <h2 className="text-2xl font-black italic text-white uppercase tracking-tighter">
-                Before Sending
-              </h2>
-              <p className="mt-1 text-[10px] text-zinc-500 normal-case tracking-normal">
-                Does everything look correct?
-              </p>
-            </div>
+            {renderWorkflowSectionHeader(
+              4,
+              'Review & Submit',
+              'Review & Submit',
+              'Does everything look correct?'
+            )}
 
             <div className="flex items-center justify-between gap-1 px-1">
               {[
                 { label: 'Event', done: true },
-                { label: 'Driver', done: true },
-                { label: 'Load', done: true },
+                { label: 'Route', done: true },
                 { label: 'Documents', done: hasBolEvidence },
                 { label: 'Review', done: false, active: true },
               ].map((step, idx) => (
@@ -2569,6 +2578,17 @@ const App: React.FC = () => {
               <h3 className="text-[9px] font-black uppercase tracking-[0.35em] text-zinc-500 px-1">
                 Load Overview
               </h3>
+
+              {manualPodPickupReviewLabel ? (
+                <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 px-4 py-3 mb-2">
+                  <p className="text-[8px] font-black uppercase tracking-[0.2em] text-amber-400">
+                    POD pickup reference
+                  </p>
+                  <p className="text-[11px] text-zinc-300 normal-case mt-1">
+                    {manualPodPickupReviewLabel}
+                  </p>
+                </div>
+              ) : null}
 
               <div className="grid grid-cols-2 gap-2">
                 {(

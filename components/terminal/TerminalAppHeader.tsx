@@ -73,7 +73,7 @@ const TerminalAppHeader: React.FC<TerminalAppHeaderProps> = ({
               className="px-1.5 sm:px-2 py-1 rounded-full text-[6px] sm:text-[7px] font-black uppercase tracking-[0.12em] border border-amber-500/50 bg-amber-500/15 text-amber-300 whitespace-nowrap"
               title="Admin upload mode"
             >
-              Admin
+              Admin Upload Mode
             </span>
           ) : null}
 
@@ -105,10 +105,9 @@ const TerminalAppHeader: React.FC<TerminalAppHeaderProps> = ({
                 ? 'border-zinc-300 text-zinc-600 hover:border-red-400 hover:text-red-600'
                 : 'border-zinc-600/80 bg-zinc-900/60 text-zinc-200 hover:border-red-500/50 hover:text-red-400 hover:bg-red-500/10'
             }`}
-            aria-label="Switch user or log out"
+            aria-label="Log out"
           >
-            <span className="sm:hidden">Logout</span>
-            <span className="hidden sm:inline">Switch User</span>
+            Logout
           </button>
 
           <button
