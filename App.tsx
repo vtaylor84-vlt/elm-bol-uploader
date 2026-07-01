@@ -4,6 +4,11 @@ import TerminalAppHeader from './components/terminal/TerminalAppHeader.tsx';
 import LogoutConfirmDialog from './components/terminal/LogoutConfirmDialog.tsx';
 import WorkflowEditBar from './components/terminal/WorkflowEditBar.tsx';
 import {
+  TERMINAL_SHELL,
+  TERMINAL_HEADER_OFFSET,
+  TERMINAL_HEADER_OFFSET_WITH_EDIT,
+} from './components/terminal/terminalLayout.ts';
+import {
   clearDriverSession,
   readDriverSession,
   type DriverSessionProfile,
@@ -907,7 +912,7 @@ const App: React.FC = () => {
         : 'ring-zinc-600/35';
 
   const renderFlowStepper = () => (
-    <div className={`${premiumPanel} p-4`}>
+    <div className={`${premiumPanel} p-4 sm:p-5 lg:p-6`}>
       <div className="flex items-center justify-between gap-1">
         {driverFlowSteps.map((step, idx) => {
           const done = idx < activeFlowIndex;
@@ -1400,9 +1405,6 @@ const App: React.FC = () => {
 
     return (
       <section className={panelBase}>
-        {assignmentEditReturnStage ? (
-          <WorkflowEditBar onBack={exitAssignmentEdit} onClose={exitAssignmentEdit} />
-        ) : null}
         <div className="px-1">
           <p className="text-[8px] font-black uppercase tracking-[0.4em] text-zinc-600">
             Step 3 of 5
@@ -1412,7 +1414,7 @@ const App: React.FC = () => {
           </h3>
         </div>
 
-        <div className={`${premiumPanel} p-5 sm:p-6`}>
+        <div className={`${premiumPanel} p-5 sm:p-6 lg:p-8`}>
         <div className="flex justify-end items-center mb-4 gap-4 min-h-[1.25rem]">
           {isScanning && (
             <div className="flex items-center gap-2 shrink-0">
@@ -1433,7 +1435,7 @@ const App: React.FC = () => {
         </div>
 
         {isScanning ? (
-          <div className="min-h-[340px] rounded-[2rem] border-2 border-dashed border-zinc-800 bg-black/30 flex flex-col items-center justify-center text-center px-8 animate-in fade-in duration-500">
+          <div className="min-h-[280px] lg:min-h-[320px] rounded-[2rem] border-2 border-dashed border-zinc-800 bg-black/30 flex flex-col items-center justify-center text-center px-8 animate-in fade-in duration-500">
             <ConnectingGlyph
               accentClass={
                 themeMode === 'green'
@@ -1442,18 +1444,18 @@ const App: React.FC = () => {
               }
             />
             <div
-              className={`mt-6 text-xl font-black uppercase tracking-[0.35em] ${
+              className={`mt-6 text-xl lg:text-2xl font-black uppercase tracking-[0.35em] ${
                 themeMode === 'green' ? 'text-green-400' : 'text-blue-400'
               }`}
             >
               Connecting to dispatch...
             </div>
-            <div className="mt-3 text-[10px] font-black uppercase tracking-[0.25em] text-zinc-500 max-w-md leading-relaxed">
+            <div className="mt-3 text-[10px] lg:text-xs font-black uppercase tracking-[0.25em] text-zinc-500 max-w-md leading-relaxed">
               Matching your active loads
             </div>
           </div>
         ) : isConnecting ? (
-          <div className="min-h-[340px] rounded-[2rem] border-2 border-dashed border-zinc-800 bg-black/30 flex flex-col items-center justify-center text-center px-8 animate-in fade-in duration-500">
+          <div className="min-h-[280px] lg:min-h-[320px] rounded-[2rem] border-2 border-dashed border-zinc-800 bg-black/30 flex flex-col items-center justify-center text-center px-8 animate-in fade-in duration-500">
             <ConnectingGlyph
               accentClass={
                 themeMode === 'green'
@@ -1541,7 +1543,7 @@ const App: React.FC = () => {
             </button>
           </div>
         ) : !manualMode && availableLoads.length > 0 ? (
-          <div className="space-y-4 animate-in fade-in slide-in-from-top duration-500">
+          <div className="space-y-4 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0 animate-in fade-in slide-in-from-top duration-500">
             {availableLoads.map((load) => {
               const identity = getLoadIdentity(load);
               const isSelected =
@@ -1645,7 +1647,7 @@ const App: React.FC = () => {
                 setManualCarrier('');
                 setCurrentStage('ASSIGNMENT');
               }}
-              className="w-full py-4 rounded-xl border border-dashed border-zinc-700/80 bg-zinc-950/40 text-[9px] font-black text-zinc-500 uppercase tracking-[0.25em] hover:border-blue-500/40 hover:text-blue-400 transition-colors"
+              className="w-full py-4 rounded-xl border border-dashed border-zinc-700/80 bg-zinc-950/40 text-[9px] font-black text-zinc-500 uppercase tracking-[0.25em] hover:border-blue-500/40 hover:text-blue-400 transition-colors lg:col-span-2"
             >
               Load not listed — enter manually
             </button>
@@ -1797,8 +1799,16 @@ const App: React.FC = () => {
         onCancel={() => setShowLogoutConfirm(false)}
       />
 
+      {assignmentEditReturnStage ? (
+        <WorkflowEditBar sticky onBack={exitAssignmentEdit} onClose={exitAssignmentEdit} />
+      ) : null}
+
       {effectiveCompany ? (
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-[4.5rem] sm:pt-20 pb-2">
+        <div
+          className={`${TERMINAL_SHELL} ${
+            assignmentEditReturnStage ? TERMINAL_HEADER_OFFSET_WITH_EDIT : TERMINAL_HEADER_OFFSET
+          } pb-2`}
+        >
           <div
             className={`${premiumPanel} px-4 py-3 flex items-center justify-center min-h-[72px] overflow-hidden`}
           >
@@ -1814,12 +1824,17 @@ const App: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="pt-[4.5rem] sm:pt-20" aria-hidden />
+        <div
+          className={
+            assignmentEditReturnStage ? TERMINAL_HEADER_OFFSET_WITH_EDIT : TERMINAL_HEADER_OFFSET
+          }
+          aria-hidden
+        />
       )}
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 mb-6">{renderFlowStepper()}</div>
+      <div className={`${TERMINAL_SHELL} mb-6`}>{renderFlowStepper()}</div>
 
-      <div className="max-w-4xl mx-auto space-y-5 px-4 sm:px-6">
+      <div className={`${TERMINAL_SHELL} space-y-5 lg:space-y-6`}>
         <section className="space-y-3">
           <div className="flex items-center justify-between px-1">
             <div>
@@ -1837,14 +1852,14 @@ const App: React.FC = () => {
               setCurrentStage('EVENT')
             )
           ) : (
-            <div className={`${premiumPanel} p-4`}>
-              <p className="text-[9px] text-zinc-500 normal-case mb-4">
+            <div className={`${premiumPanel} p-4 sm:p-5 lg:p-6`}>
+              <p className="text-[9px] sm:text-[10px] text-zinc-500 normal-case mb-4 lg:mb-6">
                 Select pickup or delivery for this stop.
               </p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4">
                 <button
                   onClick={() => resetFlowFromEvent('PICKUP')}
-                  className={`py-8 rounded-2xl border font-black uppercase tracking-widest text-[11px] transition-all active:scale-[0.98] ${
+                  className={`py-8 lg:py-10 rounded-2xl border font-black uppercase tracking-widest text-[11px] lg:text-xs transition-all active:scale-[0.98] ${
                     eventType === 'PICKUP'
                       ? 'bg-blue-600 border-blue-500 text-white shadow-[0_0_24px_rgba(59,130,246,0.35)]'
                       : 'bg-zinc-950/80 border-zinc-700 text-zinc-400 hover:border-zinc-600'
@@ -1854,7 +1869,7 @@ const App: React.FC = () => {
                 </button>
                 <button
                   onClick={() => resetFlowFromEvent('DELIVERY')}
-                  className={`py-8 rounded-2xl border font-black uppercase tracking-widest text-[11px] transition-all active:scale-[0.98] ${
+                  className={`py-8 lg:py-10 rounded-2xl border font-black uppercase tracking-widest text-[11px] lg:text-xs transition-all active:scale-[0.98] ${
                     eventType === 'DELIVERY'
                       ? 'bg-blue-600 border-blue-500 text-white shadow-[0_0_24px_rgba(59,130,246,0.35)]'
                       : 'bg-zinc-950/80 border-zinc-700 text-zinc-400 hover:border-zinc-600'
@@ -1883,7 +1898,7 @@ const App: React.FC = () => {
                 setCurrentStage('OPERATOR')
               )
             ) : (
-              <div className={`${premiumPanel} p-4 space-y-3`}>
+              <div className={`${premiumPanel} p-4 sm:p-5 lg:p-6 space-y-3 lg:space-y-4`}>
                 {!canSelectAnyDriver && authSession ? (
                   <div className="rounded-2xl border border-blue-500/30 bg-blue-500/5 p-4 space-y-2">
                     <p className="text-[8px] font-black uppercase tracking-[0.35em] text-blue-400">
@@ -2472,22 +2487,16 @@ const App: React.FC = () => {
       )}
 
       {showVerification && (
-        <div className="fixed inset-0 z-[600] bg-[#050508] overflow-y-auto animate-in slide-in-from-right">
-          <div className="max-w-xl mx-auto px-4 py-5 pb-36 space-y-5">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-green-500/30 bg-green-500/10">
-                <span className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]" />
-                <span className="text-[8px] font-black uppercase tracking-[0.25em] text-green-400">
-                  Connected
-                </span>
-              </div>
+        <div className="fixed inset-x-0 bottom-0 top-[3.75rem] sm:top-[4.25rem] z-[600] bg-[#050508] overflow-y-auto animate-in slide-in-from-right">
+          <div className={`${TERMINAL_SHELL} py-5 lg:py-8 pb-36 space-y-5 lg:space-y-6`}>
+            <div className="flex items-center justify-end gap-3">
               <button
                 onClick={() => {
                   setReviewEditCard(null);
                   setShowVerification(false);
                   setCurrentStage('EVIDENCE');
                 }}
-                className="text-zinc-500 font-black uppercase text-[9px] tracking-widest px-3 py-2 border border-zinc-800 rounded-full hover:border-zinc-600 transition-colors"
+                className="min-h-[44px] px-4 text-zinc-500 font-black uppercase text-[9px] tracking-widest border border-zinc-800 rounded-lg hover:border-zinc-600 transition-colors"
               >
                 Close ✕
               </button>

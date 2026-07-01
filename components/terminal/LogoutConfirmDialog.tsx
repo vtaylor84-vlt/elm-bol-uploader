@@ -30,7 +30,7 @@ const LogoutConfirmDialog: React.FC<LogoutConfirmDialogProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
+      className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
       role="dialog"
       aria-modal="true"
       aria-labelledby="logout-dialog-title"
@@ -41,7 +41,7 @@ const LogoutConfirmDialog: React.FC<LogoutConfirmDialogProps> = ({
             Session
           </p>
           <h2 id="logout-dialog-title" className="text-lg font-black uppercase tracking-tight text-white">
-            Log out?
+            Switch user?
           </h2>
           <p className="mt-2 text-sm text-zinc-400 normal-case">
             Are you sure you want to log out? Your session will be cleared and you will return to
