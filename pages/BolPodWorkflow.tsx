@@ -765,23 +765,6 @@ const BolPodWorkflow: React.FC = () => {
   );
 
   useEffect(() => {
-    if (bolSlotsComplete) {
-      setBolSlotsEditMode(false);
-      if (
-        eventType === 'PICKUP' &&
-        !freightNotRequired &&
-        !hasFreightPhotos &&
-        !bolFreightPromptShownRef.current
-      ) {
-        bolFreightPromptShownRef.current = true;
-        setTimeout(() => setShowFreightPrompt(true), 500);
-      }
-    } else {
-      bolFreightPromptShownRef.current = false;
-    }
-  }, [bolSlotsComplete, eventType, freightNotRequired, hasFreightPhotos]);
-
-  useEffect(() => {
     logUiDiag('state_changed', {
       currentStage,
       isScanning,
@@ -926,6 +909,23 @@ const BolPodWorkflow: React.FC = () => {
     bolDocumentComplete &&
     (eventType === 'DELIVERY' || freightDocumentComplete);
   const carrierLockedFromDispatch = Boolean(selectedLoad);
+
+  useEffect(() => {
+    if (bolSlotsComplete) {
+      setBolSlotsEditMode(false);
+      if (
+        eventType === 'PICKUP' &&
+        !freightNotRequired &&
+        !hasFreightPhotos &&
+        !bolFreightPromptShownRef.current
+      ) {
+        bolFreightPromptShownRef.current = true;
+        setTimeout(() => setShowFreightPrompt(true), 500);
+      }
+    } else {
+      bolFreightPromptShownRef.current = false;
+    }
+  }, [bolSlotsComplete, eventType, freightNotRequired, hasFreightPhotos]);
 
   const returnToFreightDocuments = () => {
     setReviewEditCard(null);
