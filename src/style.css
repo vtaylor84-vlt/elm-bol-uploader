@@ -323,11 +323,124 @@ body::before {
 }
 
 /* Reference login — crop brand asset to logo/globe region only */
+.login-brand-frame {
+  width: 100%;
+  max-width: 280px;
+  height: 108px;
+  overflow: hidden;
+  margin: 0 auto;
+  position: relative;
+}
+
 .login-brand-crop {
   display: block;
-  height: 168px;
-  object-fit: cover;
-  object-position: center top;
+  width: 100%;
+  height: auto;
+  margin-top: -56px;
+  pointer-events: none;
+  user-select: none;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 8%, #000 92%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 8%, #000 92%, transparent 100%);
+}
+
+.login-brand-crop-desktop {
+  display: block;
+  width: 100%;
+  max-width: 320px;
+  height: auto;
+  margin-top: -56px;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* --- Login page (reference aesthetic) --- */
+
+body.elm-login-page {
+  background: #050508 !important;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+body.elm-login-page::before {
+  display: none !important;
+}
+
+body.elm-login-page #root {
+  padding: 0 !important;
+  max-width: none !important;
+  display: block !important;
+}
+
+.terminal-login-root {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: transparent;
+}
+
+.login-page-gradient {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(
+    180deg,
+    #0c1424 0%,
+    #080c16 35%,
+    #050508 65%,
+    #000000 100%
+  );
+  pointer-events: none;
+}
+
+.login-signin-card {
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(8, 12, 20, 0.72);
+  backdrop-filter: blur(12px);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.45),
+    0 0 48px rgba(59, 130, 246, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.login-status-panel {
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(8, 12, 20, 0.72);
+  backdrop-filter: blur(12px);
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  padding: 0.875rem 1rem;
+}
+
+.login-field-label {
+  display: block;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #71717a;
+  margin-bottom: 0.5rem;
+}
+
+.login-input {
+  min-height: 48px;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  background: rgba(4, 8, 16, 0.9);
+  border: 1px solid rgba(63, 63, 70, 0.65);
+  font-size: 15px;
+  color: #f4f4f5;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.login-input:focus {
+  border-color: rgba(59, 130, 246, 0.45);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12);
+}
+
+.login-input::placeholder {
+  color: #52525b;
+  text-transform: none;
+  font-weight: 400;
 }
 
 .login-reference-card {
@@ -335,13 +448,14 @@ body::before {
 }
 
 .login-connect-btn {
-  background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 55%, #1e3a8a 100%);
-  border: 1px solid rgba(96, 165, 250, 0.35);
-  box-shadow: 0 4px 20px rgba(37, 99, 235, 0.45);
+  background: linear-gradient(90deg, #3b82f6 0%, #2563eb 45%, #4338ca 100%) !important;
+  border: 1px solid rgba(96, 165, 250, 0.35) !important;
+  box-shadow: 0 4px 24px rgba(37, 99, 235, 0.4) !important;
+  letter-spacing: 0.2em;
 }
 
 .login-connect-btn:hover:not(:disabled) {
-  box-shadow: 0 6px 28px rgba(37, 99, 235, 0.55);
+  box-shadow: 0 6px 32px rgba(37, 99, 235, 0.55) !important;
 }
 
 .login-remember-checkbox {
@@ -546,13 +660,10 @@ body::before {
 
 .login-brand-crop-desktop {
   display: block;
-  height: 220px;
-  object-fit: cover;
-  object-position: center top;
-}
-
-@media (min-width: 1280px) {
-  .login-brand-crop-desktop {
-    height: 260px;
-  }
+  width: 100%;
+  max-width: 320px;
+  height: auto;
+  margin-top: -56px;
+  pointer-events: none;
+  user-select: none;
 }
