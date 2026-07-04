@@ -667,3 +667,44 @@ body.elm-login-page #root {
   pointer-events: none;
   user-select: none;
 }
+
+/* --- BOL workflow step transitions --- */
+
+.bol-continue-btn {
+  background: linear-gradient(90deg, #3b82f6 0%, #2563eb 45%, #4338ca 100%);
+  border: 1px solid rgba(96, 165, 250, 0.35);
+}
+
+.bol-continue-btn:hover:not(:disabled) {
+  box-shadow: 0 6px 32px rgba(37, 99, 235, 0.55);
+}
+
+@keyframes bol-summary-collapse {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bol-photos-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.bol-summary-collapse {
+  animation: bol-summary-collapse 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.bol-photos-reveal {
+  animation: bol-photos-reveal 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
+}

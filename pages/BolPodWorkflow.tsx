@@ -6,7 +6,6 @@ import WorkflowEditBar from '../components/terminal/WorkflowEditBar.tsx';
 import {
   TERMINAL_SHELL,
   TERMINAL_HEADER_OFFSET,
-  TERMINAL_HEADER_OFFSET_WITH_EDIT,
 } from '../components/terminal/terminalLayout.ts';
 import { useAuth } from '../context/AuthContext.tsx';
 import type { DriverSessionProfile } from '../utils/driverSession.ts';
@@ -451,6 +450,7 @@ const BolPodWorkflow: React.FC = () => {
 
   const isAdminUploadMode = authSession?.authRole === 'admin';
   const canSelectAnyDriver = authSession?.canSelectAnyDriver ?? false;
+  const adminDriverRequired = canSelectAnyDriver && !driverName.trim();
 
   const applyLoggedInDriver = (profile: DriverSessionProfile) => {
     if (profile.authRole === 'driver' && profile.driverName) {
@@ -514,6 +514,11 @@ const BolPodWorkflow: React.FC = () => {
       setCurrentStage('EVIDENCE');
     }
     setAssignmentEditReturnStage(null);
+  };
+
+  const confirmBolNumber = () => {
+    if (!bolNum.trim()) return;
+    setBolNumAcknowledged(true);
   };
 
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -1056,17 +1061,27 @@ const BolPodWorkflow: React.FC = () => {
   };
 
   const resetFlowFromEvent = (nextEvent: EventType) => {
+    if (canSelectAnyDriver && !driverName.trim()) {
+      logUiDiag('resetFlowFromEvent_blocked', { nextEvent, reason: 'admin_driver_required' });
+      return;
+    }
+
     logUiDiag('resetFlowFromEvent', { nextEvent, clearsSelectedLoad: true });
     setEventType(nextEvent);
     setBolProtocol(nextEvent);
-    setCurrentStage('OPERATOR');
 
     if (authSession?.authRole === 'driver' && authSession.driverName) {
       setDriverName(authSession.driverName.toUpperCase());
+      setCurrentStage('OPERATOR');
+      setManualMode(false);
+    } else if (canSelectAnyDriver) {
+      // Admin upload: keep selected driver and manual-entry mode; advance to assignment.
+      setCurrentStage('ASSIGNMENT');
     } else {
       setDriverName('');
+      setCurrentStage('OPERATOR');
+      setManualMode(false);
     }
-    setManualMode(false);
 
     setAvailableLoads([]);
     setSelectedLoad(null);
@@ -1460,6 +1475,16 @@ const BolPodWorkflow: React.FC = () => {
 
     return (
       <section className={panelBase}>
+        {assignmentEditReturnStage ? (
+          <button
+            type="button"
+            onClick={exitAssignmentEdit}
+            className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-blue-400 hover:text-blue-300 transition-colors mb-1 -mt-1"
+          >
+            <span aria-hidden>←</span>
+            Back
+          </button>
+        ) : null}
         {renderWorkflowSectionHeader(
           2,
           'Logistics Path',
@@ -1888,15 +1913,11 @@ const BolPodWorkflow: React.FC = () => {
       />
 
       {assignmentEditReturnStage ? (
-        <WorkflowEditBar sticky onBack={exitAssignmentEdit} onClose={exitAssignmentEdit} />
+        <WorkflowEditBar onBack={exitAssignmentEdit} />
       ) : null}
 
       {effectiveCompany ? (
-        <div
-          className={`${TERMINAL_SHELL} ${
-            assignmentEditReturnStage ? TERMINAL_HEADER_OFFSET_WITH_EDIT : TERMINAL_HEADER_OFFSET
-          } pb-2`}
-        >
+        <div className={`${TERMINAL_SHELL} ${TERMINAL_HEADER_OFFSET} pb-2`}>
           <div
             className={`${premiumPanel} px-4 py-3 flex items-center justify-center min-h-[72px] overflow-hidden`}
           >
@@ -1912,12 +1933,7 @@ const BolPodWorkflow: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div
-          className={
-            assignmentEditReturnStage ? TERMINAL_HEADER_OFFSET_WITH_EDIT : TERMINAL_HEADER_OFFSET
-          }
-          aria-hidden
-        />
+        <div className={TERMINAL_HEADER_OFFSET} aria-hidden />
       )}
 
       <div className={`${TERMINAL_SHELL} mb-4`}>
@@ -2020,23 +2036,36 @@ const BolPodWorkflow: React.FC = () => {
             )
           ) : (
             <div className={`${premiumPanel} p-4 sm:p-5 lg:p-6`}>
+              {canSelectAnyDriver && adminDriverRequired ? (
+                <p className="text-[10px] text-amber-400/90 normal-case mb-3 leading-relaxed">
+                  Select a driver above before choosing pickup or delivery.
+                </p>
+              ) : null}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4">
                 <button
+                  type="button"
+                  disabled={adminDriverRequired}
                   onClick={() => resetFlowFromEvent('PICKUP')}
                   className={`py-8 lg:py-10 rounded-2xl border font-black uppercase tracking-widest text-[11px] lg:text-xs transition-all active:scale-[0.98] ${
-                    eventType === 'PICKUP'
-                      ? 'bg-blue-600 border-blue-500 text-white shadow-[0_0_24px_rgba(59,130,246,0.35)]'
-                      : 'bg-zinc-950/80 border-zinc-700 text-zinc-400 hover:border-zinc-600'
+                    adminDriverRequired
+                      ? 'opacity-50 cursor-not-allowed bg-zinc-950/50 border-zinc-800 text-zinc-600'
+                      : eventType === 'PICKUP'
+                        ? 'bg-blue-600 border-blue-500 text-white shadow-[0_0_24px_rgba(59,130,246,0.35)]'
+                        : 'bg-zinc-950/80 border-zinc-700 text-zinc-400 hover:border-zinc-600'
                   }`}
                 >
                   Pickup
                 </button>
                 <button
+                  type="button"
+                  disabled={adminDriverRequired}
                   onClick={() => resetFlowFromEvent('DELIVERY')}
                   className={`py-8 lg:py-10 rounded-2xl border font-black uppercase tracking-widest text-[11px] lg:text-xs transition-all active:scale-[0.98] ${
-                    eventType === 'DELIVERY'
-                      ? 'bg-blue-600 border-blue-500 text-white shadow-[0_0_24px_rgba(59,130,246,0.35)]'
-                      : 'bg-zinc-950/80 border-zinc-700 text-zinc-400 hover:border-zinc-600'
+                    adminDriverRequired
+                      ? 'opacity-50 cursor-not-allowed bg-zinc-950/50 border-zinc-800 text-zinc-600'
+                      : eventType === 'DELIVERY'
+                        ? 'bg-blue-600 border-blue-500 text-white shadow-[0_0_24px_rgba(59,130,246,0.35)]'
+                        : 'bg-zinc-950/80 border-zinc-700 text-zinc-400 hover:border-zinc-600'
                   }`}
                 >
                   Delivery / POD
@@ -2046,7 +2075,7 @@ const BolPodWorkflow: React.FC = () => {
           )}
         </section>
 
-        {driverName && renderAssignmentPanel()}
+        {driverName && eventType && renderAssignmentPanel()}
 
         {hasAssignment && currentStage !== 'ASSIGNMENT' && !isConnecting && isManualPodPickupConfirmed && (
           <section className="space-y-4">
@@ -2071,7 +2100,7 @@ const BolPodWorkflow: React.FC = () => {
                 }`}
               >
                 {!bolNumberStepDone ? (
-                  <div className="space-y-3">
+                  <div className="space-y-4 bol-input-step">
                     <label
                       htmlFor="bol-number-input"
                       className="block text-[9px] font-black uppercase tracking-[0.2em] text-zinc-400"
@@ -2089,26 +2118,30 @@ const BolPodWorkflow: React.FC = () => {
                         setBolNum(next);
                         if (!next) setBolNumAcknowledged(false);
                       }}
-                      onBlur={() => {
-                        if (bolNum.trim()) setBolNumAcknowledged(true);
-                      }}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && bolNum.trim()) {
-                          setBolNumAcknowledged(true);
-                          (e.target as HTMLInputElement).blur();
+                          e.preventDefault();
+                          confirmBolNumber();
                         }
                       }}
                       autoComplete="off"
                     />
-                    {hasBolNumber && !bolNumAcknowledged ? (
-                      <p className="text-[10px] text-blue-400/90 normal-case">
-                        Tap outside the field when finished entering your BOL number.
-                      </p>
-                    ) : null}
+                    <button
+                      type="button"
+                      disabled={!hasBolNumber}
+                      onClick={confirmBolNumber}
+                      className={`w-full min-h-[52px] rounded-xl font-black uppercase tracking-[0.22em] text-[13px] transition-all duration-300 ${
+                        hasBolNumber
+                          ? 'bol-continue-btn text-white shadow-[0_4px_24px_rgba(37,99,235,0.4)] active:scale-[0.98]'
+                          : 'bg-zinc-900/80 border border-zinc-800 text-zinc-600 opacity-50 cursor-not-allowed'
+                      }`}
+                    >
+                      Continue to Photos →
+                    </button>
                   </div>
                 ) : (
-                  <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                    <div className="flex items-center justify-between gap-3 pb-3 border-b border-zinc-800/80">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between gap-3 pb-3 border-b border-zinc-800/80 bol-summary-collapse">
                       <div className="min-w-0">
                         <p className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-500">
                           BOL Number
@@ -2126,7 +2159,7 @@ const BolPodWorkflow: React.FC = () => {
                       </button>
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="space-y-3 bol-photos-reveal">
                       <p className="text-sm text-zinc-300 normal-case leading-relaxed">
                         Take a clear photo of your Bill of Lading, or choose from your camera roll.
                       </p>
