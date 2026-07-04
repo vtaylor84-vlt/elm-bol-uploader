@@ -1,7 +1,7 @@
 /**
  * Public GAS web app URL for roster, loads, and truck lookup (doGet actions).
- * Must match LOGIN_APPS_SCRIPT_WEB_APP_URL in netlify/functions/driver-login.js
- * unless Netlify env overrides both.
+ * Uses the legacy deployment that implements getDriverLoads.
+ * Driver login stays on LOGIN_APPS_SCRIPT_WEB_APP_URL in driver-login.js.
  */
 export const GAS_WEB_APP_URL =
-  'https://script.google.com/macros/s/AKfycbxT_Zl6T-iP7NemVqxJ3rFILPMtsEofJ-lyX1ghOeKqeuyJecTjAElheGazedvVpkXx/exec';
+  'https://script.google.com/macros/s/AKfycbxQwhSs6p01gLRgqW0mA-_qtJEFcvEiJebTqSlzNCxgRE8X7Rv_BYm_Th_saL6QQsQj/exec';
