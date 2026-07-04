@@ -609,6 +609,96 @@ const BolPodWorkflow: React.FC = () => {
         ? 'text-blue-400'
         : 'text-zinc-300';
 
+  const reviewTheme = useMemo(() => {
+    const green = themeMode === 'green';
+    const blue = themeMode === 'blue';
+
+    return {
+      swipeTheme: (green ? 'glx' : blue ? 'bst' : 'neutral') as 'bst' | 'glx' | 'neutral',
+      stepActive: green
+        ? 'bg-green-600 text-white shadow-[0_0_16px_rgba(34,197,94,0.55)] ring-2 ring-green-400/40'
+        : blue
+          ? 'bg-blue-600 text-white shadow-[0_0_16px_rgba(59,130,246,0.55)] ring-2 ring-blue-400/40'
+          : 'bg-indigo-600 text-white shadow-[0_0_16px_rgba(99,102,241,0.55)] ring-2 ring-indigo-400/40',
+      stepDone: green
+        ? 'bg-green-600/20 text-green-400 border border-green-500/40'
+        : blue
+          ? 'bg-blue-600/20 text-blue-400 border border-blue-500/40'
+          : 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/40',
+      stepLineOn: green ? 'bg-green-500/50' : blue ? 'bg-blue-500/50' : 'bg-indigo-500/50',
+      stepLabelActive: green ? 'text-green-400' : blue ? 'text-blue-400' : 'text-indigo-400',
+      glassPanel: green
+        ? 'bg-zinc-950/40 backdrop-blur-xl border border-green-400/12 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.04)]'
+        : blue
+          ? 'bg-zinc-950/40 backdrop-blur-xl border border-blue-400/12 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.04)]'
+          : 'bg-zinc-950/40 backdrop-blur-xl border border-zinc-600/20 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.45)]',
+      glassInteractive: green
+        ? 'cursor-pointer transition-all duration-200 hover:border-green-400/28 hover:shadow-[0_0_28px_rgba(34,197,94,0.16)] active:scale-[0.99]'
+        : blue
+          ? 'cursor-pointer transition-all duration-200 hover:border-blue-400/28 hover:shadow-[0_0_28px_rgba(59,130,246,0.16)] active:scale-[0.99]'
+          : 'cursor-pointer transition-all duration-200 hover:border-zinc-500/28 active:scale-[0.99]',
+      glassActive: green
+        ? 'ring-1 ring-green-400/35 shadow-[0_0_32px_rgba(34,197,94,0.2)] border-green-400/25'
+        : blue
+          ? 'ring-1 ring-blue-400/35 shadow-[0_0_32px_rgba(59,130,246,0.2)] border-blue-400/25'
+          : 'ring-1 ring-indigo-400/35 shadow-[0_0_32px_rgba(99,102,241,0.2)] border-indigo-400/25',
+      docCardHighlight: green
+        ? 'border-green-400/20 shadow-[0_0_20px_rgba(34,197,94,0.08)]'
+        : blue
+          ? 'border-blue-400/20 shadow-[0_0_20px_rgba(59,130,246,0.08)]'
+          : 'border-zinc-700/25',
+      accentText: green ? 'text-green-400' : blue ? 'text-blue-400' : 'text-indigo-400',
+      accentBorder: green ? 'border-green-400/10' : blue ? 'border-blue-400/10' : 'border-zinc-700/60',
+      verifiedBadge: green
+        ? 'text-green-400 bg-green-500/10 border-green-400/25 shadow-[0_0_10px_rgba(34,197,94,0.12)]'
+        : blue
+          ? 'text-blue-400 bg-blue-500/10 border-blue-400/25 shadow-[0_0_10px_rgba(59,130,246,0.12)]'
+          : 'text-indigo-400 bg-indigo-500/10 border-indigo-400/25',
+      readyGlow: green
+        ? 'border-green-400/30 shadow-[0_0_24px_rgba(34,197,94,0.16)]'
+        : blue
+          ? 'border-blue-400/30 shadow-[0_0_24px_rgba(59,130,246,0.16)]'
+          : '',
+      readyCheck: green
+        ? 'bg-green-600/20 text-green-400 border-green-500/40 shadow-[0_0_12px_rgba(34,197,94,0.18)]'
+        : blue
+          ? 'bg-blue-600/20 text-blue-400 border-blue-500/40 shadow-[0_0_12px_rgba(59,130,246,0.18)]'
+          : 'bg-indigo-600/20 text-indigo-400 border-indigo-500/40',
+      eventPill: green
+        ? 'bg-green-500/10 border-green-400/20 text-green-300'
+        : blue
+          ? 'bg-blue-500/10 border-blue-400/20 text-blue-300'
+          : 'bg-zinc-900/50 border-zinc-600/20 text-zinc-300',
+      eventPillActive: green
+        ? 'bg-green-600/25 border-green-400/45 text-green-200 shadow-[0_0_16px_rgba(34,197,94,0.25)]'
+        : blue
+          ? 'bg-blue-600/25 border-blue-400/45 text-blue-200 shadow-[0_0_16px_rgba(59,130,246,0.25)]'
+          : 'bg-indigo-600/25 border-indigo-400/45 text-indigo-200',
+      carrierPillIdle: green
+        ? 'bg-zinc-900/50 border-green-400/15 text-zinc-300'
+        : blue
+          ? 'bg-zinc-900/50 border-blue-400/15 text-zinc-300'
+          : 'bg-zinc-900/50 border-zinc-700/40 text-zinc-300',
+      pickupEditActive: green
+        ? 'bg-green-500/10 border-green-400/25 shadow-[0_0_20px_rgba(34,197,94,0.12)]'
+        : blue
+          ? 'bg-blue-500/10 border-blue-400/25 shadow-[0_0_20px_rgba(59,130,246,0.12)]'
+          : 'bg-indigo-500/10 border-indigo-400/25',
+      confirmBtn: green
+        ? 'bg-green-600 text-white shadow-[0_0_12px_rgba(34,197,94,0.35)]'
+        : blue
+          ? 'bg-blue-600 text-white shadow-[0_0_12px_rgba(59,130,246,0.35)]'
+          : 'bg-indigo-600 text-white shadow-[0_0_12px_rgba(99,102,241,0.35)]',
+      optionActive: green
+        ? 'bg-green-600 border-green-500 text-white shadow-[0_0_12px_rgba(34,197,94,0.35)]'
+        : blue
+          ? 'bg-blue-600 border-blue-500 text-white shadow-[0_0_12px_rgba(59,130,246,0.35)]'
+          : 'bg-indigo-600 border-indigo-500 text-white',
+      thumbBorder: green ? 'border-green-500/30' : blue ? 'border-blue-500/30' : 'border-indigo-500/30',
+      thumbOverlay: green ? 'text-green-300' : blue ? 'text-blue-300' : 'text-indigo-300',
+    };
+  }, [themeMode]);
+
   const hasManualAssignmentData = !!(
     puCity &&
     puState &&
@@ -779,12 +869,6 @@ const BolPodWorkflow: React.FC = () => {
     setReviewEditCard(null);
   };
 
-  const reviewGlassPanel =
-    'bg-zinc-950/40 backdrop-blur-xl border border-blue-400/12 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.04)]';
-  const reviewGlassInteractive =
-    'cursor-pointer transition-all duration-200 hover:border-blue-400/28 hover:shadow-[0_0_28px_rgba(59,130,246,0.16)] hover:scale-[1.01] active:scale-[0.99]';
-  const reviewGlassActive =
-    'ring-1 ring-blue-400/35 shadow-[0_0_32px_rgba(59,130,246,0.2)] border-blue-400/25';
   const reviewCompactInput = solarMode
     ? 'w-full p-3 rounded-xl font-mono text-sm border border-zinc-300 bg-white text-black outline-none focus:ring-2 focus:ring-blue-500/40'
     : 'w-full p-3 rounded-xl font-mono text-sm border border-zinc-700 bg-black/80 text-white outline-none focus:ring-2 focus:ring-blue-500/40';
@@ -795,6 +879,8 @@ const BolPodWorkflow: React.FC = () => {
 
   const activeFlowIndex = getVisibleFlowIndex();
   const bolPhotoCount = uploadedFiles.filter((f) => f.category === 'bol').length;
+  const bolReviewFiles = uploadedFiles.filter((f) => f.category === 'bol');
+  const freightReviewFiles = uploadedFiles.filter((f) => f.category === 'freight');
   const freightPhotoCount = uploadedFiles.filter((f) => f.category === 'freight').length;
   const hasFreightPhotos = freightPhotoCount > 0;
   const showFreightWaived = freightNotRequired && !hasFreightPhotos;
@@ -2589,51 +2675,44 @@ const BolPodWorkflow: React.FC = () => {
 
       {showVerification && (
         <div className="fixed inset-x-0 bottom-0 top-[3.75rem] sm:top-[4.25rem] z-[600] bg-[#050508] overflow-y-auto animate-in slide-in-from-right">
-          <div className={`${TERMINAL_SHELL} py-5 lg:py-8 pb-36 space-y-5 lg:space-y-6`}>
-            <div className="flex items-center justify-end gap-3">
+          <div className={`${TERMINAL_SHELL} py-2 sm:py-3 lg:py-8 pb-20 sm:pb-24 space-y-2.5 sm:space-y-3 lg:space-y-6`}>
+            <div className="flex items-center justify-end">
               <button
                 onClick={() => {
                   setReviewEditCard(null);
                   setShowVerification(false);
                   setCurrentStage('EVIDENCE');
                 }}
-                className="min-h-[44px] px-4 text-zinc-500 font-black uppercase text-[9px] tracking-widest border border-zinc-800 rounded-lg hover:border-zinc-600 transition-colors"
+                className="min-h-[36px] px-3 text-zinc-500 font-black uppercase text-[8px] tracking-widest border border-zinc-800 rounded-lg hover:border-zinc-600 transition-colors"
               >
                 Close ✕
               </button>
             </div>
 
-            {renderWorkflowSectionHeader(
-              4,
-              'Review & Submit',
-              'Review & Submit',
-              'Does everything look correct?'
-            )}
-
-            <div className="flex items-center justify-between gap-1 px-1">
+            <div className="flex items-center justify-between gap-1 px-0.5 pt-0.5 pb-1">
               {[
                 { label: 'Event', done: true },
                 { label: 'Route', done: true },
                 { label: 'Documents', done: hasBolEvidence },
                 { label: 'Review', done: false, active: true },
               ].map((step, idx) => (
-                <div key={step.label} className="flex-1 flex flex-col items-center gap-1.5 min-w-0">
+                <div key={step.label} className="flex-1 flex flex-col items-center gap-1 min-w-0">
                   <div className="flex items-center w-full">
                     {idx > 0 ? (
                       <div
                         className={`h-px flex-1 ${
-                          step.done || step.active ? 'bg-blue-500/50' : 'bg-zinc-800'
+                          step.done || step.active ? reviewTheme.stepLineOn : 'bg-zinc-800'
                         }`}
                       />
                     ) : (
                       <div className="flex-1" />
                     )}
                     <div
-                      className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 transition-all ${
+                      className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-[9px] font-black shrink-0 transition-all ${
                         step.active
-                          ? 'bg-blue-600 text-white shadow-[0_0_16px_rgba(59,130,246,0.55)] ring-2 ring-blue-400/40'
+                          ? reviewTheme.stepActive
                           : step.done
-                            ? 'bg-blue-600/20 text-blue-400 border border-blue-500/40'
+                            ? reviewTheme.stepDone
                             : 'bg-zinc-900 text-zinc-600 border border-zinc-800'
                       }`}
                     >
@@ -2642,7 +2721,7 @@ const BolPodWorkflow: React.FC = () => {
                     {idx < 3 ? (
                       <div
                         className={`h-px flex-1 ${
-                          step.done ? 'bg-blue-500/50' : 'bg-zinc-800'
+                          step.done ? reviewTheme.stepLineOn : 'bg-zinc-800'
                         }`}
                       />
                     ) : (
@@ -2650,8 +2729,12 @@ const BolPodWorkflow: React.FC = () => {
                     )}
                   </div>
                   <span
-                    className={`text-[7px] font-black uppercase tracking-[0.15em] truncate w-full text-center ${
-                      step.active ? 'text-blue-400' : step.done ? 'text-zinc-500' : 'text-zinc-700'
+                    className={`text-[6px] sm:text-[7px] font-black uppercase tracking-[0.12em] truncate w-full text-center ${
+                      step.active
+                        ? reviewTheme.stepLabelActive
+                        : step.done
+                          ? 'text-zinc-500'
+                          : 'text-zinc-700'
                     }`}
                   >
                     {step.label}
@@ -2660,38 +2743,38 @@ const BolPodWorkflow: React.FC = () => {
               ))}
             </div>
 
-            <section className="space-y-2">
-              <h3 className="text-[9px] font-black uppercase tracking-[0.35em] text-zinc-500 px-1">
+            <section className="space-y-1.5">
+              <h3 className="text-[8px] font-black uppercase tracking-[0.32em] text-zinc-500 px-0.5">
                 Trip Ticket
               </h3>
 
-              {manualPodPickupReviewLabel ? (
-                <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 backdrop-blur-sm px-4 py-3">
-                  <p className="text-[8px] font-black uppercase tracking-[0.2em] text-amber-400">
-                    POD pickup reference
-                  </p>
-                  <p className="text-[11px] text-zinc-300 normal-case mt-1">
-                    {manualPodPickupReviewLabel}
-                  </p>
-                </div>
-              ) : null}
-
               <div
-                className={`${reviewGlassPanel} overflow-hidden ${
+                className={`${reviewTheme.glassPanel} overflow-hidden ${
                   ['event', 'carrier', 'pickup', 'destination'].includes(reviewEditCard || '')
-                    ? reviewGlassActive
+                    ? reviewTheme.glassActive
                     : ''
                 }`}
               >
-                <div className="p-4 space-y-4">
-                  <div className="flex flex-wrap items-center gap-2">
+                {manualPodPickupReviewLabel ? (
+                  <div className="px-3 py-2 bg-amber-500/[0.08] border-b border-amber-500/20">
+                    <p className="text-[7px] font-black uppercase tracking-[0.18em] text-amber-400">
+                      POD pickup reference
+                    </p>
+                    <p className="text-[10px] text-zinc-300 normal-case mt-0.5 leading-snug">
+                      {manualPodPickupReviewLabel}
+                    </p>
+                  </div>
+                ) : null}
+
+                <div className="p-3 space-y-3">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     <button
                       type="button"
                       onClick={() => openReviewEdit('event')}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[8px] font-black uppercase tracking-[0.18em] transition-all ${reviewGlassInteractive} ${
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[7px] font-black uppercase tracking-[0.16em] transition-all ${reviewTheme.glassInteractive} ${
                         reviewEditCard === 'event'
-                          ? 'bg-blue-600/25 border-blue-400/45 text-blue-200 shadow-[0_0_16px_rgba(59,130,246,0.25)]'
-                          : 'bg-blue-500/10 border-blue-400/20 text-blue-300'
+                          ? reviewTheme.eventPillActive
+                          : reviewTheme.eventPill
                       }`}
                       aria-label="Edit event type"
                     >
@@ -2699,7 +2782,7 @@ const BolPodWorkflow: React.FC = () => {
                       {eventType || 'Event'}
                     </button>
                     {carrierLockedFromDispatch ? (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border bg-zinc-900/60 border-zinc-700/50 text-[8px] font-black uppercase tracking-[0.18em] text-zinc-400">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border bg-zinc-900/60 border-zinc-700/50 text-[7px] font-black uppercase tracking-[0.16em] text-zinc-400">
                         <span aria-hidden>🚛</span>
                         {reviewCarrierDisplay}
                         <span className="text-[7px] text-zinc-600 normal-case tracking-normal">
@@ -2710,10 +2793,10 @@ const BolPodWorkflow: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => openReviewEdit('carrier')}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[8px] font-black uppercase tracking-[0.18em] transition-all ${reviewGlassInteractive} ${
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[7px] font-black uppercase tracking-[0.16em] transition-all ${reviewTheme.glassInteractive} ${
                           reviewEditCard === 'carrier'
-                            ? 'bg-blue-600/25 border-blue-400/45 text-blue-200 shadow-[0_0_16px_rgba(59,130,246,0.25)]'
-                            : 'bg-zinc-900/50 border-blue-400/15 text-zinc-300'
+                            ? reviewTheme.eventPillActive
+                            : reviewTheme.carrierPillIdle
                         }`}
                         aria-label="Edit carrier"
                       >
@@ -2725,29 +2808,29 @@ const BolPodWorkflow: React.FC = () => {
 
                   <div className="relative pl-1">
                     <div
-                      className="absolute left-[1.35rem] top-5 bottom-5 w-px bg-gradient-to-b from-blue-500/75 via-blue-400/40 to-green-500/55 pointer-events-none"
+                      className="absolute left-[1.2rem] top-4 bottom-4 w-px bg-gradient-to-b from-blue-500/75 via-blue-400/40 to-green-500/55 pointer-events-none"
                       aria-hidden
                     />
 
                     <button
                       type="button"
                       onClick={() => openReviewEdit('pickup')}
-                      className={`w-full text-left rounded-xl px-3 py-3 -ml-1 border border-transparent ${reviewGlassInteractive} ${
+                      className={`w-full text-left rounded-lg px-2.5 py-2 -ml-1 border border-transparent ${reviewTheme.glassInteractive} ${
                         reviewEditCard === 'pickup'
-                          ? 'bg-blue-500/10 border-blue-400/25 shadow-[0_0_20px_rgba(59,130,246,0.12)]'
+                          ? reviewTheme.pickupEditActive
                           : 'hover:bg-white/[0.02]'
                       }`}
                       aria-label="Edit pickup location"
                     >
-                        <div className="flex items-start gap-3">
+                        <div className="flex items-start gap-2.5">
                         <div className="flex flex-col items-center shrink-0 pt-0.5">
-                          <div className="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_12px_rgba(59,130,246,0.65)] ring-2 ring-blue-400/30" />
+                          <div className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.65)] ring-2 ring-blue-400/30" />
                         </div>
-                        <div className="min-w-0 flex-1 pb-1">
-                          <p className="text-[7px] font-black uppercase tracking-[0.22em] text-blue-400/90">
+                        <div className="min-w-0 flex-1 pb-0.5">
+                          <p className="text-[6px] font-black uppercase tracking-[0.2em] text-blue-400/90">
                             Pickup
                           </p>
-                          <p className="text-[13px] font-bold text-white uppercase tracking-tight mt-0.5 truncate">
+                          <p className="text-[12px] font-bold text-white uppercase tracking-tight mt-0.5 truncate">
                             {pickupRouteLabel}
                           </p>
                         </div>
@@ -2757,22 +2840,22 @@ const BolPodWorkflow: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => openReviewEdit('destination')}
-                      className={`w-full text-left rounded-xl px-3 py-3 -ml-1 border border-transparent ${reviewGlassInteractive} ${
+                      className={`w-full text-left rounded-lg px-2.5 py-2 -ml-1 border border-transparent ${reviewTheme.glassInteractive} ${
                         reviewEditCard === 'destination'
-                          ? 'bg-green-500/10 border-green-400/25 shadow-[0_0_20px_rgba(34,197,94,0.12)]'
+                          ? 'bg-green-500/10 border-green-400/25 shadow-[0_0_16px_rgba(34,197,94,0.1)]'
                           : 'hover:bg-white/[0.02]'
                       }`}
                       aria-label="Edit destination"
                     >
-                      <div className="flex items-start gap-3">
+                      <div className="flex items-start gap-2.5">
                         <div className="flex flex-col items-center shrink-0 pt-0.5">
-                          <div className="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_12px_rgba(34,197,94,0.55)] ring-2 ring-green-400/30" />
+                          <div className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.55)] ring-2 ring-green-400/30" />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-[7px] font-black uppercase tracking-[0.22em] text-green-400/90">
+                          <p className="text-[6px] font-black uppercase tracking-[0.2em] text-green-400/90">
                             Destination
                           </p>
-                          <p className="text-[13px] font-bold text-white uppercase tracking-tight mt-0.5 truncate">
+                          <p className="text-[12px] font-bold text-white uppercase tracking-tight mt-0.5 truncate">
                             {destinationRouteLabel}
                           </p>
                         </div>
@@ -2785,9 +2868,9 @@ const BolPodWorkflow: React.FC = () => {
                 reviewEditCard === 'carrier' ||
                 reviewEditCard === 'pickup' ||
                 reviewEditCard === 'destination' ? (
-                  <div className="px-4 pb-4 pt-0 border-t border-blue-400/10 animate-in slide-in-from-top-2 duration-300">
+                  <div className={`px-3 pb-3 pt-0 border-t ${reviewTheme.accentBorder} animate-in slide-in-from-top-2 duration-300`}>
                     {reviewEditCard === 'event' ? (
-                      <div className="grid grid-cols-2 gap-2 mt-3">
+                      <div className="grid grid-cols-2 gap-2 mt-2">
                         {(['PICKUP', 'DELIVERY'] as const).map((opt) => (
                           <button
                             key={opt}
@@ -2795,9 +2878,9 @@ const BolPodWorkflow: React.FC = () => {
                             onClick={() =>
                               setReviewDraft((d) => ({ ...d, eventType: opt }))
                             }
-                            className={`py-3 rounded-xl border text-[9px] font-black uppercase tracking-widest transition-all ${
+                            className={`py-2.5 rounded-xl border text-[8px] font-black uppercase tracking-widest transition-all ${
                               reviewDraft.eventType === opt
-                                ? 'bg-blue-600 border-blue-500 text-white shadow-[0_0_12px_rgba(59,130,246,0.35)]'
+                                ? reviewTheme.optionActive
                                 : 'bg-zinc-950/80 border-zinc-800 text-zinc-500'
                             }`}
                           >
@@ -2891,18 +2974,18 @@ const BolPodWorkflow: React.FC = () => {
                       </div>
                     ) : null}
 
-                    <div className="flex gap-2 mt-3">
+                    <div className="flex gap-2 mt-2">
                       <button
                         type="button"
                         onClick={cancelReviewEdit}
-                        className="flex-1 py-2.5 rounded-xl border border-zinc-700/80 text-[8px] font-black uppercase tracking-widest text-zinc-500 active:scale-95"
+                        className="flex-1 py-2 rounded-xl border border-zinc-700/80 text-[8px] font-black uppercase tracking-widest text-zinc-500 active:scale-95"
                       >
                         Cancel
                       </button>
                       <button
                         type="button"
                         onClick={confirmReviewEdit}
-                        className="flex-1 py-2.5 rounded-xl bg-blue-600 text-[8px] font-black uppercase tracking-widest text-white shadow-[0_0_12px_rgba(59,130,246,0.35)] active:scale-95"
+                        className={`flex-1 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest active:scale-95 ${reviewTheme.confirmBtn}`}
                       >
                         Confirm
                       </button>
@@ -2912,48 +2995,93 @@ const BolPodWorkflow: React.FC = () => {
               </div>
             </section>
 
-            <section className="space-y-2">
-              <div className="flex items-center justify-between px-1">
-                <h3 className="text-[9px] font-black uppercase tracking-[0.35em] text-zinc-500">
+            <section className="space-y-1.5">
+              <div className="flex items-center justify-between px-0.5">
+                <h3 className="text-[8px] font-black uppercase tracking-[0.32em] text-zinc-500">
                   Documents & Photos
                 </h3>
-                <span className="text-[7px] font-black uppercase tracking-widest text-green-400 flex items-center gap-1">
-                  <span className="text-green-500">✓</span>
-                  {uploadedFiles.length} item{uploadedFiles.length === 1 ? '' : 's'} uploaded
+                <span
+                  className={`text-[6px] font-black uppercase tracking-widest flex items-center gap-1 ${reviewTheme.accentText}`}
+                >
+                  <span>✓</span>
+                  {uploadedFiles.length} item{uploadedFiles.length === 1 ? '' : 's'}
                 </span>
               </div>
 
               <div
-                className={`${reviewGlassPanel} border-blue-400/20 overflow-hidden shadow-[0_0_28px_rgba(59,130,246,0.1)]`}
+                className={`${reviewTheme.glassPanel} ${reviewTheme.docCardHighlight} overflow-hidden ${
+                  reviewEditCard === 'bol' ? reviewTheme.glassActive : ''
+                }`}
               >
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (reviewEditCard !== 'bol') openReviewEdit('bol');
-                  }}
-                  className={`w-full p-3 border-b border-blue-400/10 text-left ${reviewGlassInteractive} ${
-                    reviewEditCard === 'bol' ? reviewGlassActive : ''
-                  }`}
-                  aria-label="Edit BOL number"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div>
-                      <p className="text-[8px] font-black uppercase tracking-[0.2em] text-blue-400">
-                        BOL (Proof of Load)
-                      </p>
-                      <p className="text-[10px] font-bold text-white mt-0.5">
-                        BOL # {bolNum || '—'}
-                      </p>
-                    </div>
-                    <span className="text-[7px] font-black uppercase text-green-400 px-2 py-1 rounded-full bg-green-500/10 border border-green-400/25 shadow-[0_0_12px_rgba(34,197,94,0.15)]">
-                      ✓ Verified
-                    </span>
+                <div className="flex items-center gap-2 p-2 sm:p-2.5">
+                  {bolReviewFiles[0] ? (
+                    <button
+                      type="button"
+                      onClick={() => setFullImage(bolReviewFiles[0].preview)}
+                      className={`shrink-0 w-14 h-14 rounded-lg overflow-hidden border ${reviewTheme.thumbBorder} relative`}
+                      aria-label="View BOL photo"
+                    >
+                      <img
+                        src={bolReviewFiles[0].preview}
+                        className="w-full h-full object-cover"
+                        alt="BOL"
+                      />
+                      {bolReviewFiles.length > 1 ? (
+                        <span className="absolute top-0.5 right-0.5 min-w-[1rem] h-4 px-1 rounded bg-black/75 text-[6px] font-black text-white flex items-center justify-center">
+                          +{bolReviewFiles.length - 1}
+                        </span>
+                      ) : null}
+                      <span
+                        className={`absolute inset-x-0 bottom-0 bg-black/75 text-[5px] font-black uppercase ${reviewTheme.thumbOverlay} py-0.5 text-center`}
+                      >
+                        Tap to view
+                      </span>
+                    </button>
+                  ) : (
+                    <div className="shrink-0 w-14 h-14 rounded-lg border border-dashed border-zinc-700/80 bg-zinc-950/50" />
+                  )}
+
+                  <div className="flex-1 min-w-0">
+                    <p
+                      className={`text-[7px] font-black uppercase tracking-[0.16em] leading-tight ${reviewTheme.accentText}`}
+                    >
+                      BOL (Proof of Load)
+                    </p>
+                    <p className="text-[10px] font-bold text-white truncate leading-tight mt-0.5">
+                      BOL # {bolNum || '—'}
+                    </p>
                   </div>
-                </button>
+
+                  <span
+                    className={`shrink-0 text-[6px] font-black uppercase px-1.5 py-0.5 rounded-full border ${reviewTheme.verifiedBadge}`}
+                  >
+                    ✓ Verified
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => openReviewEdit('bol')}
+                    className="shrink-0 w-8 h-8 rounded-lg border border-zinc-700/70 flex items-center justify-center text-zinc-500 hover:text-white hover:border-zinc-500 transition-colors"
+                    aria-label="Edit BOL number"
+                  >
+                    <svg
+                      width="13"
+                      height="13"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      aria-hidden
+                    >
+                      <path d="M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+                    </svg>
+                  </button>
+                </div>
+
                 {reviewEditCard === 'bol' ? (
-                  <div className="px-3 pb-3 pt-0 border-b border-blue-400/10 animate-in slide-in-from-top-2">
+                  <div className={`px-2.5 pb-2.5 pt-0 border-t ${reviewTheme.accentBorder} animate-in slide-in-from-top-2`}>
                     <input
-                      className={`${reviewCompactInput} mt-3`}
+                      className={`${reviewCompactInput} mt-2`}
                       placeholder="BOL #"
                       value={reviewDraft.bolNum}
                       onChange={(e) =>
@@ -2971,113 +3099,107 @@ const BolPodWorkflow: React.FC = () => {
                       <button
                         type="button"
                         onClick={confirmReviewEdit}
-                        className="flex-1 py-2 rounded-xl bg-blue-600 text-[8px] font-black uppercase text-white"
+                        className={`flex-1 py-2 rounded-xl text-[8px] font-black uppercase text-white ${reviewTheme.confirmBtn}`}
                       >
                         Confirm
                       </button>
                     </div>
                   </div>
                 ) : null}
-                {uploadedFiles.some((f) => f.category === 'bol') ? (
-                  <div className="p-3 flex gap-2 overflow-x-auto">
-                    {uploadedFiles
-                      .filter((f) => f.category === 'bol')
-                      .map((f) => (
-                        <button
-                          key={f.id}
-                          type="button"
-                          onClick={() => setFullImage(f.preview)}
-                          className="shrink-0 w-20 h-20 rounded-xl overflow-hidden border border-blue-500/30 relative group"
-                        >
-                          <img
-                            src={f.preview}
-                            className="w-full h-full object-cover"
-                            alt="BOL"
-                          />
-                          <span className="absolute inset-x-0 bottom-0 bg-black/70 text-[6px] font-black uppercase text-blue-300 py-0.5">
-                            Tap to view
-                          </span>
-                        </button>
-                      ))}
-                  </div>
-                ) : null}
               </div>
 
               {eventType === 'PICKUP' ? (
                 <div
-                  className={`${reviewGlassPanel} border-green-400/18 overflow-hidden shadow-[0_0_28px_rgba(34,197,94,0.08)]`}
+                  className={`${reviewTheme.glassPanel} ${reviewTheme.docCardHighlight} overflow-hidden`}
                 >
-                  <button
-                    type="button"
-                    onClick={returnToFreightDocuments}
-                    className={`w-full p-3 border-b border-green-400/10 text-left ${reviewGlassInteractive}`}
-                    aria-label="Edit freight photos"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <div>
-                        <p className="text-[8px] font-black uppercase tracking-[0.2em] text-green-400">
-                          Freight Photos
-                        </p>
-                        {showFreightWaived ? (
-                          <p className="text-[9px] text-amber-400/90 normal-case mt-0.5">
-                            ✓ Waived — confirmed by dispatch
-                          </p>
-                        ) : hasFreightPhotos ? (
-                          <p className="text-[9px] text-zinc-400 normal-case mt-0.5">
-                            {freightPhotoCount} photo{freightPhotoCount === 1 ? '' : 's'} attached
-                          </p>
-                        ) : (
-                          <p className="text-[9px] text-zinc-500 normal-case mt-0.5">
-                            No photos added yet
-                          </p>
-                        )}
-                      </div>
-                      {hasFreightPhotos ? (
-                        <span className="text-[7px] font-black uppercase text-green-400 px-2 py-1 rounded-full bg-green-500/10 border border-green-400/25 shadow-[0_0_12px_rgba(34,197,94,0.15)]">
-                          ✓ Verified
+                  <div className="flex items-center gap-2 p-2 sm:p-2.5">
+                    {freightReviewFiles[0] ? (
+                      <button
+                        type="button"
+                        onClick={() => setFullImage(freightReviewFiles[0].preview)}
+                        className="shrink-0 w-14 h-14 rounded-lg overflow-hidden border border-green-500/30 relative"
+                        aria-label="View freight photo"
+                      >
+                        <img
+                          src={freightReviewFiles[0].preview}
+                          className="w-full h-full object-cover"
+                          alt="Freight"
+                        />
+                        {freightReviewFiles.length > 1 ? (
+                          <span className="absolute top-0.5 right-0.5 min-w-[1rem] h-4 px-1 rounded bg-black/75 text-[6px] font-black text-white flex items-center justify-center">
+                            +{freightReviewFiles.length - 1}
+                          </span>
+                        ) : null}
+                        <span className="absolute inset-x-0 bottom-0 bg-black/75 text-[5px] font-black uppercase text-green-300 py-0.5 text-center">
+                          Tap to view
                         </span>
-                      ) : null}
+                      </button>
+                    ) : (
+                      <div className="shrink-0 w-14 h-14 rounded-lg border border-dashed border-zinc-700/80 bg-zinc-950/50 flex items-center justify-center text-lg opacity-40">
+                        📷
+                      </div>
+                    )}
+
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[7px] font-black uppercase tracking-[0.16em] text-green-400 leading-tight">
+                        Freight Photos
+                      </p>
+                      {showFreightWaived ? (
+                        <p className="text-[9px] text-amber-400/90 normal-case truncate leading-tight mt-0.5">
+                          Waived — dispatch confirmed
+                        </p>
+                      ) : hasFreightPhotos ? (
+                        <p className="text-[9px] text-zinc-400 normal-case truncate leading-tight mt-0.5">
+                          {freightPhotoCount} photo{freightPhotoCount === 1 ? '' : 's'} attached
+                        </p>
+                      ) : (
+                        <p className="text-[9px] text-zinc-500 normal-case truncate leading-tight mt-0.5">
+                          No photos yet
+                        </p>
+                      )}
                     </div>
-                  </button>
-                  {hasFreightPhotos ? (
-                    <div className="p-3 flex gap-2 overflow-x-auto">
-                      {uploadedFiles
-                        .filter((f) => f.category === 'freight')
-                        .map((f) => (
-                          <button
-                            key={f.id}
-                            type="button"
-                            onClick={() => setFullImage(f.preview)}
-                            className="shrink-0 w-20 h-20 rounded-xl overflow-hidden border border-green-500/30 relative"
-                          >
-                            <img
-                              src={f.preview}
-                              className="w-full h-full object-cover"
-                              alt="Freight"
-                            />
-                            <span className="absolute inset-x-0 bottom-0 bg-black/70 text-[6px] font-black uppercase text-green-300 py-0.5">
-                              Tap to view
-                            </span>
-                          </button>
-                        ))}
-                    </div>
-                  ) : null}
+
+                    {hasFreightPhotos || showFreightWaived ? (
+                      <span
+                        className={`shrink-0 text-[6px] font-black uppercase px-1.5 py-0.5 rounded-full border ${reviewTheme.verifiedBadge}`}
+                      >
+                        ✓ Verified
+                      </span>
+                    ) : null}
+
+                    <button
+                      type="button"
+                      onClick={returnToFreightDocuments}
+                      className="shrink-0 w-8 h-8 rounded-lg border border-zinc-700/70 flex items-center justify-center text-zinc-500 hover:text-white hover:border-zinc-500 transition-colors"
+                      aria-label="Edit freight photos"
+                    >
+                      <svg
+                        width="13"
+                        height="13"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        aria-hidden
+                      >
+                        <path d="M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               ) : null}
             </section>
 
             <div
-              className={`${reviewGlassPanel} p-4 space-y-4 ${
-                isReady
-                  ? 'border-blue-400/30 shadow-[0_0_32px_rgba(59,130,246,0.18)]'
-                  : ''
+              className={`${reviewTheme.glassPanel} p-2.5 sm:p-3 space-y-2 ${
+                isReady ? reviewTheme.readyGlow : ''
               }`}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2.5">
                 <div
-                  className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-black shrink-0 ${
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-black shrink-0 ${
                     isReady
-                      ? 'bg-green-600/20 text-green-400 border border-green-500/40 shadow-[0_0_16px_rgba(34,197,94,0.2)]'
+                      ? reviewTheme.readyCheck
                       : 'bg-zinc-800 text-zinc-600 border border-zinc-700'
                   }`}
                 >
@@ -3085,13 +3207,13 @@ const BolPodWorkflow: React.FC = () => {
                 </div>
                 <div className="min-w-0">
                   <p
-                    className={`text-[10px] font-black uppercase tracking-[0.25em] ${
+                    className={`text-[9px] font-black uppercase tracking-[0.22em] ${
                       isReady ? 'text-white' : 'text-zinc-500'
                     }`}
                   >
                     Ready to Submit
                   </p>
-                  <p className="text-[9px] text-zinc-500 normal-case tracking-normal mt-0.5">
+                  <p className="text-[8px] text-zinc-500 normal-case tracking-normal mt-0.5 hidden sm:block">
                     {isReady
                       ? 'Swipe right to transmit to dispatch.'
                       : 'Complete your documents before submitting.'}
@@ -3106,12 +3228,13 @@ const BolPodWorkflow: React.FC = () => {
                 idleLabel="Swipe to submit →"
                 slidingLabel="Keep sliding…"
                 doneLabel="Submitting…"
+                theme={reviewTheme.swipeTheme}
               />
             </div>
 
-            <p className="text-center text-[8px] text-zinc-600 normal-case tracking-normal flex items-center justify-center gap-1.5 pb-2">
+            <p className="text-center text-[7px] text-zinc-600 normal-case tracking-normal flex items-center justify-center gap-1 pb-1">
               <span>🔒</span>
-              Your documents are secure and will be sent to dispatch.
+              Secure transmission to dispatch
             </p>
           </div>
         </div>
