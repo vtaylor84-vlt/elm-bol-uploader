@@ -40,6 +40,8 @@ interface FileWithPreview {
   id: string;
   category: 'bol' | 'freight';
   fingerprint: string;
+  /** 0-based BOL page slot when category is bol */
+  slotIndex?: number;
 }
 
 interface VaultEntry {
@@ -422,6 +424,8 @@ const BolPodWorkflow: React.FC = () => {
   const [showFreightConfirm, setShowFreightConfirm] = useState(false);
   const [freightNotRequired, setFreightNotRequired] = useState(false);
   const [bolNumAcknowledged, setBolNumAcknowledged] = useState(false);
+  const [expectedBolPageCount, setExpectedBolPageCount] = useState<number | null>(null);
+  const [bolSlotsEditMode, setBolSlotsEditMode] = useState(false);
   const [manualPodPickupMatchStatus, setManualPodPickupMatchStatus] =
     useState<ManualPodPickupMatchStatus>('');
   const [bolEditOpen, setBolEditOpen] = useState(false);
@@ -490,6 +494,9 @@ const BolPodWorkflow: React.FC = () => {
     setFullImage(null);
     setBolNumAcknowledged(false);
     setBolEditOpen(false);
+    setExpectedBolPageCount(null);
+    setBolSlotsEditMode(false);
+    bolFreightPromptShownRef.current = false;
     setReviewEditCard(null);
     setManualPodPickupMatchStatus('');
   };
@@ -525,6 +532,8 @@ const BolPodWorkflow: React.FC = () => {
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bolNumInputRef = useRef<HTMLInputElement>(null);
+  const activeBolSlotRef = useRef<number | null>(null);
+  const bolFreightPromptShownRef = useRef(false);
   const freightCamRef = useRef<HTMLInputElement>(null);
   const freightFileRef = useRef<HTMLInputElement>(null);
   const selectedLoadRef = useRef<AvailableLoad | null>(null);
@@ -615,55 +624,49 @@ const BolPodWorkflow: React.FC = () => {
 
     return {
       swipeTheme: (green ? 'glx' : blue ? 'bst' : 'neutral') as 'bst' | 'glx' | 'neutral',
-      stepActive: green
-        ? 'bg-green-600 text-white shadow-[0_0_16px_rgba(34,197,94,0.55)] ring-2 ring-green-400/40'
+      cardFrame: green
+        ? 'review-card-frame-glx'
         : blue
-          ? 'bg-blue-600 text-white shadow-[0_0_16px_rgba(59,130,246,0.55)] ring-2 ring-blue-400/40'
-          : 'bg-indigo-600 text-white shadow-[0_0_16px_rgba(99,102,241,0.55)] ring-2 ring-indigo-400/40',
+          ? 'review-card-frame-bst'
+          : 'review-card-frame-neutral',
+      stepActive: green
+        ? 'bg-green-600 text-white ring-2 ring-green-400/40'
+        : blue
+          ? 'bg-blue-600 text-white ring-2 ring-blue-400/40'
+          : 'bg-indigo-600 text-white ring-2 ring-indigo-400/40',
+      stepActivePulse: green
+        ? 'review-step-active-pulse-glx'
+        : blue
+          ? 'review-step-active-pulse-bst'
+          : 'review-step-active-pulse-neutral',
       stepDone: green
         ? 'bg-green-600/20 text-green-400 border border-green-500/40'
         : blue
           ? 'bg-blue-600/20 text-blue-400 border border-blue-500/40'
           : 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/40',
-      stepLineOn: green ? 'bg-green-500/50' : blue ? 'bg-blue-500/50' : 'bg-indigo-500/50',
+      stepLineGradient: green
+        ? 'review-step-line-glx'
+        : blue
+          ? 'review-step-line-bst'
+          : 'review-step-line-neutral',
       stepLabelActive: green ? 'text-green-400' : blue ? 'text-blue-400' : 'text-indigo-400',
-      glassPanel: green
-        ? 'bg-zinc-950/40 backdrop-blur-xl border border-green-400/12 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.04)]'
-        : blue
-          ? 'bg-zinc-950/40 backdrop-blur-xl border border-blue-400/12 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.04)]'
-          : 'bg-zinc-950/40 backdrop-blur-xl border border-zinc-600/20 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.45)]',
+      statusVerified:
+        'text-emerald-400 bg-emerald-500/10 border-emerald-400/30 shadow-[0_0_12px_rgba(52,211,153,0.18)]',
+      statusReady:
+        'bg-emerald-600/20 text-emerald-400 border border-emerald-500/45 shadow-[0_0_14px_rgba(52,211,153,0.22)]',
+      readyCardGlow: 'shadow-[0_0_28px_rgba(52,211,153,0.14)]',
       glassInteractive: green
-        ? 'cursor-pointer transition-all duration-200 hover:border-green-400/28 hover:shadow-[0_0_28px_rgba(34,197,94,0.16)] active:scale-[0.99]'
+        ? 'cursor-pointer transition-all duration-200 hover:shadow-[0_0_28px_rgba(34,197,94,0.16)] active:scale-[0.99]'
         : blue
-          ? 'cursor-pointer transition-all duration-200 hover:border-blue-400/28 hover:shadow-[0_0_28px_rgba(59,130,246,0.16)] active:scale-[0.99]'
-          : 'cursor-pointer transition-all duration-200 hover:border-zinc-500/28 active:scale-[0.99]',
+          ? 'cursor-pointer transition-all duration-200 hover:shadow-[0_0_28px_rgba(59,130,246,0.16)] active:scale-[0.99]'
+          : 'cursor-pointer transition-all duration-200 active:scale-[0.99]',
       glassActive: green
-        ? 'ring-1 ring-green-400/35 shadow-[0_0_32px_rgba(34,197,94,0.2)] border-green-400/25'
+        ? 'ring-1 ring-green-400/35 shadow-[0_0_32px_rgba(34,197,94,0.2)]'
         : blue
-          ? 'ring-1 ring-blue-400/35 shadow-[0_0_32px_rgba(59,130,246,0.2)] border-blue-400/25'
-          : 'ring-1 ring-indigo-400/35 shadow-[0_0_32px_rgba(99,102,241,0.2)] border-indigo-400/25',
-      docCardHighlight: green
-        ? 'border-green-400/20 shadow-[0_0_20px_rgba(34,197,94,0.08)]'
-        : blue
-          ? 'border-blue-400/20 shadow-[0_0_20px_rgba(59,130,246,0.08)]'
-          : 'border-zinc-700/25',
+          ? 'ring-1 ring-blue-400/35 shadow-[0_0_32px_rgba(59,130,246,0.2)]'
+          : 'ring-1 ring-indigo-400/35 shadow-[0_0_32px_rgba(99,102,241,0.2)]',
       accentText: green ? 'text-green-400' : blue ? 'text-blue-400' : 'text-indigo-400',
       accentBorder: green ? 'border-green-400/10' : blue ? 'border-blue-400/10' : 'border-zinc-700/60',
-      verifiedBadge: green
-        ? 'text-green-400 bg-green-500/10 border-green-400/25 shadow-[0_0_10px_rgba(34,197,94,0.12)]'
-        : blue
-          ? 'text-blue-400 bg-blue-500/10 border-blue-400/25 shadow-[0_0_10px_rgba(59,130,246,0.12)]'
-          : 'text-indigo-400 bg-indigo-500/10 border-indigo-400/25',
-      readyGlow: green
-        ? 'border-green-400/30 shadow-[0_0_24px_rgba(34,197,94,0.16)]'
-        : blue
-          ? 'border-blue-400/30 shadow-[0_0_24px_rgba(59,130,246,0.16)]'
-          : '',
-      readyCheck: green
-        ? 'bg-green-600/20 text-green-400 border-green-500/40 shadow-[0_0_12px_rgba(34,197,94,0.18)]'
-        : blue
-          ? 'bg-blue-600/20 text-blue-400 border-blue-500/40 shadow-[0_0_12px_rgba(59,130,246,0.18)]'
-          : 'bg-indigo-600/20 text-indigo-400 border-indigo-500/40',
       eventPill: green
         ? 'bg-green-500/10 border-green-400/20 text-green-300'
         : blue
@@ -725,10 +728,24 @@ const BolPodWorkflow: React.FC = () => {
         ? 'Pickup city/state does not match BOL shipper'
         : '';
 
-  const hasBolEvidence = uploadedFiles.some((f) => f.category === 'bol');
+  const bolReviewFiles = uploadedFiles.filter((f) => f.category === 'bol');
+  const bolReviewFilesOrdered = bolReviewFiles
+    .slice()
+    .sort((a, b) => (a.slotIndex ?? 0) - (b.slotIndex ?? 0));
+  const getBolFileForSlot = (slotIndex: number) =>
+    bolReviewFiles.find((f) => f.slotIndex === slotIndex) ?? null;
+  const bolSlotsFilledCount =
+    expectedBolPageCount != null
+      ? Array.from({ length: expectedBolPageCount }, (_, i) => getBolFileForSlot(i)).filter(
+          Boolean
+        ).length
+      : 0;
+  const bolSlotsComplete =
+    expectedBolPageCount != null && bolSlotsFilledCount === expectedBolPageCount;
+  const hasBolEvidence = bolSlotsComplete;
   const hasBolNumber = !!bolNum.trim();
   const bolNumberStepDone = bolNumAcknowledged && hasBolNumber;
-  const bolDocumentComplete = hasBolNumber && hasBolEvidence;
+  const bolDocumentComplete = hasBolNumber && bolSlotsComplete;
   const bolGuideCollapsed = bolDocumentComplete && !bolEditOpen;
 
   const hasRouteData = !!(
@@ -746,6 +763,23 @@ const BolPodWorkflow: React.FC = () => {
     hasBolEvidence &&
     hasAssignment
   );
+
+  useEffect(() => {
+    if (bolSlotsComplete) {
+      setBolSlotsEditMode(false);
+      if (
+        eventType === 'PICKUP' &&
+        !freightNotRequired &&
+        !hasFreightPhotos &&
+        !bolFreightPromptShownRef.current
+      ) {
+        bolFreightPromptShownRef.current = true;
+        setTimeout(() => setShowFreightPrompt(true), 500);
+      }
+    } else {
+      bolFreightPromptShownRef.current = false;
+    }
+  }, [bolSlotsComplete, eventType, freightNotRequired, hasFreightPhotos]);
 
   useEffect(() => {
     logUiDiag('state_changed', {
@@ -878,8 +912,7 @@ const BolPodWorkflow: React.FC = () => {
     : 'terminal-module-panel';
 
   const activeFlowIndex = getVisibleFlowIndex();
-  const bolPhotoCount = uploadedFiles.filter((f) => f.category === 'bol').length;
-  const bolReviewFiles = uploadedFiles.filter((f) => f.category === 'bol');
+  const bolPhotoCount = bolReviewFiles.length;
   const freightReviewFiles = uploadedFiles.filter((f) => f.category === 'freight');
   const freightPhotoCount = uploadedFiles.filter((f) => f.category === 'freight').length;
   const hasFreightPhotos = freightPhotoCount > 0;
@@ -907,7 +940,12 @@ const BolPodWorkflow: React.FC = () => {
     setUploadSavedLocally(false);
 
     const base64 = await Promise.all(
-      uploadedFiles.map(async (f) => {
+      [
+        ...uploadedFiles
+          .filter((f) => f.category === 'bol')
+          .sort((a, b) => (a.slotIndex ?? 0) - (b.slotIndex ?? 0)),
+        ...uploadedFiles.filter((f) => f.category === 'freight'),
+      ].map(async (f) => {
         return {
           category: f.category as 'bol' | 'freight',
           base64: await new Promise<string>((res) => {
@@ -958,68 +996,166 @@ const BolPodWorkflow: React.FC = () => {
     setFreightNotRequired(false);
   };
 
-  const renderBolPhotoButtons = (highlighted: boolean) => (
-    <div className="grid grid-cols-2 gap-2">
-      <button
-        type="button"
-        onClick={() => cameraInputRef.current?.click()}
-        className={`py-4 rounded-xl border border-dashed bg-blue-500/5 active:scale-[0.98] transition-all ${
-          highlighted
-            ? 'border-blue-400/70 ring-2 ring-blue-500/40 shadow-[0_0_20px_rgba(59,130,246,0.2)] animate-pulse'
-            : 'border-blue-500/35'
-        }`}
-      >
-        <div className="text-xl mb-1">📸</div>
-        <div className="text-[8px] font-black uppercase tracking-[0.15em] text-blue-300">
-          Take Photo
-        </div>
-      </button>
-      <button
-        type="button"
-        onClick={() => fileInputRef.current?.click()}
-        className={`py-4 rounded-xl border border-dashed bg-blue-500/5 active:scale-[0.98] transition-all ${
-          highlighted
-            ? 'border-blue-400/70 ring-2 ring-blue-500/40 shadow-[0_0_20px_rgba(59,130,246,0.2)] animate-pulse'
-            : 'border-blue-500/35'
-        }`}
-      >
-        <div className="text-xl mb-1">🖼️</div>
-        <div className="text-[8px] font-black uppercase tracking-[0.15em] text-blue-300">
-          Choose Existing
-        </div>
-      </button>
+  const selectBolPageCount = (count: number) => {
+    setExpectedBolPageCount(count);
+    setBolSlotsEditMode(true);
+    setUploadedFiles((prev) => prev.filter((f) => f.category !== 'bol'));
+  };
+
+  const resetBolNumberStep = () => {
+    setBolNumAcknowledged(false);
+    setExpectedBolPageCount(null);
+    setBolSlotsEditMode(false);
+    setUploadedFiles((prev) => prev.filter((f) => f.category !== 'bol'));
+  };
+
+  const removeBolSlot = (slotIndex: number) => {
+    setUploadedFiles((prev) =>
+      prev.filter((f) => !(f.category === 'bol' && f.slotIndex === slotIndex))
+    );
+    setBolSlotsEditMode(true);
+  };
+
+  const openBolSlotCamera = (slotIndex: number) => {
+    activeBolSlotRef.current = slotIndex;
+    cameraInputRef.current?.click();
+  };
+
+  const openBolSlotGallery = (slotIndex: number) => {
+    activeBolSlotRef.current = slotIndex;
+    fileInputRef.current?.click();
+  };
+
+  const showBolSlotUploaders = Boolean(
+    expectedBolPageCount != null && (bolSlotsEditMode || !bolSlotsComplete)
+  );
+
+  const renderBolPageCountSelector = () => (
+    <div className="space-y-5 animate-in fade-in slide-in-from-bottom-3 duration-400">
+      <h3 className="text-lg sm:text-xl font-black text-white normal-case tracking-tight leading-snug">
+        How many pages is your BOL paperwork?
+      </h3>
+      <p className="text-[11px] text-zinc-400 normal-case">
+        Tap the number of pages you need to photograph.
+      </p>
+      <div className="grid grid-cols-2 gap-3">
+        {([1, 2, 3, 4] as const).map((count) => (
+          <button
+            key={count}
+            type="button"
+            onClick={() => selectBolPageCount(count)}
+            className="min-h-[56px] rounded-2xl border-2 border-blue-500/35 bg-blue-500/10 px-4 py-4 text-[13px] font-black uppercase tracking-[0.12em] text-blue-200 shadow-[0_0_20px_rgba(59,130,246,0.12)] transition-all active:scale-[0.98] hover:border-blue-400/55 hover:bg-blue-500/15"
+          >
+            {count === 4 ? '4+ Pages' : `${count} Page${count === 1 ? '' : 's'}`}
+          </button>
+        ))}
+      </div>
     </div>
   );
 
-  const renderBolThumbnails = () =>
-    bolPhotoCount > 0 ? (
-      <div className="flex gap-2 overflow-x-auto pt-1">
-        {uploadedFiles
-          .filter((f) => f.category === 'bol')
-          .map((f) => (
-            <div
-              key={f.id}
-              className="relative shrink-0 w-20 h-24 rounded-xl overflow-hidden border border-blue-500/40"
-            >
-              <img src={f.preview} className="w-full h-full object-cover" alt="BOL" />
-              <button
-                type="button"
-                onClick={() => setFullImage(f.preview)}
-                className="absolute inset-x-0 bottom-0 bg-black/75 text-[6px] font-black uppercase text-blue-200 py-0.5"
-              >
-                View
-              </button>
-              <button
-                type="button"
-                onClick={() => setUploadedFiles((p) => p.filter((i) => i.id !== f.id))}
-                className="absolute top-1 right-1 bg-red-600 w-5 h-5 rounded-full text-[10px]"
-              >
-                ✕
-              </button>
+  const renderBolSlotCard = (slotIndex: number) => {
+    if (expectedBolPageCount == null) return null;
+    const file = getBolFileForSlot(slotIndex);
+    const pageLabel = `Page ${slotIndex + 1} of ${expectedBolPageCount}`;
+
+    if (file) {
+      return (
+        <div
+          key={slotIndex}
+          className="relative rounded-2xl overflow-hidden border-2 border-blue-500/40 bg-zinc-950/60 aspect-[4/3] shadow-[0_0_24px_rgba(59,130,246,0.1)]"
+        >
+          <img src={file.preview} className="w-full h-full object-cover" alt={pageLabel} />
+          <button
+            type="button"
+            onClick={() => setFullImage(file.preview)}
+            className="absolute inset-x-0 bottom-0 bg-black/70 text-[8px] font-black uppercase tracking-widest text-blue-200 py-2"
+          >
+            Tap to view
+          </button>
+          <button
+            type="button"
+            onClick={() => removeBolSlot(slotIndex)}
+            aria-label={`Remove ${pageLabel}`}
+            className="absolute top-2 right-2 w-9 h-9 rounded-full bg-red-600 border-2 border-red-400 text-white text-base font-black shadow-[0_0_16px_rgba(239,68,68,0.55)] flex items-center justify-center active:scale-95"
+          >
+            ✕
+          </button>
+          <span className="absolute top-2 left-2 px-2.5 py-1 rounded-lg bg-black/65 text-[8px] font-black uppercase tracking-widest text-white">
+            {pageLabel}
+          </span>
+        </div>
+      );
+    }
+
+    if (!showBolSlotUploaders) return null;
+
+    return (
+      <div
+        key={slotIndex}
+        className="rounded-2xl border-2 border-dashed border-blue-500/40 bg-blue-500/5 p-4 space-y-3 animate-in fade-in duration-300"
+      >
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-300">
+          {pageLabel}
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => openBolSlotCamera(slotIndex)}
+            className="min-h-[72px] rounded-xl border border-dashed border-blue-400/50 bg-zinc-950/50 active:scale-[0.98] transition-all hover:border-blue-400/70 hover:shadow-[0_0_16px_rgba(59,130,246,0.15)]"
+          >
+            <div className="text-2xl mb-1">📸</div>
+            <div className="text-[8px] font-black uppercase tracking-[0.15em] text-blue-200">
+              Take Photo
             </div>
-          ))}
+          </button>
+          <button
+            type="button"
+            onClick={() => openBolSlotGallery(slotIndex)}
+            className="min-h-[72px] rounded-xl border border-dashed border-blue-400/50 bg-zinc-950/50 active:scale-[0.98] transition-all hover:border-blue-400/70 hover:shadow-[0_0_16px_rgba(59,130,246,0.15)]"
+          >
+            <div className="text-2xl mb-1">🖼️</div>
+            <div className="text-[8px] font-black uppercase tracking-[0.15em] text-blue-200">
+              Choose Existing
+            </div>
+          </button>
+        </div>
       </div>
-    ) : null;
+    );
+  };
+
+  const renderBolSlotUploadFlow = () => {
+    if (expectedBolPageCount == null) return null;
+
+    return (
+      <div className="space-y-4 bol-photos-reveal">
+        {bolSlotsComplete && !bolSlotsEditMode ? (
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-2xl border border-green-500/35 bg-green-500/10 px-4 py-4 shadow-[0_0_20px_rgba(34,197,94,0.12)]">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <div className="w-10 h-10 rounded-full bg-green-600/25 border border-green-500/40 flex items-center justify-center text-green-400 font-black shrink-0">
+                ✓
+              </div>
+              <p className="text-[11px] font-black uppercase tracking-[0.14em] text-green-300 leading-relaxed">
+                Paperwork Completed ({bolSlotsFilledCount} of {expectedBolPageCount} Pages Attached)
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setBolSlotsEditMode(true)}
+              className="shrink-0 w-full sm:w-auto min-h-[44px] px-5 rounded-xl bg-blue-600 text-[10px] font-black uppercase tracking-[0.2em] text-white shadow-[0_0_16px_rgba(59,130,246,0.35)] active:scale-[0.98]"
+            >
+              Change / Add
+            </button>
+          </div>
+        ) : null}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {Array.from({ length: expectedBolPageCount }, (_, i) => renderBolSlotCard(i))}
+        </div>
+
+        <p className="text-[8px] text-zinc-600 normal-case">{UPLOAD_FORMAT_HINT}</p>
+      </div>
+    );
+  };
 
   const accentRing =
     themeMode === 'green'
@@ -1245,6 +1381,9 @@ const BolPodWorkflow: React.FC = () => {
     setDelState('');
 
     setBolNumAcknowledged(false);
+    setExpectedBolPageCount(null);
+    setBolSlotsEditMode(false);
+    bolFreightPromptShownRef.current = false;
     setManualPodPickupMatchStatus('');
     setUploadedFiles([]);
     setShowFreightPrompt(false);
@@ -1269,6 +1408,10 @@ const BolPodWorkflow: React.FC = () => {
     setDelState('');
     setCompany('');
     setUploadedFiles([]);
+    setBolNumAcknowledged(false);
+    setExpectedBolPageCount(null);
+    setBolSlotsEditMode(false);
+    bolFreightPromptShownRef.current = false;
     setShowFreightPrompt(false);
     setShowFreightConfirm(false);
     setFreightNotRequired(false);
@@ -1504,10 +1647,14 @@ const BolPodWorkflow: React.FC = () => {
 
   const onFileSelect = async (
     e: React.ChangeEvent<HTMLInputElement>,
-    cat: 'bol' | 'freight'
+    cat: 'bol' | 'freight',
+    bolSlotIndex?: number
   ) => {
     if (e.target.files) {
-      const files = Array.from(e.target.files);
+      const files =
+        cat === 'bol' && bolSlotIndex != null
+          ? Array.from(e.target.files).slice(0, 1)
+          : Array.from(e.target.files);
 
       for (const f of files) {
         const rejection = getFileRejectionReason(f);
@@ -1530,14 +1677,21 @@ const BolPodWorkflow: React.FC = () => {
               duplicateAfterCompress = true;
               return prev;
             }
+            const withoutSlot =
+              cat === 'bol' && bolSlotIndex != null
+                ? prev.filter(
+                    (item) => !(item.category === 'bol' && item.slotIndex === bolSlotIndex)
+                  )
+                : prev;
             return [
-              ...prev,
+              ...withoutSlot,
               {
                 file: enh,
                 preview: URL.createObjectURL(enh),
                 id: Math.random().toString(),
                 category: cat,
                 fingerprint,
+                ...(cat === 'bol' && bolSlotIndex != null ? { slotIndex: bolSlotIndex } : {}),
               },
             ];
           });
@@ -1551,15 +1705,6 @@ const BolPodWorkflow: React.FC = () => {
         } catch {
           window.alert(isHeicFile(f) ? HEIC_BLOCK_MESSAGE : 'Could not process this photo. Use JPG or PNG.');
         }
-      }
-
-      if (
-        cat === 'bol' &&
-        eventType === 'PICKUP' &&
-        !freightNotRequired &&
-        !uploadedFiles.some((f) => f.category === 'freight')
-      ) {
-        setTimeout(() => setShowFreightPrompt(true), 500);
       }
     }
 
@@ -2234,7 +2379,7 @@ const BolPodWorkflow: React.FC = () => {
             {bolGuideCollapsed ? (
               renderVerifiedSummary(
                 'BOL complete',
-                `BOL # ${bolNum} · ${bolPhotoCount} photo${bolPhotoCount === 1 ? '' : 's'}`,
+                `BOL # ${bolNum} · ${bolSlotsFilledCount} of ${expectedBolPageCount ?? bolPhotoCount} page${(expectedBolPageCount ?? bolPhotoCount) === 1 ? '' : 's'}`,
                 () => setBolEditOpen(true)
               )
             ) : (
@@ -2298,29 +2443,16 @@ const BolPodWorkflow: React.FC = () => {
                       </div>
                       <button
                         type="button"
-                        onClick={() => setBolNumAcknowledged(false)}
+                        onClick={resetBolNumberStep}
                         className="shrink-0 text-[8px] font-black uppercase tracking-widest text-blue-400 px-3 py-2 rounded-lg border border-blue-500/30 bg-blue-500/10"
                       >
                         Edit
                       </button>
                     </div>
 
-                    <div className="space-y-3 bol-photos-reveal">
-                      <p className="text-sm text-zinc-300 normal-case leading-relaxed">
-                        Take a clear photo of your Bill of Lading, or choose from your camera roll.
-                      </p>
-                      <p className="text-[10px] text-zinc-500 normal-case">
-                        You can add up to 5 images.
-                      </p>
-                      <p className="text-[8px] text-zinc-600 normal-case">{UPLOAD_FORMAT_HINT}</p>
-                      {bolPhotoCount > 0 ? (
-                        <p className="text-[9px] text-blue-400/90 normal-case">
-                          {bolPhotoCount} of 5 image{bolPhotoCount === 1 ? '' : 's'} attached
-                        </p>
-                      ) : null}
-                      {renderBolPhotoButtons(!bolDocumentComplete)}
-                      {renderBolThumbnails()}
-                    </div>
+                    {expectedBolPageCount == null
+                      ? renderBolPageCountSelector()
+                      : renderBolSlotUploadFlow()}
                   </div>
                 )}
               </div>
@@ -2562,7 +2694,9 @@ const BolPodWorkflow: React.FC = () => {
                     </p>
                   ) : !bolDocumentComplete ? (
                     <p className="text-[9px] text-blue-400/80 normal-case mt-0.5">
-                      Add BOL photos to continue
+                      {expectedBolPageCount == null
+                        ? 'Select how many BOL pages to photograph'
+                        : `Fill all ${expectedBolPageCount} page slot${expectedBolPageCount === 1 ? '' : 's'} to continue`}
                     </p>
                   ) : eventType === 'PICKUP' && !freightDocumentComplete ? (
                     <p className="text-[9px] text-zinc-500 normal-case mt-0.5">
@@ -2675,7 +2809,7 @@ const BolPodWorkflow: React.FC = () => {
 
       {showVerification && (
         <div className="fixed inset-x-0 bottom-0 top-[3.75rem] sm:top-[4.25rem] z-[600] bg-[#050508] overflow-y-auto animate-in slide-in-from-right">
-          <div className={`${TERMINAL_SHELL} py-2 sm:py-3 lg:py-8 pb-20 sm:pb-24 space-y-2.5 sm:space-y-3 lg:space-y-6`}>
+          <div className={`${TERMINAL_SHELL} py-2 sm:py-3 lg:py-6 pb-20 sm:pb-24 space-y-2.5 sm:space-y-3 lg:space-y-5 lg:max-w-6xl lg:mx-auto`}>
             <div className="flex items-center justify-end">
               <button
                 onClick={() => {
@@ -2689,7 +2823,7 @@ const BolPodWorkflow: React.FC = () => {
               </button>
             </div>
 
-            <div className="flex items-center justify-between gap-1 px-0.5 pt-0.5 pb-1">
+            <div className="flex items-center justify-between gap-1 px-0.5 pt-0.5 pb-1 lg:max-w-3xl lg:mx-auto">
               {[
                 { label: 'Event', done: true },
                 { label: 'Route', done: true },
@@ -2701,7 +2835,9 @@ const BolPodWorkflow: React.FC = () => {
                     {idx > 0 ? (
                       <div
                         className={`h-px flex-1 ${
-                          step.done || step.active ? reviewTheme.stepLineOn : 'bg-zinc-800'
+                          step.done || step.active
+                            ? reviewTheme.stepLineGradient
+                            : 'bg-zinc-800'
                         }`}
                       />
                     ) : (
@@ -2710,7 +2846,7 @@ const BolPodWorkflow: React.FC = () => {
                     <div
                       className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-[9px] font-black shrink-0 transition-all ${
                         step.active
-                          ? reviewTheme.stepActive
+                          ? `${reviewTheme.stepActive} ${reviewTheme.stepActivePulse}`
                           : step.done
                             ? reviewTheme.stepDone
                             : 'bg-zinc-900 text-zinc-600 border border-zinc-800'
@@ -2721,7 +2857,7 @@ const BolPodWorkflow: React.FC = () => {
                     {idx < 3 ? (
                       <div
                         className={`h-px flex-1 ${
-                          step.done ? reviewTheme.stepLineOn : 'bg-zinc-800'
+                          step.done ? reviewTheme.stepLineGradient : 'bg-zinc-800'
                         }`}
                       />
                     ) : (
@@ -2743,18 +2879,21 @@ const BolPodWorkflow: React.FC = () => {
               ))}
             </div>
 
+            <div className="space-y-2.5 sm:space-y-3 lg:grid lg:grid-cols-[3fr_2fr] lg:gap-5 lg:items-start lg:space-y-0">
+              <div className="space-y-2.5 sm:space-y-3">
             <section className="space-y-1.5">
               <h3 className="text-[8px] font-black uppercase tracking-[0.32em] text-zinc-500 px-0.5">
                 Trip Ticket
               </h3>
 
               <div
-                className={`${reviewTheme.glassPanel} overflow-hidden ${
+                className={`review-card-frame ${reviewTheme.cardFrame} ${
                   ['event', 'carrier', 'pickup', 'destination'].includes(reviewEditCard || '')
                     ? reviewTheme.glassActive
                     : ''
                 }`}
               >
+              <div className="review-card-frame-inner overflow-hidden">
                 {manualPodPickupReviewLabel ? (
                   <div className="px-3 py-2 bg-amber-500/[0.08] border-b border-amber-500/20">
                     <p className="text-[7px] font-black uppercase tracking-[0.18em] text-amber-400">
@@ -2993,9 +3132,55 @@ const BolPodWorkflow: React.FC = () => {
                   </div>
                 ) : null}
               </div>
+              </div>
             </section>
 
-            <section className="space-y-1.5">
+            <div
+              className={`review-card-frame ${reviewTheme.cardFrame} ${
+                isReady ? `${reviewTheme.glassActive} ${reviewTheme.readyCardGlow}` : ''
+              }`}
+            >
+            <div className="review-card-frame-inner p-2.5 sm:p-3 lg:p-4 space-y-2 lg:space-y-3">
+              <div className="flex items-center gap-2.5">
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-black shrink-0 ${
+                    isReady
+                      ? reviewTheme.statusReady
+                      : 'bg-zinc-800 text-zinc-600 border border-zinc-700'
+                  }`}
+                >
+                  {isReady ? '✓' : '·'}
+                </div>
+                <div className="min-w-0">
+                  <p
+                    className={`text-[9px] font-black uppercase tracking-[0.22em] ${
+                      isReady ? 'text-emerald-300' : 'text-zinc-500'
+                    }`}
+                  >
+                    Ready to Submit
+                  </p>
+                  <p className="text-[8px] text-zinc-500 normal-case tracking-normal mt-0.5 hidden sm:block">
+                    {isReady
+                      ? 'Swipe right to transmit to dispatch.'
+                      : 'Complete your documents before submitting.'}
+                  </p>
+                </div>
+              </div>
+
+              <SwipeToSubmit
+                disabled={!isReady}
+                loading={isSubmitting}
+                onSubmit={handleDispatchSubmit}
+                idleLabel="Swipe to submit →"
+                slidingLabel="Keep sliding…"
+                doneLabel="Submitting…"
+                theme={reviewTheme.swipeTheme}
+              />
+            </div>
+            </div>
+              </div>
+
+            <section className="space-y-1.5 lg:sticky lg:top-4">
               <div className="flex items-center justify-between px-0.5">
                 <h3 className="text-[8px] font-black uppercase tracking-[0.32em] text-zinc-500">
                   Documents & Photos
@@ -3009,26 +3194,27 @@ const BolPodWorkflow: React.FC = () => {
               </div>
 
               <div
-                className={`${reviewTheme.glassPanel} ${reviewTheme.docCardHighlight} overflow-hidden ${
+                className={`review-card-frame ${reviewTheme.cardFrame} ${
                   reviewEditCard === 'bol' ? reviewTheme.glassActive : ''
                 }`}
               >
-                <div className="flex items-center gap-2 p-2 sm:p-2.5">
-                  {bolReviewFiles[0] ? (
+              <div className="review-card-frame-inner overflow-hidden">
+                <div className="flex items-center gap-2 p-2 sm:p-2.5 lg:p-3">
+                  {bolReviewFilesOrdered[0] ? (
                     <button
                       type="button"
-                      onClick={() => setFullImage(bolReviewFiles[0].preview)}
+                      onClick={() => setFullImage(bolReviewFilesOrdered[0].preview)}
                       className={`shrink-0 w-14 h-14 rounded-lg overflow-hidden border ${reviewTheme.thumbBorder} relative`}
                       aria-label="View BOL photo"
                     >
                       <img
-                        src={bolReviewFiles[0].preview}
+                        src={bolReviewFilesOrdered[0].preview}
                         className="w-full h-full object-cover"
                         alt="BOL"
                       />
-                      {bolReviewFiles.length > 1 ? (
+                      {bolReviewFilesOrdered.length > 1 ? (
                         <span className="absolute top-0.5 right-0.5 min-w-[1rem] h-4 px-1 rounded bg-black/75 text-[6px] font-black text-white flex items-center justify-center">
-                          +{bolReviewFiles.length - 1}
+                          +{bolReviewFilesOrdered.length - 1}
                         </span>
                       ) : null}
                       <span
@@ -3053,7 +3239,7 @@ const BolPodWorkflow: React.FC = () => {
                   </div>
 
                   <span
-                    className={`shrink-0 text-[6px] font-black uppercase px-1.5 py-0.5 rounded-full border ${reviewTheme.verifiedBadge}`}
+                    className={`shrink-0 text-[6px] font-black uppercase px-1.5 py-0.5 rounded-full border ${reviewTheme.statusVerified}`}
                   >
                     ✓ Verified
                   </span>
@@ -3107,12 +3293,12 @@ const BolPodWorkflow: React.FC = () => {
                   </div>
                 ) : null}
               </div>
+              </div>
 
               {eventType === 'PICKUP' ? (
-                <div
-                  className={`${reviewTheme.glassPanel} ${reviewTheme.docCardHighlight} overflow-hidden`}
-                >
-                  <div className="flex items-center gap-2 p-2 sm:p-2.5">
+                <div className={`review-card-frame ${reviewTheme.cardFrame}`}>
+                <div className="review-card-frame-inner overflow-hidden">
+                  <div className="flex items-center gap-2 p-2 sm:p-2.5 lg:p-3">
                     {freightReviewFiles[0] ? (
                       <button
                         type="button"
@@ -3161,7 +3347,7 @@ const BolPodWorkflow: React.FC = () => {
 
                     {hasFreightPhotos || showFreightWaived ? (
                       <span
-                        className={`shrink-0 text-[6px] font-black uppercase px-1.5 py-0.5 rounded-full border ${reviewTheme.verifiedBadge}`}
+                        className={`shrink-0 text-[6px] font-black uppercase px-1.5 py-0.5 rounded-full border ${reviewTheme.statusVerified}`}
                       >
                         ✓ Verified
                       </span>
@@ -3187,49 +3373,9 @@ const BolPodWorkflow: React.FC = () => {
                     </button>
                   </div>
                 </div>
+                </div>
               ) : null}
             </section>
-
-            <div
-              className={`${reviewTheme.glassPanel} p-2.5 sm:p-3 space-y-2 ${
-                isReady ? reviewTheme.readyGlow : ''
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-black shrink-0 ${
-                    isReady
-                      ? reviewTheme.readyCheck
-                      : 'bg-zinc-800 text-zinc-600 border border-zinc-700'
-                  }`}
-                >
-                  {isReady ? '✓' : '·'}
-                </div>
-                <div className="min-w-0">
-                  <p
-                    className={`text-[9px] font-black uppercase tracking-[0.22em] ${
-                      isReady ? 'text-white' : 'text-zinc-500'
-                    }`}
-                  >
-                    Ready to Submit
-                  </p>
-                  <p className="text-[8px] text-zinc-500 normal-case tracking-normal mt-0.5 hidden sm:block">
-                    {isReady
-                      ? 'Swipe right to transmit to dispatch.'
-                      : 'Complete your documents before submitting.'}
-                  </p>
-                </div>
-              </div>
-
-              <SwipeToSubmit
-                disabled={!isReady}
-                loading={isSubmitting}
-                onSubmit={handleDispatchSubmit}
-                idleLabel="Swipe to submit →"
-                slidingLabel="Keep sliding…"
-                doneLabel="Submitting…"
-                theme={reviewTheme.swipeTheme}
-              />
             </div>
 
             <p className="text-center text-[7px] text-zinc-600 normal-case tracking-normal flex items-center justify-center gap-1 pb-1">
@@ -3506,16 +3652,24 @@ const BolPodWorkflow: React.FC = () => {
         className="hidden"
         capture="environment"
         accept="image/jpeg,image/png"
-        multiple
-        onChange={(e) => onFileSelect(e, 'bol')}
+        onChange={(e) => {
+          const slot = activeBolSlotRef.current;
+          if (slot === null) return;
+          onFileSelect(e, 'bol', slot);
+          activeBolSlotRef.current = null;
+        }}
       />
       <input
         type="file"
         ref={fileInputRef}
         className="hidden"
-        multiple
         accept="image/jpeg,image/png"
-        onChange={(e) => onFileSelect(e, 'bol')}
+        onChange={(e) => {
+          const slot = activeBolSlotRef.current;
+          if (slot === null) return;
+          onFileSelect(e, 'bol', slot);
+          activeBolSlotRef.current = null;
+        }}
       />
       <input
         type="file"
