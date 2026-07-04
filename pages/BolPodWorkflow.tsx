@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import TerminalAppHeader from '../components/terminal/TerminalAppHeader.tsx';
 import LogoutConfirmDialog from '../components/terminal/LogoutConfirmDialog.tsx';
 import WorkflowEditBar from '../components/terminal/WorkflowEditBar.tsx';
+import SwipeToSubmit from '../components/terminal/SwipeToSubmit.tsx';
 import {
   TERMINAL_SHELL,
   TERMINAL_HEADER_OFFSET,
@@ -778,7 +779,12 @@ const BolPodWorkflow: React.FC = () => {
     setReviewEditCard(null);
   };
 
-  const reviewGlassPanel = 'bg-zinc-900/70 backdrop-blur-md border border-zinc-700/60 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.35)]';
+  const reviewGlassPanel =
+    'bg-zinc-950/40 backdrop-blur-xl border border-blue-400/12 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.04)]';
+  const reviewGlassInteractive =
+    'cursor-pointer transition-all duration-200 hover:border-blue-400/28 hover:shadow-[0_0_28px_rgba(59,130,246,0.16)] hover:scale-[1.01] active:scale-[0.99]';
+  const reviewGlassActive =
+    'ring-1 ring-blue-400/35 shadow-[0_0_32px_rgba(59,130,246,0.2)] border-blue-400/25';
   const reviewCompactInput = solarMode
     ? 'w-full p-3 rounded-xl font-mono text-sm border border-zinc-300 bg-white text-black outline-none focus:ring-2 focus:ring-blue-500/40'
     : 'w-full p-3 rounded-xl font-mono text-sm border border-zinc-700 bg-black/80 text-white outline-none focus:ring-2 focus:ring-blue-500/40';
@@ -807,6 +813,60 @@ const BolPodWorkflow: React.FC = () => {
     setShowVerification(false);
     setCurrentStage('EVIDENCE');
   };
+
+  const handleDispatchSubmit = async () => {
+    setIsSubmitting(true);
+    setShowUploadFailure(false);
+    setUploadFailureMessage('');
+    setUploadSavedLocally(false);
+
+    const base64 = await Promise.all(
+      uploadedFiles.map(async (f) => {
+        return {
+          category: f.category as 'bol' | 'freight',
+          base64: await new Promise<string>((res) => {
+            const r = new FileReader();
+            r.onload = () => res(String(r.result || ''));
+            r.readAsDataURL(f.file);
+          }),
+        };
+      })
+    );
+
+    const payload = buildSubmissionPayload(base64);
+
+    try {
+      await submitDocumentUpload(payload);
+      navigate('/submissions/success', {
+        replace: true,
+        state: { submissionType: 'BOL_POD' },
+      });
+    } catch (e) {
+      const message =
+        e instanceof Error ? e.message : 'Upload failed. Please try again.';
+
+      try {
+        savePayloadToVault(payload);
+        setUploadSavedLocally(true);
+      } catch {
+        setUploadSavedLocally(false);
+      }
+
+      setUploadFailureMessage(message);
+      setShowUploadFailure(true);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const pickupRouteLabel =
+    puCity || puState
+      ? `${puCity || '—'}${puState ? `, ${puState}` : ''}`
+      : '—';
+  const destinationRouteLabel =
+    delCity || delState
+      ? `${delCity || '—'}${delState ? `, ${delState}` : ''}`
+      : '—';
 
   const reopenFreightWaiverChoice = () => {
     setFreightNotRequired(false);
@@ -2602,11 +2662,11 @@ const BolPodWorkflow: React.FC = () => {
 
             <section className="space-y-2">
               <h3 className="text-[9px] font-black uppercase tracking-[0.35em] text-zinc-500 px-1">
-                Load Overview
+                Trip Ticket
               </h3>
 
               {manualPodPickupReviewLabel ? (
-                <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 px-4 py-3 mb-2">
+                <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 backdrop-blur-sm px-4 py-3">
                   <p className="text-[8px] font-black uppercase tracking-[0.2em] text-amber-400">
                     POD pickup reference
                   </p>
@@ -2616,207 +2676,240 @@ const BolPodWorkflow: React.FC = () => {
                 </div>
               ) : null}
 
-              <div className="grid grid-cols-2 gap-2">
-                {(
-                  [
-                    {
-                      id: 'event' as const,
-                      label: 'Event',
-                      value: eventType || '—',
-                      icon: '📦',
-                    },
-                    {
-                      id: 'carrier' as const,
-                      label: 'Carrier',
-                      value: reviewCarrierDisplay,
-                      icon: '🚛',
-                    },
-                    {
-                      id: 'pickup' as const,
-                      label: 'Pickup Location',
-                      value: `${puCity || '—'}, ${puState || '—'}`,
-                      icon: '📍',
-                    },
-                    {
-                      id: 'destination' as const,
-                      label: 'Destination',
-                      value: `${delCity || '—'}, ${delState || '—'}`,
-                      icon: '🏁',
-                    },
-                  ] as const
-                ).map((card) => {
-                  const isOpen = reviewEditCard === card.id;
-                  return (
-                    <div
-                      key={card.id}
-                      className={`${reviewGlassPanel} overflow-hidden transition-all duration-300 ${
-                        isOpen ? 'col-span-2 ring-1 ring-blue-500/30' : ''
+              <div
+                className={`${reviewGlassPanel} overflow-hidden ${
+                  ['event', 'carrier', 'pickup', 'destination'].includes(reviewEditCard || '')
+                    ? reviewGlassActive
+                    : ''
+                }`}
+              >
+                <div className="p-4 space-y-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => openReviewEdit('event')}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[8px] font-black uppercase tracking-[0.18em] transition-all ${reviewGlassInteractive} ${
+                        reviewEditCard === 'event'
+                          ? 'bg-blue-600/25 border-blue-400/45 text-blue-200 shadow-[0_0_16px_rgba(59,130,246,0.25)]'
+                          : 'bg-blue-500/10 border-blue-400/20 text-blue-300'
                       }`}
+                      aria-label="Edit event type"
                     >
-                      <div className="p-3">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex items-start gap-2 min-w-0 flex-1">
-                            <span className="text-base leading-none opacity-80">{card.icon}</span>
-                            <div className="min-w-0">
-                              <p className="text-[7px] font-black uppercase tracking-[0.2em] text-zinc-500">
-                                {card.label}
-                              </p>
-                              <p className="text-[11px] font-bold text-white uppercase tracking-tight truncate mt-0.5">
-                                {card.value}
-                              </p>
-                              {card.id === 'carrier' && carrierLockedFromDispatch ? (
-                                <p className="text-[7px] text-zinc-500 normal-case mt-0.5 tracking-normal">
-                                  🔒 From dispatch
-                                </p>
-                              ) : null}
-                            </div>
-                          </div>
-                          {card.id === 'carrier' && carrierLockedFromDispatch ? null : (
-                            <button
-                              type="button"
-                              onClick={() => openReviewEdit(card.id)}
-                              className="shrink-0 w-8 h-8 rounded-lg border border-zinc-700/80 bg-zinc-800/50 text-[10px] text-blue-400 hover:border-blue-500/40 hover:bg-blue-500/10 transition-all active:scale-95"
-                              aria-label={`Edit ${card.label}`}
-                            >
-                              ✎
-                            </button>
-                          )}
+                      <span aria-hidden>📦</span>
+                      {eventType || 'Event'}
+                    </button>
+                    {carrierLockedFromDispatch ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border bg-zinc-900/60 border-zinc-700/50 text-[8px] font-black uppercase tracking-[0.18em] text-zinc-400">
+                        <span aria-hidden>🚛</span>
+                        {reviewCarrierDisplay}
+                        <span className="text-[7px] text-zinc-600 normal-case tracking-normal">
+                          🔒
+                        </span>
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => openReviewEdit('carrier')}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[8px] font-black uppercase tracking-[0.18em] transition-all ${reviewGlassInteractive} ${
+                          reviewEditCard === 'carrier'
+                            ? 'bg-blue-600/25 border-blue-400/45 text-blue-200 shadow-[0_0_16px_rgba(59,130,246,0.25)]'
+                            : 'bg-zinc-900/50 border-blue-400/15 text-zinc-300'
+                        }`}
+                        aria-label="Edit carrier"
+                      >
+                        <span aria-hidden>🚛</span>
+                        {reviewCarrierDisplay}
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="relative pl-1">
+                    <div
+                      className="absolute left-[1.35rem] top-5 bottom-5 w-px bg-gradient-to-b from-blue-500/75 via-blue-400/40 to-green-500/55 pointer-events-none"
+                      aria-hidden
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => openReviewEdit('pickup')}
+                      className={`w-full text-left rounded-xl px-3 py-3 -ml-1 border border-transparent ${reviewGlassInteractive} ${
+                        reviewEditCard === 'pickup'
+                          ? 'bg-blue-500/10 border-blue-400/25 shadow-[0_0_20px_rgba(59,130,246,0.12)]'
+                          : 'hover:bg-white/[0.02]'
+                      }`}
+                      aria-label="Edit pickup location"
+                    >
+                        <div className="flex items-start gap-3">
+                        <div className="flex flex-col items-center shrink-0 pt-0.5">
+                          <div className="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_12px_rgba(59,130,246,0.65)] ring-2 ring-blue-400/30" />
+                        </div>
+                        <div className="min-w-0 flex-1 pb-1">
+                          <p className="text-[7px] font-black uppercase tracking-[0.22em] text-blue-400/90">
+                            Pickup
+                          </p>
+                          <p className="text-[13px] font-bold text-white uppercase tracking-tight mt-0.5 truncate">
+                            {pickupRouteLabel}
+                          </p>
                         </div>
                       </div>
+                    </button>
 
-                      {isOpen ? (
-                        <div className="px-3 pb-3 pt-0 border-t border-zinc-800/80 animate-in slide-in-from-top-2 duration-300">
-                          {card.id === 'event' ? (
-                            <div className="grid grid-cols-2 gap-2 mt-3">
-                              {(['PICKUP', 'DELIVERY'] as const).map((opt) => (
-                                <button
-                                  key={opt}
-                                  type="button"
-                                  onClick={() =>
-                                    setReviewDraft((d) => ({ ...d, eventType: opt }))
-                                  }
-                                  className={`py-3 rounded-xl border text-[9px] font-black uppercase tracking-widest transition-all ${
-                                    reviewDraft.eventType === opt
-                                      ? 'bg-blue-600 border-blue-500 text-white shadow-[0_0_12px_rgba(59,130,246,0.35)]'
-                                      : 'bg-zinc-950 border-zinc-800 text-zinc-500'
-                                  }`}
-                                >
-                                  {opt}
-                                </button>
-                              ))}
-                            </div>
-                          ) : null}
-
-                          {card.id === 'carrier' ? (
-                            <select
-                              className={`${reviewCompactInput} mt-3`}
-                              value={reviewDraft.manualCarrier}
-                              onChange={(e) =>
-                                setReviewDraft((d) => ({
-                                  ...d,
-                                  manualCarrier: e.target.value as ManualCarrierOption,
-                                }))
-                              }
-                            >
-                              <option value="">Select carrier</option>
-                              <option value="BST Expedite Inc">BST Expedite Inc</option>
-                              <option value="Greenleaf Xpress">Greenleaf Xpress</option>
-                              <option value="Other Carrier">Other Carrier</option>
-                            </select>
-                          ) : null}
-
-                          {card.id === 'pickup' ? (
-                            <div className="grid grid-cols-4 gap-2 mt-3">
-                              <input
-                                className={`${reviewCompactInput} col-span-3`}
-                                placeholder="City"
-                                value={reviewDraft.puCity}
-                                onChange={(e) =>
-                                  setReviewDraft((d) => ({
-                                    ...d,
-                                    puCity: e.target.value.toUpperCase(),
-                                  }))
-                                }
-                              />
-                              <select
-                                className={reviewCompactInput}
-                                value={reviewDraft.puState}
-                                onChange={(e) =>
-                                  setReviewDraft((d) => ({
-                                    ...d,
-                                    puState: e.target.value.toUpperCase(),
-                                  }))
-                                }
-                              >
-                                <option value="">ST</option>
-                                {states.map((s) => (
-                                  <option key={s} value={s}>
-                                    {s}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-                          ) : null}
-
-                          {card.id === 'destination' ? (
-                            <div className="grid grid-cols-4 gap-2 mt-3">
-                              <input
-                                className={`${reviewCompactInput} col-span-3`}
-                                placeholder="City"
-                                value={reviewDraft.delCity}
-                                onChange={(e) =>
-                                  setReviewDraft((d) => ({
-                                    ...d,
-                                    delCity: e.target.value.toUpperCase(),
-                                  }))
-                                }
-                              />
-                              <select
-                                className={reviewCompactInput}
-                                value={reviewDraft.delState}
-                                onChange={(e) =>
-                                  setReviewDraft((d) => ({
-                                    ...d,
-                                    delState: e.target.value.toUpperCase(),
-                                  }))
-                                }
-                              >
-                                <option value="">ST</option>
-                                {states.map((s) => (
-                                  <option key={s} value={s}>
-                                    {s}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-                          ) : null}
-
-                          <div className="flex gap-2 mt-3">
-                            <button
-                              type="button"
-                              onClick={cancelReviewEdit}
-                              className="flex-1 py-2.5 rounded-xl border border-zinc-700 text-[8px] font-black uppercase tracking-widest text-zinc-500 active:scale-95"
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              type="button"
-                              onClick={confirmReviewEdit}
-                              className="flex-1 py-2.5 rounded-xl bg-blue-600 text-[8px] font-black uppercase tracking-widest text-white shadow-[0_0_12px_rgba(59,130,246,0.35)] active:scale-95"
-                            >
-                              Confirm
-                            </button>
-                          </div>
+                    <button
+                      type="button"
+                      onClick={() => openReviewEdit('destination')}
+                      className={`w-full text-left rounded-xl px-3 py-3 -ml-1 border border-transparent ${reviewGlassInteractive} ${
+                        reviewEditCard === 'destination'
+                          ? 'bg-green-500/10 border-green-400/25 shadow-[0_0_20px_rgba(34,197,94,0.12)]'
+                          : 'hover:bg-white/[0.02]'
+                      }`}
+                      aria-label="Edit destination"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="flex flex-col items-center shrink-0 pt-0.5">
+                          <div className="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_12px_rgba(34,197,94,0.55)] ring-2 ring-green-400/30" />
                         </div>
-                      ) : null}
-                    </div>
-                  );
-                })}
-              </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[7px] font-black uppercase tracking-[0.22em] text-green-400/90">
+                            Destination
+                          </p>
+                          <p className="text-[13px] font-bold text-white uppercase tracking-tight mt-0.5 truncate">
+                            {destinationRouteLabel}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                </div>
 
-              <p className="text-center text-[7px] font-black uppercase tracking-[0.3em] text-zinc-700 pt-1">
-                ↑ Tap any field above to edit ↓
-              </p>
+                {reviewEditCard === 'event' ||
+                reviewEditCard === 'carrier' ||
+                reviewEditCard === 'pickup' ||
+                reviewEditCard === 'destination' ? (
+                  <div className="px-4 pb-4 pt-0 border-t border-blue-400/10 animate-in slide-in-from-top-2 duration-300">
+                    {reviewEditCard === 'event' ? (
+                      <div className="grid grid-cols-2 gap-2 mt-3">
+                        {(['PICKUP', 'DELIVERY'] as const).map((opt) => (
+                          <button
+                            key={opt}
+                            type="button"
+                            onClick={() =>
+                              setReviewDraft((d) => ({ ...d, eventType: opt }))
+                            }
+                            className={`py-3 rounded-xl border text-[9px] font-black uppercase tracking-widest transition-all ${
+                              reviewDraft.eventType === opt
+                                ? 'bg-blue-600 border-blue-500 text-white shadow-[0_0_12px_rgba(59,130,246,0.35)]'
+                                : 'bg-zinc-950/80 border-zinc-800 text-zinc-500'
+                            }`}
+                          >
+                            {opt}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+
+                    {reviewEditCard === 'carrier' ? (
+                      <select
+                        className={`${reviewCompactInput} mt-3`}
+                        value={reviewDraft.manualCarrier}
+                        onChange={(e) =>
+                          setReviewDraft((d) => ({
+                            ...d,
+                            manualCarrier: e.target.value as ManualCarrierOption,
+                          }))
+                        }
+                      >
+                        <option value="">Select carrier</option>
+                        <option value="BST Expedite Inc">BST Expedite Inc</option>
+                        <option value="Greenleaf Xpress">Greenleaf Xpress</option>
+                        <option value="Other Carrier">Other Carrier</option>
+                      </select>
+                    ) : null}
+
+                    {reviewEditCard === 'pickup' ? (
+                      <div className="grid grid-cols-4 gap-2 mt-3">
+                        <input
+                          className={`${reviewCompactInput} col-span-3`}
+                          placeholder="City"
+                          value={reviewDraft.puCity}
+                          onChange={(e) =>
+                            setReviewDraft((d) => ({
+                              ...d,
+                              puCity: e.target.value.toUpperCase(),
+                            }))
+                          }
+                        />
+                        <select
+                          className={reviewCompactInput}
+                          value={reviewDraft.puState}
+                          onChange={(e) =>
+                            setReviewDraft((d) => ({
+                              ...d,
+                              puState: e.target.value.toUpperCase(),
+                            }))
+                          }
+                        >
+                          <option value="">ST</option>
+                          {states.map((s) => (
+                            <option key={s} value={s}>
+                              {s}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    ) : null}
+
+                    {reviewEditCard === 'destination' ? (
+                      <div className="grid grid-cols-4 gap-2 mt-3">
+                        <input
+                          className={`${reviewCompactInput} col-span-3`}
+                          placeholder="City"
+                          value={reviewDraft.delCity}
+                          onChange={(e) =>
+                            setReviewDraft((d) => ({
+                              ...d,
+                              delCity: e.target.value.toUpperCase(),
+                            }))
+                          }
+                        />
+                        <select
+                          className={reviewCompactInput}
+                          value={reviewDraft.delState}
+                          onChange={(e) =>
+                            setReviewDraft((d) => ({
+                              ...d,
+                              delState: e.target.value.toUpperCase(),
+                            }))
+                          }
+                        >
+                          <option value="">ST</option>
+                          {states.map((s) => (
+                            <option key={s} value={s}>
+                              {s}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    ) : null}
+
+                    <div className="flex gap-2 mt-3">
+                      <button
+                        type="button"
+                        onClick={cancelReviewEdit}
+                        className="flex-1 py-2.5 rounded-xl border border-zinc-700/80 text-[8px] font-black uppercase tracking-widest text-zinc-500 active:scale-95"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={confirmReviewEdit}
+                        className="flex-1 py-2.5 rounded-xl bg-blue-600 text-[8px] font-black uppercase tracking-widest text-white shadow-[0_0_12px_rgba(59,130,246,0.35)] active:scale-95"
+                      >
+                        Confirm
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
             </section>
 
             <section className="space-y-2">
@@ -2830,8 +2923,19 @@ const BolPodWorkflow: React.FC = () => {
                 </span>
               </div>
 
-              <div className={`${reviewGlassPanel} border-blue-500/25 overflow-hidden`}>
-                <div className="p-3 border-b border-zinc-800/80">
+              <div
+                className={`${reviewGlassPanel} border-blue-400/20 overflow-hidden shadow-[0_0_28px_rgba(59,130,246,0.1)]`}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (reviewEditCard !== 'bol') openReviewEdit('bol');
+                  }}
+                  className={`w-full p-3 border-b border-blue-400/10 text-left ${reviewGlassInteractive} ${
+                    reviewEditCard === 'bol' ? reviewGlassActive : ''
+                  }`}
+                  aria-label="Edit BOL number"
+                >
                   <div className="flex items-center justify-between gap-2">
                     <div>
                       <p className="text-[8px] font-black uppercase tracking-[0.2em] text-blue-400">
@@ -2841,47 +2945,39 @@ const BolPodWorkflow: React.FC = () => {
                         BOL # {bolNum || '—'}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[7px] font-black uppercase text-green-400">✓ Verified</span>
+                    <span className="text-[7px] font-black uppercase text-green-400 px-2 py-1 rounded-full bg-green-500/10 border border-green-400/25 shadow-[0_0_12px_rgba(34,197,94,0.15)]">
+                      ✓ Verified
+                    </span>
+                  </div>
+                </button>
+                {reviewEditCard === 'bol' ? (
+                  <div className="px-3 pb-3 pt-0 border-b border-blue-400/10 animate-in slide-in-from-top-2">
+                    <input
+                      className={`${reviewCompactInput} mt-3`}
+                      placeholder="BOL #"
+                      value={reviewDraft.bolNum}
+                      onChange={(e) =>
+                        setReviewDraft((d) => ({ ...d, bolNum: e.target.value.trim() }))
+                      }
+                    />
+                    <div className="flex gap-2 mt-2">
                       <button
                         type="button"
-                        onClick={() => openReviewEdit('bol')}
-                        className="w-8 h-8 rounded-lg border border-blue-500/30 bg-blue-500/10 text-[10px] text-blue-400 active:scale-95"
-                        aria-label="Edit BOL number"
+                        onClick={cancelReviewEdit}
+                        className="flex-1 py-2 rounded-xl border border-zinc-700 text-[8px] font-black uppercase text-zinc-500"
                       >
-                        ✎
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={confirmReviewEdit}
+                        className="flex-1 py-2 rounded-xl bg-blue-600 text-[8px] font-black uppercase text-white"
+                      >
+                        Confirm
                       </button>
                     </div>
                   </div>
-                  {reviewEditCard === 'bol' ? (
-                    <div className="mt-3 pt-3 border-t border-zinc-800/80 animate-in slide-in-from-top-2">
-                      <input
-                        className={reviewCompactInput}
-                        placeholder="BOL #"
-                        value={reviewDraft.bolNum}
-                        onChange={(e) =>
-                          setReviewDraft((d) => ({ ...d, bolNum: e.target.value.trim() }))
-                        }
-                      />
-                      <div className="flex gap-2 mt-2">
-                        <button
-                          type="button"
-                          onClick={cancelReviewEdit}
-                          className="flex-1 py-2 rounded-xl border border-zinc-700 text-[8px] font-black uppercase text-zinc-500"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="button"
-                          onClick={confirmReviewEdit}
-                          className="flex-1 py-2 rounded-xl bg-blue-600 text-[8px] font-black uppercase text-white"
-                        >
-                          Confirm
-                        </button>
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
+                ) : null}
                 {uploadedFiles.some((f) => f.category === 'bol') ? (
                   <div className="p-3 flex gap-2 overflow-x-auto">
                     {uploadedFiles
@@ -2908,42 +3004,41 @@ const BolPodWorkflow: React.FC = () => {
               </div>
 
               {eventType === 'PICKUP' ? (
-                <div className={`${reviewGlassPanel} border-green-500/25 overflow-hidden`}>
-                  <div className="p-3 border-b border-zinc-800/80 flex items-center justify-between gap-2">
-                    <div>
-                      <p className="text-[8px] font-black uppercase tracking-[0.2em] text-green-400">
-                        Freight Photos
-                      </p>
-                      {showFreightWaived ? (
-                        <p className="text-[9px] text-amber-400/90 normal-case mt-0.5">
-                          ✓ Waived — confirmed by dispatch
+                <div
+                  className={`${reviewGlassPanel} border-green-400/18 overflow-hidden shadow-[0_0_28px_rgba(34,197,94,0.08)]`}
+                >
+                  <button
+                    type="button"
+                    onClick={returnToFreightDocuments}
+                    className={`w-full p-3 border-b border-green-400/10 text-left ${reviewGlassInteractive}`}
+                    aria-label="Edit freight photos"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <p className="text-[8px] font-black uppercase tracking-[0.2em] text-green-400">
+                          Freight Photos
                         </p>
-                      ) : hasFreightPhotos ? (
-                        <p className="text-[9px] text-zinc-400 normal-case mt-0.5">
-                          {freightPhotoCount} photo{freightPhotoCount === 1 ? '' : 's'} attached
-                        </p>
-                      ) : (
-                        <p className="text-[9px] text-zinc-500 normal-case mt-0.5">
-                          No photos added yet
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
+                        {showFreightWaived ? (
+                          <p className="text-[9px] text-amber-400/90 normal-case mt-0.5">
+                            ✓ Waived — confirmed by dispatch
+                          </p>
+                        ) : hasFreightPhotos ? (
+                          <p className="text-[9px] text-zinc-400 normal-case mt-0.5">
+                            {freightPhotoCount} photo{freightPhotoCount === 1 ? '' : 's'} attached
+                          </p>
+                        ) : (
+                          <p className="text-[9px] text-zinc-500 normal-case mt-0.5">
+                            No photos added yet
+                          </p>
+                        )}
+                      </div>
                       {hasFreightPhotos ? (
-                        <span className="text-[7px] font-black uppercase text-green-400">
+                        <span className="text-[7px] font-black uppercase text-green-400 px-2 py-1 rounded-full bg-green-500/10 border border-green-400/25 shadow-[0_0_12px_rgba(34,197,94,0.15)]">
                           ✓ Verified
                         </span>
                       ) : null}
-                      <button
-                        type="button"
-                        onClick={returnToFreightDocuments}
-                        className="w-8 h-8 rounded-lg border border-green-500/30 bg-green-500/10 text-[10px] text-green-400 active:scale-95"
-                        aria-label="Edit freight photos"
-                      >
-                        ✎
-                      </button>
                     </div>
-                  </div>
+                  </button>
                   {hasFreightPhotos ? (
                     <div className="p-3 flex gap-2 overflow-x-auto">
                       {uploadedFiles
@@ -2972,17 +3067,17 @@ const BolPodWorkflow: React.FC = () => {
             </section>
 
             <div
-              className={`${reviewGlassPanel} p-4 space-y-3 ${
+              className={`${reviewGlassPanel} p-4 space-y-4 ${
                 isReady
-                  ? 'border-blue-500/40 shadow-[0_0_24px_rgba(59,130,246,0.15)]'
-                  : 'border-zinc-800'
+                  ? 'border-blue-400/30 shadow-[0_0_32px_rgba(59,130,246,0.18)]'
+                  : ''
               }`}
             >
               <div className="flex items-center gap-3">
                 <div
                   className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-black shrink-0 ${
                     isReady
-                      ? 'bg-green-600/20 text-green-400 border border-green-500/40'
+                      ? 'bg-green-600/20 text-green-400 border border-green-500/40 shadow-[0_0_16px_rgba(34,197,94,0.2)]'
                       : 'bg-zinc-800 text-zinc-600 border border-zinc-700'
                   }`}
                 >
@@ -2998,69 +3093,20 @@ const BolPodWorkflow: React.FC = () => {
                   </p>
                   <p className="text-[9px] text-zinc-500 normal-case tracking-normal mt-0.5">
                     {isReady
-                      ? 'Everything has been verified.'
+                      ? 'Swipe right to transmit to dispatch.'
                       : 'Complete your documents before submitting.'}
                   </p>
                 </div>
               </div>
 
-              <button
-                type="button"
-                disabled={!isReady || isSubmitting}
-                onClick={async () => {
-                  setIsSubmitting(true);
-                  setShowUploadFailure(false);
-                  setUploadFailureMessage('');
-                  setUploadSavedLocally(false);
-
-                  const base64 = await Promise.all(
-                    uploadedFiles.map(async (f) => {
-                      return {
-                        category: f.category as 'bol' | 'freight',
-                        base64: await new Promise<string>((res) => {
-                          const r = new FileReader();
-                          r.onload = () => res(String(r.result || ''));
-                          r.readAsDataURL(f.file);
-                        }),
-                      };
-                    })
-                  );
-
-                  const payload = buildSubmissionPayload(base64);
-
-                  try {
-                    await submitDocumentUpload(payload);
-                    navigate('/submissions/success', {
-                      replace: true,
-                      state: { submissionType: 'BOL_POD' },
-                    });
-                  } catch (e) {
-                    const message =
-                      e instanceof Error ? e.message : 'Upload failed. Please try again.';
-
-                    try {
-                      savePayloadToVault(payload);
-                      setUploadSavedLocally(true);
-                    } catch {
-                      setUploadSavedLocally(false);
-                    }
-
-                    setUploadFailureMessage(message);
-                    setShowUploadFailure(true);
-                  } finally {
-                    setIsSubmitting(false);
-                  }
-                }}
-                className={`w-full py-4 rounded-2xl font-black uppercase tracking-[0.35em] text-[11px] text-white transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed ${
-                  themeMode === 'green'
-                    ? 'bg-green-600 shadow-[0_0_20px_rgba(34,197,94,0.25)]'
-                    : themeMode === 'blue'
-                      ? 'bg-blue-600 shadow-[0_0_20px_rgba(59,130,246,0.35)]'
-                      : 'bg-zinc-700'
-                }`}
-              >
-                Submit to Dispatch →
-              </button>
+              <SwipeToSubmit
+                disabled={!isReady}
+                loading={isSubmitting}
+                onSubmit={handleDispatchSubmit}
+                idleLabel="Swipe to submit →"
+                slidingLabel="Keep sliding…"
+                doneLabel="Submitting…"
+              />
             </div>
 
             <p className="text-center text-[8px] text-zinc-600 normal-case tracking-normal flex items-center justify-center gap-1.5 pb-2">
