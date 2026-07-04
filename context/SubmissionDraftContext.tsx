@@ -17,6 +17,7 @@ interface SubmissionDraftContextValue {
   }) => SubmissionRecord;
   updateExpense: (expense: Partial<ExpenseRecord>) => void;
   updateDriverName: (driverName: string) => void;
+  updateCompany: (company: string) => void;
   setDocuments: (documents: DocumentRecord[]) => void;
   setReceiptBlob: (blob: Blob | null) => void;
   clearDraft: () => void;
@@ -60,6 +61,10 @@ export const SubmissionDraftProvider: React.FC<{ children: React.ReactNode }> = 
     setDraft((prev) => (prev ? { ...prev, driverName } : prev));
   }, []);
 
+  const updateCompany = useCallback((company: string) => {
+    setDraft((prev) => (prev ? { ...prev, company } : prev));
+  }, []);
+
   const setDocuments = useCallback((documents: DocumentRecord[]) => {
     setDraft((prev) => (prev ? { ...prev, documents } : prev));
   }, []);
@@ -76,11 +81,12 @@ export const SubmissionDraftProvider: React.FC<{ children: React.ReactNode }> = 
       startDraft,
       updateExpense,
       updateDriverName,
+      updateCompany,
       setDocuments,
       setReceiptBlob,
       clearDraft,
     }),
-    [draft, receiptBlob, startDraft, updateExpense, updateDriverName, setDocuments, clearDraft]
+    [draft, receiptBlob, startDraft, updateExpense, updateDriverName, updateCompany, setDocuments, clearDraft]
   );
 
   return (

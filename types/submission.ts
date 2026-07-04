@@ -20,6 +20,7 @@ export interface ExpenseRecord {
   amount: number;
   expenseDate: string;
   truckNumber?: string;
+  companyCode?: string;
   vendor?: string;
   paidWith?: string;
   paidWithOther?: string;

@@ -20,21 +20,26 @@ export type PaidWithId =
   | 'company_card'
   | 'efs'
   | 'fuel_card'
-  | 'personal_cash'
   | 'personal_card'
+  | 'personal_cash'
   | 'other';
 
+export const DRIVER_SELECT_MANUAL = '__MANUAL_ENTRY__';
+export const DRIVER_SELECT_NOT_LISTED = '__DRIVER_NOT_LISTED__';
+
 export interface ExpenseFormState {
-  expenseType: ExpenseTypeId;
+  expenseType: ExpenseTypeId | '';
   expenseTypeOther: string;
   amount: string;
   expenseDate: string;
   truckNumber: string;
+  companyCode: string;
   vendor: string;
-  paidWith: PaidWithId;
+  paidWith: PaidWithId | '';
   paidWithOther: string;
   reimbursementForDriver: boolean;
   selectedDriverName: string;
+  customDriverName: string;
 }
 
 export const PAID_WITH_OPTIONS: { value: PaidWithId; label: string }[] = [
@@ -42,8 +47,8 @@ export const PAID_WITH_OPTIONS: { value: PaidWithId; label: string }[] = [
   { value: 'company_card', label: 'Company Card' },
   { value: 'efs', label: 'EFS' },
   { value: 'fuel_card', label: 'Fuel Card' },
-  { value: 'personal_cash', label: 'Personal Cash' },
   { value: 'personal_card', label: 'Personal Card' },
+  { value: 'personal_cash', label: 'Personal Cash' },
   { value: 'other', label: 'Other' },
 ];
 
@@ -77,15 +82,18 @@ const EXPENSE_TYPE_TO_BACKEND: Record<ExpenseTypeId, ExpenseCategory> = {
   other: 'other',
 };
 
-export function expenseTypeLabel(id: ExpenseTypeId): string {
+export function expenseTypeLabel(id: ExpenseTypeId | ''): string {
+  if (!id) return '';
   return EXPENSE_TYPE_OPTIONS.find((o) => o.value === id)?.label || id;
 }
 
-export function paidWithLabel(id: PaidWithId): string {
+export function paidWithLabel(id: PaidWithId | ''): string {
+  if (!id) return '';
   return PAID_WITH_OPTIONS.find((o) => o.value === id)?.label || id;
 }
 
-export function toBackendCategory(expenseType: ExpenseTypeId): ExpenseCategory {
+export function toBackendCategory(expenseType: ExpenseTypeId | ''): ExpenseCategory {
+  if (!expenseType) return 'other';
   return EXPENSE_TYPE_TO_BACKEND[expenseType] || 'other';
 }
 
@@ -103,15 +111,28 @@ export function displayPaidWith(form: Pick<ExpenseFormState, 'paidWith' | 'paidW
   return paidWithLabel(form.paidWith);
 }
 
+export function isCustomDriverSelection(value: string): boolean {
+  return value === DRIVER_SELECT_MANUAL || value === DRIVER_SELECT_NOT_LISTED;
+}
+
+export function resolveExpenseDriverName(form: ExpenseFormState): string {
+  if (isCustomDriverSelection(form.selectedDriverName)) {
+    return form.customDriverName.trim().toUpperCase();
+  }
+  return form.selectedDriverName.trim().toUpperCase();
+}
+
 export const defaultExpenseFormState = (): ExpenseFormState => ({
-  expenseType: 'fuel',
+  expenseType: '',
   expenseTypeOther: '',
   amount: '',
   expenseDate: new Date().toISOString().slice(0, 10),
   truckNumber: '',
+  companyCode: '',
   vendor: '',
-  paidWith: 'fuel_card',
+  paidWith: '',
   paidWithOther: '',
   reimbursementForDriver: true,
   selectedDriverName: '',
+  customDriverName: '',
 });
