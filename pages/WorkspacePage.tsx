@@ -89,9 +89,21 @@ const WorkspacePage: React.FC = () => {
               onClick={openBolPod}
             />
             <ElmModuleCard
-              title="Expense Submission"
-              description="Submit an expense with receipt for reimbursement or tracking."
-              icon="🧾"
+              title="Expenses & Repairs"
+              description="Submit receipts for fuel, tolls, travel expenses, or truck/trailer repairs."
+              icon={
+                <span className="relative inline-flex items-center justify-center w-full h-full">
+                  <span className="text-xl lg:text-2xl" aria-hidden>
+                    🧾
+                  </span>
+                  <span
+                    className="absolute -bottom-0.5 -right-1 text-[11px] lg:text-xs leading-none drop-shadow-sm"
+                    aria-hidden
+                  >
+                    🔧
+                  </span>
+                </span>
+              }
               accent="cyan"
               onClick={openReceipt}
             />

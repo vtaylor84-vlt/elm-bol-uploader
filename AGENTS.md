@@ -109,7 +109,7 @@ When implementing features, design for the **planned** model (PostgreSQL, Supaba
 | Roster change | `03__App_DriverLookup.js`, `Driver_Master` sheet |
 | Intake fields | `04_App_DocIntakeWriter.js`, `DB_Docs` headers |
 | Rotate upload token | Netlify env + GAS Script Property `UPLOAD_TOKEN`, then E2E test |
-| GLX upload email sender | `SETTINGS.GLX_SENDER` in `00_App_Config.js`; alias check in `05_App_Notifications.js`. Verify `maintenance@greenleafxpressllc.com` is a Gmail **Send mail as** alias on the script executor account (`GmailApp.getAliases()`). Falls back with `GLX_SENDER_ALIAS_MISSING` if absent. |
+| GLX upload email sender | `SETTINGS.GLX_SENDER` in `00_App_Config.js`; alias check in `05_App_Notifications.js`. Add **Send mail as** alias on the executor Gmail account only — no Apps Script ownership transfer or GLX admin access required. Run `testGlxSenderAliases()`; falls back with `GLX_SENDER_ALIAS_MISSING` if absent. |
 
 ## When Unsure
 

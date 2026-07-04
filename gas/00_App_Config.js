@@ -20,6 +20,20 @@ const SETTINGS = {
     'BST': "Leroy@bstexpediteinc.com, nick@bstexpediteinc.com",
     'GLX': "leroy@bstexpediteinc.com"
   },
+  /**
+   * GLX upload notification "From" — Gmail "Send mail as" alias on the executor account.
+   * Manual setup (no Apps Script ownership transfer required):
+   * 1. Sign in to Gmail as the account that runs this Apps Script (USER_DEPLOYING).
+   * 2. Settings → Accounts → Send mail as → Add maintenance@greenleafxpressllc.com.
+   * 3. Complete Google verification for that alias.
+   * 4. Run testGlxSenderAliases() in the script editor; aliasAvailable must be true.
+   * GLX admins do not need Apps Script access — only this Gmail alias on the executor account.
+   */
+  GLX_SENDER: {
+    from: 'maintenance@greenleafxpressllc.com',
+    name: 'Greenleaf Xpress Maintenance',
+    replyTo: 'maintenance@greenleafxpressllc.com',
+  },
   SMS_GATEWAY: "9452107105@vtext.com",
   /** Temporary bridge-only upload admins — replace with real identity later. */
   BRIDGE_ADMINS: {

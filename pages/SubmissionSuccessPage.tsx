@@ -12,7 +12,7 @@ const SubmissionSuccessPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { clearDraft, startDraft } = useSubmissionDraft();
-  const { session } = useAuth();
+  const { session, logout } = useAuth();
 
   const state = location.state as {
     submissionType?: SubmissionType;
@@ -30,6 +30,7 @@ const SubmissionSuccessPage: React.FC = () => {
   }, []);
 
   const isExpense = submissionType === 'EXPENSE_RECEIPT';
+  const isAdminUploadMode = session?.authRole === 'admin';
 
   const getCarrierDisplayName = (code?: string) => {
     const c = String(code || '').trim().toUpperCase();
@@ -52,6 +53,12 @@ const SubmissionSuccessPage: React.FC = () => {
       company,
     });
     navigate('/submissions/receipt', { replace: true });
+  };
+
+  const handleLogout = () => {
+    clearDraft();
+    logout();
+    navigate('/login', { replace: true });
   };
 
   return (
@@ -96,6 +103,14 @@ const SubmissionSuccessPage: React.FC = () => {
             </ElmButton>
           ) : null}
         </div>
+
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="mt-8 text-[11px] font-semibold normal-case tracking-normal text-slate-500 hover:text-zinc-300 active:text-zinc-200 transition-colors underline-offset-4 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30 rounded px-2 py-1"
+        >
+          {isAdminUploadMode ? 'Ready for next driver? Log Out' : 'Finished? Log Out'}
+        </button>
       </PageContainer>
     </AuthenticatedShell>
   );

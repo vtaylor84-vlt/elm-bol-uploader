@@ -449,6 +449,7 @@ function validateExpenseSubmission(data) {
         amount,
         expenseDate,
         truckNumber: String(expense.truckNumber || '').trim(),
+        companyCode: String(expense.companyCode || '').trim().toUpperCase(),
         vendor: String(expense.vendor || '').trim(),
         paidWith: String(expense.paidWith || '').trim(),
         paidWithOther: String(expense.paidWithOther || '').trim(),
