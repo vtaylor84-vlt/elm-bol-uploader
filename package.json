@@ -2,13 +2,16 @@
   "name": "document-uploader",
   "version": "1.0.0",
   "type": "module",
-  "description": "",
+  "description": "ELM CONNECT driver document uploader",
   "main": "index.js",
   "scripts": {
     "dev": "vite",
     "build": "node ./node_modules/vite/bin/vite.js build",
     "preview": "node ./node_modules/vite/bin/vite.js preview",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "typecheck": "tsc --noEmit",
+    "lint": "npx --yes @biomejs/biome@1.9.4 lint .",
+    "audit:a11y": "npx --yes @lhci/cli@0.15.1 autorun --config=./lighthouserc.json",
+    "test": "echo \"No automated test suite configured yet\""
   },
   "keywords": [],
   "author": "",
