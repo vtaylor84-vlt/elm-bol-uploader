@@ -13,12 +13,12 @@ test.describe('RC1 authenticated shells', () => {
       await gotoAuthed(page, '/today', driverSession(carrier));
       await expect(page.getByRole('heading', { name: 'What needs attention' })).toBeVisible();
       await expect(
-        page.getByText(carrier === 'GLX' ? 'Greenleaf Xpress' : 'BST Expedite Inc')
+        page.getByText(carrier === 'GLX' ? 'Greenleaf Xpress' : 'BST Expedite Inc').first()
       ).toBeVisible();
       await expect(page.getByRole('heading', { name: 'No current load available' })).toBeVisible();
       await expect(page.getByText('48291')).toHaveCount(0);
       await expect(page.getByText('Dallas')).toHaveCount(0);
-      await expect(page.getByRole('navigation', { name: 'Primary' })).toBeVisible();
+      await expect(page.getByRole('navigation', { name: 'Primary' }).first()).toBeVisible();
     });
   }
 
@@ -60,6 +60,9 @@ test.describe('RC1 production routes', () => {
   test('pay isolation shows disconnected disclosure', async ({ page }) => {
     await gotoAuthed(page, '/pay', driverSession('BST'));
     await expect(page.getByText('NOT CONNECTED TO PRODUCTION')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Settlement not connected' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Settlement layout' })).toHaveCount(0);
+    await expect(page.locator('dt', { hasText: 'Gross' })).toHaveCount(0);
   });
 
   test('BOL/POD workflow navigates without submission', async ({ page }) => {

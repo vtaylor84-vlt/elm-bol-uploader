@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import MissionShell from '../components/mission-control/MissionShell.tsx';
 import ElmCard from '../design-system/components/ElmCard.tsx';
+import EmptyState from '../design-system/components/EmptyState.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
 import { useDriverExperience } from '../context/DriverExperienceContext.tsx';
 import { useShowcaseOptional } from '../context/ShowcaseContext.tsx';
@@ -32,22 +33,20 @@ export const LoadsPage: React.FC = () => {
         </header>
 
         {loads.length === 0 ? (
-          <ElmCard variant="default" padding="md" as="section" aria-label="Active loads">
-            <div className="flex items-start justify-between gap-3 mb-3">
-              <div>
-                <p className="mc-kicker">Active</p>
-                <h2 className="mc-section-title">No live load list yet</h2>
-              </div>
-              <span className="mc-capability-chip">Ready for integration</span>
-            </div>
-            <p className="mc-section-copy">
-              When the load service is connected, your current haul and recent history will show here.
-              Use Capture for live BOL/POD and expense uploads.
-            </p>
-            <Link to={captureTo === '/capture' ? '/capture' : captureTo} className="mc-exception-action mt-5 inline-flex no-underline">
-              Open Capture
-            </Link>
-          </ElmCard>
+          <EmptyState
+            kicker="Active"
+            title="No live load list yet"
+            chip="Ready for integration"
+            description="When the load service is connected, your current haul and recent history will show here. Use Capture for live BOL/POD and expense uploads."
+            action={
+              <Link
+                to={captureTo === '/capture' ? '/capture' : captureTo}
+                className="mc-exception-action inline-flex no-underline"
+              >
+                Open Capture
+              </Link>
+            }
+          />
         ) : (
           <ul className="space-y-3">
             {loads.map((load) => (
@@ -74,55 +73,67 @@ export const LoadsPage: React.FC = () => {
   );
 };
 
-/** Pay — production placeholder / Showcase pay summary */
+/** Pay — production disconnected / Showcase pay summary */
 export const PayPage: React.FC = () => {
   const { mode, dataSource } = useDriverExperience();
   const pay = dataSource.getPaySummary();
 
   return (
     <MissionShell title="Pay" activeNav="pay">
-      <div className="space-y-6">
+      <div className="space-y-6 max-w-3xl">
         <header>
           <p className="mc-kicker">Pay</p>
           <h1 className="mc-page-title">Settlement</h1>
           <p className="mc-section-copy">
             {mode === 'showcase'
-              ? 'DEMONSTRATION DATA — Showcase settlement preview.'
-              : 'Settlement summaries will appear here. No amounts are calculated in this build.'}
+              ? 'DEMONSTRATION DATA — Showcase settlement preview only.'
+              : 'Payroll and settlement services are not connected in this build.'}
           </p>
         </header>
 
-        <ElmCard variant="muted" padding="md" as="section" aria-label="Settlement summary">
-          <div className="flex items-start justify-between gap-3 mb-4">
-            <div>
-              <p className="mc-kicker">{pay.periodLabel}</p>
-              <h2 className="mc-section-title">
-                {mode === 'showcase' ? 'Demonstration settlement' : 'Demonstration layout'}
-              </h2>
+        {mode === 'production' ? (
+          <section className="elm-disconnected-panel" aria-label="Settlement unavailable">
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <p className="mc-kicker mb-0">Production status</p>
+              <span className="mc-capability-chip">{pay.disclosure}</span>
             </div>
-            <span className="mc-capability-chip">{pay.disclosure}</span>
-          </div>
+            <h2>Settlement not connected</h2>
+            <p className="mc-section-copy">
+              No gross, deduction, or net amounts are calculated or displayed. When payroll is
+              connected through the approved architecture, settlement summaries will appear here.
+            </p>
+          </section>
+        ) : (
+          <ElmCard variant="muted" padding="md" as="section" aria-label="Settlement summary">
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div>
+                <p className="mc-kicker">{pay.periodLabel}</p>
+                <h2 className="mc-section-title">Demonstration settlement</h2>
+              </div>
+              <span className="mc-capability-chip">{pay.disclosure}</span>
+            </div>
 
-          <dl className="mc-meta-grid">
-            <div>
-              <dt>Gross</dt>
-              <dd>{pay.grossLabel}</dd>
-            </div>
-            <div>
-              <dt>Deductions</dt>
-              <dd>{pay.deductionsLabel}</dd>
-            </div>
-            <div>
-              <dt>Escrow / savings</dt>
-              <dd>—</dd>
-            </div>
-            <div>
-              <dt>Net payout</dt>
-              <dd className="mc-earnings-value text-xl">{pay.netLabel}</dd>
-            </div>
-          </dl>
-          <p className="mc-section-copy mt-4">{pay.note}</p>
-        </ElmCard>
+            <dl className="mc-meta-grid">
+              <div>
+                <dt>Gross</dt>
+                <dd>{pay.grossLabel}</dd>
+              </div>
+              <div>
+                <dt>Deductions</dt>
+                <dd>{pay.deductionsLabel}</dd>
+              </div>
+              <div>
+                <dt>Escrow / savings</dt>
+                <dd>—</dd>
+              </div>
+              <div>
+                <dt>Net payout</dt>
+                <dd className="mc-earnings-value text-xl">{pay.netLabel}</dd>
+              </div>
+            </dl>
+            <p className="mc-section-copy mt-4">{pay.note}</p>
+          </ElmCard>
+        )}
       </div>
     </MissionShell>
   );
