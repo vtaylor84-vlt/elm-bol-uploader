@@ -416,17 +416,18 @@ export const PayPage: React.FC = () => {
 
 /** More — profile, Showcase menu / production shortcuts, and admin Showcase entry. */
 export const MorePage: React.FC = () => {
-  const { session } = useAuth();
+  const { session, logout } = useAuth();
   const { mode, routePrefix, dataSource } = useDriverExperience();
   const showcase = useShowcaseOptional();
   const navigate = useNavigate();
   const [entering, setEntering] = useState(false);
   const company = getCompanyDisplayName(session?.companyCode);
-  const canTryShowcase =
+  const isBridgeAdmin =
     mode === 'production' &&
     session?.authRole === 'admin' &&
-    session?.canSelectAnyDriver &&
-    isShowcaseGrantPresentAndUnexpired();
+    Boolean(session?.canSelectAnyDriver);
+  const hasShowcaseGrant = isShowcaseGrantPresentAndUnexpired();
+  const canEnterShowcase = isBridgeAdmin && hasShowcaseGrant;
   const moreMenu = mode === 'showcase' ? dataSource.getMoreMenu?.() ?? [] : [];
 
   const enterShowcase = async () => {
@@ -436,6 +437,11 @@ export const MorePage: React.FC = () => {
     setEntering(false);
     if (result === 'ok') navigate('/showcase');
     else navigate('/showcase/today'); // guard will show Access Denied if grant invalid
+  };
+
+  const refreshAdminGrant = () => {
+    logout();
+    navigate('/login', { replace: true });
   };
 
   return (
@@ -604,23 +610,38 @@ export const MorePage: React.FC = () => {
           </ElmCard>
         )}
 
-        {canTryShowcase ? (
-          <ElmCard variant="default" padding="md" as="section" aria-label="Admin Showcase">
-            <p className="mc-kicker mb-2">Admin</p>
-            <h2 className="mc-section-title">Showcase Mode</h2>
-            <p className="mc-section-copy">
-              Verified platform admin only. Demonstration fixtures for GLX and BST — NOT CONNECTED TO
-              PRODUCTION.
-            </p>
-            <button
-              type="button"
-              className="mc-exception-action mt-4"
-              disabled={entering}
-              onClick={enterShowcase}
-            >
-              {entering ? 'Verifying…' : 'Enter Showcase'}
-            </button>
-          </ElmCard>
+        {isBridgeAdmin ? (
+          <div id="showcase-entry">
+            <ElmCard variant="default" padding="md" as="section" aria-label="Admin Showcase">
+              <p className="mc-kicker mb-2">Admin</p>
+              <h2 className="mc-section-title">Showcase Mode</h2>
+              <p className="mc-section-copy">
+                Verified platform admin only. Demonstration fixtures for GLX and BST — NOT CONNECTED TO
+                PRODUCTION.
+              </p>
+              {canEnterShowcase ? (
+                <button
+                  type="button"
+                  className="mc-exception-action mt-4"
+                  disabled={entering}
+                  onClick={enterShowcase}
+                >
+                  {entering ? 'Verifying…' : 'Enter Showcase'}
+                </button>
+              ) : (
+                <div className="mt-4 space-y-3">
+                  <p className="mc-section-copy text-amber-200/90">
+                    No valid Showcase grant in this browser session. Sign out and sign back in with your
+                    bridge admin email so the server can issue a short-lived grant. Ordinary driver
+                    accounts cannot enter Showcase.
+                  </p>
+                  <button type="button" className="mc-exception-action" onClick={refreshAdminGrant}>
+                    Sign out to refresh Showcase grant
+                  </button>
+                </div>
+              )}
+            </ElmCard>
+          </div>
         ) : null}
 
         <ElmCard variant="muted" padding="md" as="section" aria-label="System">

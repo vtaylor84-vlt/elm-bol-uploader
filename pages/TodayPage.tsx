@@ -106,6 +106,28 @@ const TodayPage: React.FC = () => {
           </p>
         ) : null}
 
+        {mode === 'production' &&
+        session?.authRole === 'admin' &&
+        session?.canSelectAnyDriver ? (
+          <ElmCard
+            variant="default"
+            padding="md"
+            as="section"
+            aria-label="Admin Showcase entry"
+            className="mb-6"
+          >
+            <p className="mc-kicker mb-2">Admin</p>
+            <h2 className="mc-section-title">Enter Showcase Mode</h2>
+            <p className="mc-section-copy">
+              You are on the Production path. Demonstration data lives in Showcase Mode — open More,
+              then choose Enter Showcase (bridge admin + valid grant required).
+            </p>
+            <Link to="/more#showcase-entry" className="mc-exception-action mt-4 inline-flex no-underline">
+              Go to More → Showcase
+            </Link>
+          </ElmCard>
+        ) : null}
+
         <div className="mc-today-alert">
           <ExceptionBanner exceptions={model.exceptions} onActivateAction={openCapture} />
         </div>
