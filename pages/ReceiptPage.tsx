@@ -81,7 +81,7 @@ const ReceiptPage: React.FC = () => {
 
   useEffect(() => {
     if (!draft || draft.submissionType !== 'EXPENSE_RECEIPT') {
-      navigate('/workspace', { replace: true });
+      navigate('/capture', { replace: true });
     }
   }, [draft, navigate]);
 
@@ -210,7 +210,7 @@ const ReceiptPage: React.FC = () => {
     <AuthenticatedShell
       title="Expense Submission"
       showBack
-      onBack={() => (step === 'upload' ? setStep('details') : navigate('/workspace'))}
+      onBack={() => (step === 'upload' ? setStep('details') : navigate('/capture'))}
     >
       <PageContainer width="wide" className="space-y-6 lg:space-y-8 expense-page-enter">
         <ElmPageHeader

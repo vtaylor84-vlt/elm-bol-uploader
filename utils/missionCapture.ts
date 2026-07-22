@@ -21,7 +21,7 @@ interface ActivateMissionCaptureParams extends MissionCaptureTarget {
 /**
  * Seeds the submission draft required by capture routes, then navigates.
  * All Mission Control capture CTAs must use this (or an equivalent) so
- * draft-gated pages like /submissions/receipt do not bounce to /workspace.
+ * draft-gated pages like /submissions/receipt do not bounce to /capture.
  */
 export function activateMissionCapture({
   submissionType,

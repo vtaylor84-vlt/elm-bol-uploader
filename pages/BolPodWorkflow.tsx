@@ -2230,10 +2230,10 @@ const BolPodWorkflow: React.FC = () => {
       <div className={`${TERMINAL_SHELL} mb-4`}>
         <button
           type="button"
-          onClick={() => navigate('/workspace')}
+          onClick={() => navigate('/capture')}
           className="text-[8px] font-black uppercase tracking-widest text-blue-400 hover:text-blue-300"
         >
-          ← Back to Workspace
+          ← Back to Capture
         </button>
       </div>
 

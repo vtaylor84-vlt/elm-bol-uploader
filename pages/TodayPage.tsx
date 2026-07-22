@@ -44,7 +44,7 @@ const TodayPage: React.FC = () => {
       activeNav="today"
       connectionLabel={model.connectionLabel}
     >
-      <div className="mc-today space-y-6 lg:space-y-8">
+      <div className="mc-today">
         <header className="mc-today-header">
           <p className="mc-kicker">Today</p>
           <h1 className="mc-page-title">What needs attention</h1>
@@ -54,19 +54,27 @@ const TodayPage: React.FC = () => {
           </p>
         </header>
 
-        <ExceptionBanner exceptions={model.exceptions} onActivateAction={openCapture} />
-        <ActiveHaulCard haul={model.activeHaul} dataCapability={model.dataCapability} />
-        <PrimaryActionButton
-          action={model.primaryAction}
-          onActivate={() =>
-            openCapture({
-              submissionType: model.primaryAction.submissionType,
-              href: model.primaryAction.href,
-            })
-          }
-        />
-        <EarningsCard earnings={model.earnings} />
-        <OutstandingTasks tasks={model.tasks} onActivateTask={openCapture} />
+        <div className="mc-today-alert">
+          <ExceptionBanner exceptions={model.exceptions} onActivateAction={openCapture} />
+        </div>
+
+        <div className="mc-today-primary space-y-6">
+          <ActiveHaulCard haul={model.activeHaul} dataCapability={model.dataCapability} />
+          <PrimaryActionButton
+            action={model.primaryAction}
+            onActivate={() =>
+              openCapture({
+                submissionType: model.primaryAction.submissionType,
+                href: model.primaryAction.href,
+              })
+            }
+          />
+        </div>
+
+        <aside className="mc-today-aside space-y-6" aria-label="Earnings and tasks">
+          <EarningsCard earnings={model.earnings} />
+          <OutstandingTasks tasks={model.tasks} onActivateTask={openCapture} />
+        </aside>
       </div>
     </MissionShell>
   );

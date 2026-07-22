@@ -41,11 +41,11 @@ const WorkspacePage: React.FC = () => {
       <PageContainer width="full" className="space-y-8 lg:space-y-10">
         <ElmPageHeader
           eyebrow="Capture"
-          title="Document modules"
-          description={`${driverName} — select a live upload module.`}
+          title="Document capture"
+          description={`${driverName} — choose a live upload module. Camera-first, verified path.`}
         />
 
-        <section aria-label="Active modules">
+        <section aria-label="Live capture modules">
           <p className="elm-section-label mb-4 lg:mb-5">Live modules</p>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-5">
             <ElmModuleCard

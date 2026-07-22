@@ -60,6 +60,15 @@ const App: React.FC = () => (
             }
           />
           <Route
+            path="/capture"
+            element={
+              <ProtectedRoute>
+                <WorkspacePage />
+              </ProtectedRoute>
+            }
+          />
+          {/* Legacy Capture deep link — same module hub as /capture */}
+          <Route
             path="/workspace"
             element={
               <ProtectedRoute>

@@ -30,7 +30,7 @@ const SubmissionReviewPage: React.FC = () => {
 
   useEffect(() => {
     if (!draft || draft.submissionType !== 'EXPENSE_RECEIPT' || !draft.expense) {
-      navigate('/workspace', { replace: true });
+      navigate('/capture', { replace: true });
     }
   }, [draft, navigate]);
 

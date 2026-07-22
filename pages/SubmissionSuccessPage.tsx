@@ -41,7 +41,7 @@ const SubmissionSuccessPage: React.FC = () => {
 
   const handleWorkspace = () => {
     clearDraft();
-    navigate('/workspace', { replace: true });
+    navigate('/today', { replace: true });
   };
 
   const handleAnother = () => {
@@ -95,7 +95,7 @@ const SubmissionSuccessPage: React.FC = () => {
 
         <div className="flex flex-col gap-3 pt-2 max-w-sm mx-auto w-full">
           <ElmButton variant="primary" fullWidth onClick={handleWorkspace} trailing={<span aria-hidden>›</span>}>
-            Return to Workspace
+            Return to Today
           </ElmButton>
           {isExpense ? (
             <ElmButton variant="ghost" fullWidth onClick={handleAnother}>

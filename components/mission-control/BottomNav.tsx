@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 
 export type BottomNavId = 'today' | 'loads' | 'capture' | 'pay' | 'more';
 
@@ -8,6 +8,8 @@ interface NavItem {
   label: string;
   to: string;
   icon: React.ReactNode;
+  /** Paths that should also mark this item active (deep links / aliases). */
+  matchPaths?: string[];
 }
 
 const IconToday = () => (
@@ -58,7 +60,13 @@ const IconMore = () => (
 const ITEMS: NavItem[] = [
   { id: 'today', label: 'Today', to: '/today', icon: <IconToday /> },
   { id: 'loads', label: 'Loads', to: '/loads', icon: <IconLoads /> },
-  { id: 'capture', label: 'Capture', to: '/workspace', icon: <IconCapture /> },
+  {
+    id: 'capture',
+    label: 'Capture',
+    to: '/capture',
+    icon: <IconCapture />,
+    matchPaths: ['/capture', '/workspace'],
+  },
   { id: 'pay', label: 'Pay', to: '/pay', icon: <IconPay /> },
   { id: 'more', label: 'More', to: '/more', icon: <IconMore /> },
 ];
@@ -67,25 +75,39 @@ interface BottomNavProps {
   active: BottomNavId;
 }
 
-const BottomNav: React.FC<BottomNavProps> = ({ active }) => (
-  <nav className="mc-bottom-nav" aria-label="Primary">
-    <ul className="mc-bottom-nav-list">
-      {ITEMS.map((item) => (
-        <li key={item.id}>
-          <NavLink
-            to={item.to}
-            className={({ isActive }) =>
-              `mc-bottom-nav-item${isActive || active === item.id ? ' is-active' : ''}`
-            }
-            end={item.to === '/today'}
-          >
-            <span className="mc-bottom-nav-icon">{item.icon}</span>
-            <span className="mc-bottom-nav-label">{item.label}</span>
-          </NavLink>
-        </li>
-      ))}
-    </ul>
-  </nav>
-);
+const BottomNav: React.FC<BottomNavProps> = ({ active }) => {
+  const { pathname } = useLocation();
+
+  return (
+    <nav className="mc-bottom-nav" aria-label="Primary">
+      <ul className="mc-bottom-nav-list">
+        {ITEMS.map((item) => {
+          const pathActive =
+            item.matchPaths?.some((p) => pathname === p || pathname.startsWith(`${p}/`)) ??
+            pathname === item.to;
+          const isSelected = active === item.id || pathActive;
+
+          return (
+            <li key={item.id}>
+              <NavLink
+                to={item.to}
+                className={() =>
+                  `mc-bottom-nav-item${isSelected ? ' is-active' : ''}${
+                    item.id === 'capture' ? ' mc-bottom-nav-item--capture' : ''
+                  }`
+                }
+                aria-current={isSelected ? 'page' : undefined}
+                end={item.to === '/today'}
+              >
+                <span className="mc-bottom-nav-icon">{item.icon}</span>
+                <span className="mc-bottom-nav-label">{item.label}</span>
+              </NavLink>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  );
+};
 
 export default BottomNav;

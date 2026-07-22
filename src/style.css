@@ -1176,11 +1176,27 @@ body.elm-login-page #root {
   background: rgba(59, 130, 246, 0.12);
 }
 
+.mc-bottom-nav-item--capture.is-active {
+  color: #bfdbfe;
+  background: rgba(59, 130, 246, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.25);
+}
+
 .mc-bottom-nav-label {
   font-size: 0.6rem;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mc-task-row-link,
+  .mc-exception-action,
+  .mc-bottom-nav-item,
+  .elm-btn-primary,
+  .terminal-btn-primary {
+    transition: none !important;
+  }
 }
 
 .sr-only {
@@ -1205,7 +1221,31 @@ body.elm-login-page #root {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .mc-today-header {
-    margin-bottom: 0.25rem;
+  .mc-today {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    gap: 1.5rem 1.75rem;
+    align-items: start;
+  }
+
+  .mc-today-header,
+  .mc-today-alert {
+    grid-column: 1 / -1;
+  }
+
+  .mc-today-primary {
+    grid-column: 1;
+  }
+
+  .mc-today-aside {
+    grid-column: 2;
+  }
+}
+
+@media (max-width: 1023px) {
+  .mc-today {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
   }
 }
