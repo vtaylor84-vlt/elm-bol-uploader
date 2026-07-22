@@ -1,14 +1,14 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.tsx';
 import { useSubmissionDraft } from '../context/SubmissionDraftContext.tsx';
+import { useDriverExperience } from '../context/DriverExperienceContext.tsx';
 import MissionShell from '../components/mission-control/MissionShell.tsx';
 import ExceptionBanner from '../components/mission-control/ExceptionBanner.tsx';
 import ActiveHaulCard from '../components/mission-control/ActiveHaulCard.tsx';
 import PrimaryActionButton from '../components/mission-control/PrimaryActionButton.tsx';
 import EarningsCard from '../components/mission-control/EarningsCard.tsx';
 import OutstandingTasks from '../components/mission-control/OutstandingTasks.tsx';
-import { getMissionControlViewModel } from '../services/missionControlAdapter.ts';
 import { getCompanyDisplayName } from '../utils/companyMap.ts';
 import {
   activateMissionCapture,
@@ -19,13 +19,25 @@ const TodayPage: React.FC = () => {
   const { session } = useAuth();
   const { clearDraft, startDraft } = useSubmissionDraft();
   const navigate = useNavigate();
+  const { mode, routePrefix, dataSource, actions } = useDriverExperience();
+  const [simMessage, setSimMessage] = useState('');
 
-  const model = useMemo(() => getMissionControlViewModel(session), [session]);
-
+  const model = useMemo(() => dataSource.getMissionControl(), [dataSource]);
   const companyForUpload = getCompanyDisplayName(session?.companyCode);
 
   const openCapture = useCallback(
-    (target: MissionCaptureTarget) => {
+    async (target: MissionCaptureTarget) => {
+      if (mode === 'showcase') {
+        if (actions.submitPodSimulated && target.submissionType === 'BOL_POD') {
+          const result = await actions.submitPodSimulated();
+          setSimMessage(`${result.disclosure}: ${result.message}`);
+        } else if (actions.submitReceiptSimulated) {
+          const result = await actions.submitReceiptSimulated();
+          setSimMessage(`${result.disclosure}: ${result.message}`);
+        }
+        navigate(`${routePrefix}/capture`);
+        return;
+      }
       activateMissionCapture({
         ...target,
         driverName: session?.driverName || '',
@@ -35,7 +47,16 @@ const TodayPage: React.FC = () => {
         navigate,
       });
     },
-    [session?.driverName, companyForUpload, clearDraft, startDraft, navigate]
+    [
+      mode,
+      actions,
+      routePrefix,
+      session?.driverName,
+      companyForUpload,
+      clearDraft,
+      startDraft,
+      navigate,
+    ]
   );
 
   return (
@@ -51,8 +72,15 @@ const TodayPage: React.FC = () => {
           <p className="mc-section-copy">
             {model.driverDisplayName}
             {model.companyLabel ? ` · ${model.companyLabel}` : ''}
+            {mode === 'showcase' ? ' · DEMONSTRATION DATA' : ''}
           </p>
         </header>
+
+        {simMessage ? (
+          <p className="text-xs text-amber-300 normal-case mb-3" role="status">
+            {simMessage}
+          </p>
+        ) : null}
 
         <div className="mc-today-alert">
           <ExceptionBanner exceptions={model.exceptions} onActivateAction={openCapture} />
@@ -61,11 +89,21 @@ const TodayPage: React.FC = () => {
         <div className="mc-today-primary space-y-6">
           <ActiveHaulCard haul={model.activeHaul} dataCapability={model.dataCapability} />
           <PrimaryActionButton
-            action={model.primaryAction}
+            action={{
+              ...model.primaryAction,
+              href:
+                mode === 'showcase'
+                  ? `${routePrefix}/capture`
+                  : model.primaryAction.href,
+              capability: mode === 'showcase' ? 'DEMONSTRATION' : model.primaryAction.capability,
+            }}
             onActivate={() =>
               openCapture({
                 submissionType: model.primaryAction.submissionType,
-                href: model.primaryAction.href,
+                href:
+                  mode === 'showcase'
+                    ? `${routePrefix}/capture`
+                    : model.primaryAction.href,
               })
             }
           />

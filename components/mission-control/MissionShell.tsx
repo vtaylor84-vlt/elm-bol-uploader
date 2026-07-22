@@ -5,6 +5,8 @@ import ElmBrandLogo from '../terminal/ElmBrandLogo.tsx';
 import LogoutConfirmDialog from '../terminal/LogoutConfirmDialog.tsx';
 import { MISSION_SHELL } from '../terminal/terminalLayout.ts';
 import BottomNav, { type BottomNavId } from './BottomNav.tsx';
+import { useDriverExperienceOptional } from '../../context/DriverExperienceContext.tsx';
+import { useShowcaseOptional } from '../../context/ShowcaseContext.tsx';
 
 interface MissionShellProps {
   title: string;
@@ -22,13 +24,18 @@ const MissionShell: React.FC<MissionShellProps> = ({
   const navigate = useNavigate();
   const { logout } = useAuth();
   const [showLogout, setShowLogout] = useState(false);
+  const experience = useDriverExperienceOptional();
+  const showcase = useShowcaseOptional();
+  const routePrefix = experience?.routePrefix || '';
+  const homePath = routePrefix ? `${routePrefix}/today` : '/today';
 
   const handleLogout = () => {
+    showcase?.exitShowcase();
     logout();
     navigate('/login', { replace: true });
   };
 
-  const goHome = () => navigate('/today');
+  const goHome = () => navigate(homePath);
 
   return (
     <div className="min-h-screen terminal-app-bg text-zinc-100 mc-app">
@@ -40,7 +47,7 @@ const MissionShell: React.FC<MissionShellProps> = ({
                 type="button"
                 onClick={goHome}
                 className="min-w-0 text-left rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
-                aria-label="ELM CONNECT home — Mission Control Today"
+                aria-label="ELM CONNECT home"
               >
                 <ElmBrandLogo size="sm" subtitle={false} />
               </button>
@@ -81,7 +88,7 @@ const MissionShell: React.FC<MissionShellProps> = ({
       />
 
       <main className={`${MISSION_SHELL} pt-[4.5rem] pb-28`}>{children}</main>
-      <BottomNav active={activeNav} />
+      <BottomNav active={activeNav} routePrefix={routePrefix} />
     </div>
   );
 };
