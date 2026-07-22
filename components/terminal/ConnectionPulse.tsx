@@ -1,6 +1,6 @@
 import React from 'react';
 
-/** Animated terminal handshake — energy pulse between connectors */
+/** Animated connection graphic for the connecting screen (visual only). */
 const ConnectionPulse: React.FC<{ compact?: boolean }> = ({ compact = false }) => (
   <div
     className={`relative mx-auto flex items-center justify-center ${

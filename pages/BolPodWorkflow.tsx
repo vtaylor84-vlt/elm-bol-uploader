@@ -1817,10 +1817,10 @@ const BolPodWorkflow: React.FC = () => {
                 themeMode === 'green' ? 'text-green-400' : 'text-blue-400'
               }`}
             >
-              Connecting to dispatch...
+              Looking up your loads...
             </div>
             <div className="mt-3 text-[10px] lg:text-xs font-black uppercase tracking-[0.25em] text-zinc-500 max-w-md leading-relaxed">
-              Matching your active loads
+              Matching your active assignments
             </div>
           </div>
         ) : isConnecting ? (
@@ -2726,7 +2726,7 @@ const BolPodWorkflow: React.FC = () => {
 
             <p className="text-center text-[8px] text-zinc-600 normal-case flex items-center justify-center gap-1.5">
               <span>🔒</span>
-              Your documents are secure and will be sent to dispatch.
+              Ready for review — submit when your documents look correct.
             </p>
           </section>
         )}
@@ -3161,7 +3161,7 @@ const BolPodWorkflow: React.FC = () => {
                   </p>
                   <p className="text-[8px] text-zinc-500 normal-case tracking-normal mt-0.5 hidden sm:block">
                     {isReady
-                      ? 'Swipe right to transmit to dispatch.'
+                      ? 'Swipe right to submit.'
                       : 'Complete your documents before submitting.'}
                   </p>
                 </div>
@@ -3380,7 +3380,7 @@ const BolPodWorkflow: React.FC = () => {
 
             <p className="text-center text-[7px] text-zinc-600 normal-case tracking-normal flex items-center justify-center gap-1 pb-1">
               <span>🔒</span>
-              Secure transmission to dispatch
+              Ready to submit
             </p>
           </div>
         </div>
@@ -3392,12 +3392,12 @@ const BolPodWorkflow: React.FC = () => {
             <div className="absolute inset-0 border-8 border-blue-500/20 rounded-full animate-ping"></div>
             <div className="absolute inset-4 border-4 border-blue-500/40 rounded-full animate-pulse"></div>
             <div className="absolute inset-0 flex items-center justify-center text-7xl animate-bounce">
-              🛰️
+              📤
             </div>
           </div>
 
           <h2 className="text-4xl font-black italic text-blue-500 uppercase tracking-tighter mb-4">
-            Submitting to Dispatch
+            Submitting…
           </h2>
           <p className="text-orange-500 font-bold text-[11px] uppercase tracking-[0.4em] animate-pulse">
             Please wait. Do not close the app.
@@ -3416,7 +3416,7 @@ const BolPodWorkflow: React.FC = () => {
               Upload Failed
             </h2>
             <p className="text-red-400 font-bold text-[10px] uppercase tracking-[0.3em] mb-4">
-              Not synchronized with fleet control
+              Upload did not complete
             </p>
 
             <p className="text-zinc-300 text-sm normal-case tracking-normal mb-6 px-2">
@@ -3474,10 +3474,10 @@ const BolPodWorkflow: React.FC = () => {
             </div>
 
             <h2 className="text-3xl font-black italic text-white uppercase tracking-tighter mb-2">
-              Secure Manifest
+              Submission received
             </h2>
             <p className="text-zinc-500 font-bold text-[10px] uppercase tracking-[0.3em] mb-8">
-              Synchronized with fleet control
+              Upload complete
             </p>
 
             <div className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-6 mb-8 text-left space-y-3 font-mono text-[10px]">

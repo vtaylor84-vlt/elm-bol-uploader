@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import AuthenticatedShell from '../components/terminal/AuthenticatedShell.tsx';
 import ElmButton from '../design-system/components/ElmButton.tsx';
 import ElmPageHeader from '../design-system/components/ElmPageHeader.tsx';
+import GlassCard from '../design-system/components/GlassCard.tsx';
 import PageContainer from '../design-system/components/PageContainer.tsx';
 import { useSubmissionDraft } from '../context/SubmissionDraftContext.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
@@ -66,11 +67,11 @@ const SubmissionSuccessPage: React.FC = () => {
       <PageContainer width="narrow" className="text-center space-y-8">
         <ElmPageHeader
           eyebrow="Success"
-          title="Submission Successful"
+          title="Submission received"
           description={
             isExpense
-              ? 'Your expense has been submitted and is on its way for review.'
-              : 'Your documents have been transmitted successfully.'
+              ? 'Your expense submission was received and is queued for review.'
+              : 'Your documents were received successfully.'
           }
         />
 
@@ -85,12 +86,12 @@ const SubmissionSuccessPage: React.FC = () => {
         </div>
 
         {submissionId ? (
-          <div className="terminal-glass-panel rounded-xl px-5 py-4 inline-block w-full max-w-xs mx-auto">
+          <GlassCard glowColor="cyan" padding="md" className="max-w-xs mx-auto">
             <p className="text-[8px] font-black uppercase tracking-widest text-zinc-500">
               Submission ID
             </p>
             <p className="text-xs font-mono text-cyan-400/95 mt-1.5 break-all">{submissionId}</p>
-          </div>
+          </GlassCard>
         ) : null}
 
         <div className="flex flex-col gap-3 pt-2 max-w-sm mx-auto w-full">
@@ -107,7 +108,7 @@ const SubmissionSuccessPage: React.FC = () => {
         <button
           type="button"
           onClick={handleLogout}
-          className="mt-8 text-[11px] font-semibold normal-case tracking-normal text-slate-500 hover:text-zinc-300 active:text-zinc-200 transition-colors underline-offset-4 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30 rounded px-2 py-1"
+          className="mt-8 text-[11px] font-semibold normal-case tracking-normal text-slate-500 hover:text-zinc-300 active:text-zinc-200 transition-colors underline-offset-4 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/30 rounded px-2 py-1 min-h-[44px]"
         >
           {isAdminUploadMode ? 'Ready for next driver? Log Out' : 'Finished? Log Out'}
         </button>

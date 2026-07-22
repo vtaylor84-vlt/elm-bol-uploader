@@ -2,10 +2,10 @@ import React from 'react';
 import ElmCard from '../../design-system/components/ElmCard.tsx';
 import ElmStatusBadge from '../../design-system/components/ElmStatusBadge.tsx';
 
-const SECURITY_ITEMS = [
-  'Verified identity',
-  'Encrypted connection',
-  'Secured session',
+const ACCESS_ITEMS = [
+  'Verified email access',
+  'Roster-gated login',
+  'Company-scoped uploads',
   'Ready to connect',
 ] as const;
 
@@ -26,7 +26,9 @@ const LoginBrandPanel: React.FC<LoginBrandPanelProps> = ({ className = '' }) => 
     aria-label="ELM CONNECT platform information"
   >
     <div className="flex justify-end">
-      <ElmStatusBadge />
+      <ElmStatusBadge
+        ariaLabel="Application status — visual only, not a live backend health check"
+      />
     </div>
 
     <div className="flex-1 flex flex-col justify-center space-y-8 xl:space-y-10 py-8">
@@ -44,7 +46,7 @@ const LoginBrandPanel: React.FC<LoginBrandPanelProps> = ({ className = '' }) => 
           Driver Terminal
         </p>
         <p className="text-sm xl:text-base text-zinc-400 normal-case leading-relaxed max-w-md">
-          Secure. Simple. Connected.
+          Secure driver access
         </p>
         <p className="text-[10px] font-black uppercase tracking-[0.35em] text-zinc-500 pt-2">
           Elite Logistics Manager
@@ -53,10 +55,10 @@ const LoginBrandPanel: React.FC<LoginBrandPanelProps> = ({ className = '' }) => 
 
       <ElmCard variant="default" padding="lg" className="max-w-md">
         <p className="text-[10px] font-black uppercase tracking-[0.32em] text-blue-400 mb-4">
-          Secure Connection
+          Secure driver access
         </p>
         <ul className="space-y-3">
-          {SECURITY_ITEMS.map((item) => (
+          {ACCESS_ITEMS.map((item) => (
             <li key={item} className="flex items-center gap-3 text-sm text-zinc-300 normal-case">
               <span
                 className="w-5 h-5 rounded-full border border-blue-500/40 bg-blue-500/10 flex items-center justify-center text-[10px] text-blue-400 shrink-0"

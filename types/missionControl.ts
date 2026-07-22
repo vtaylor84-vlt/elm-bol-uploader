@@ -22,6 +22,13 @@ export interface MissionException {
   actionHref?: string;
   /** When set with actionHref, seeds draft before navigation */
   submissionType?: SubmissionType;
+  loadNum?: string;
+}
+
+export interface RouteMilestone {
+  id: string;
+  label: string;
+  state: 'done' | 'active' | 'upcoming';
 }
 
 export interface ActiveHaul {
@@ -36,15 +43,23 @@ export interface ActiveHaul {
   truckNumber?: string;
   trailerNumber?: string;
   missingDocuments: string[];
+  brokerLabel?: string;
+  /** Demonstration-only telemetry — never claim live settlement */
+  demoCommodity?: string;
+  demoWeightLabel?: string;
+  demoTempLabel?: string;
+  demoGrossLabel?: string;
+  milestones?: RouteMilestone[];
 }
 
 export interface PrimaryAction {
   label: string;
   href: string;
   helperText: string;
-  /** LIVE actions hit existing upload/workspace routes */
+  /** LIVE actions hit existing upload routes */
   capability: CapabilityClass;
   submissionType: SubmissionType;
+  variant?: 'primary' | 'urgent';
 }
 
 export interface EarningsSummary {

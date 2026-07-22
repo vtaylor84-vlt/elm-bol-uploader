@@ -5,6 +5,7 @@ import ExpenseDetailsForm from '../components/expense/ExpenseDetailsForm.tsx';
 import ExpenseStepper from '../components/expense/ExpenseStepper.tsx';
 import ElmButton from '../design-system/components/ElmButton.tsx';
 import ElmPageHeader from '../design-system/components/ElmPageHeader.tsx';
+import GlassCard from '../design-system/components/GlassCard.tsx';
 import PageContainer from '../design-system/components/PageContainer.tsx';
 import ReceiptUploadZone from '../components/expense/ReceiptUploadZone.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
@@ -225,7 +226,7 @@ const ReceiptPage: React.FC = () => {
 
         <ExpenseStepper current={stepperCurrent as 'Details' | 'Upload'} />
 
-        <section className="terminal-module-panel rounded-2xl p-5 sm:p-7 lg:p-8 xl:p-10">
+        <GlassCard glowColor="cyan" padding="lg" className="space-y-2">
           {step === 'details' ? (
             <ExpenseDetailsForm
               form={form}
@@ -269,7 +270,7 @@ const ReceiptPage: React.FC = () => {
           >
             Continue
           </ElmButton>
-        </section>
+        </GlassCard>
       </PageContainer>
     </AuthenticatedShell>
   );

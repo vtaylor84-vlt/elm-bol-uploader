@@ -177,7 +177,7 @@ const SwipeToSubmit: React.FC<SwipeToSubmitProps> = ({
 
       <div
         role="slider"
-        aria-label="Swipe to submit to dispatch"
+        aria-label="Swipe to submit"
         aria-valuenow={Math.round(progress * 100)}
         aria-valuemin={0}
         aria-valuemax={100}

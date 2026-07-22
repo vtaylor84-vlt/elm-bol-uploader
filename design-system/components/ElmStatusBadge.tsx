@@ -6,6 +6,8 @@ type ElmStatusBadgeProps = {
   showVersion?: boolean;
   className?: string;
   variant?: 'default' | 'login';
+  /** Prefer an honest description when the badge is visual chrome only. */
+  ariaLabel?: string;
 };
 
 const ElmStatusBadge: React.FC<ElmStatusBadgeProps> = ({
@@ -13,6 +15,7 @@ const ElmStatusBadge: React.FC<ElmStatusBadgeProps> = ({
   showVersion = true,
   className = '',
   variant = 'default',
+  ariaLabel = 'Application status — visual only, not a live backend health check',
 }) => (
   <div
     className={[
@@ -26,18 +29,20 @@ const ElmStatusBadge: React.FC<ElmStatusBadgeProps> = ({
       .filter(Boolean)
       .join(' ')}
     role="status"
+    aria-label={ariaLabel}
   >
-    <div className="flex items-center justify-center gap-2">
+    <div className="flex items-center justify-center gap-2" aria-hidden>
       <span
         className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e] shrink-0"
-        aria-hidden
       />
       <span className="text-[9px] font-semibold uppercase tracking-[0.26em] text-green-400">
         {label}
       </span>
     </div>
     {showVersion ? (
-      <span className="text-[10px] text-zinc-600 font-mono">{ELM_VERSION}</span>
+      <span className="text-[10px] text-zinc-600 font-mono" aria-hidden>
+        {ELM_VERSION}
+      </span>
     ) : null}
   </div>
 );

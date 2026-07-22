@@ -4,7 +4,7 @@ import { getCompanyDisplayName } from '../utils/companyMap.ts';
 
 /**
  * Builds the Mission Control view model.
- * Haul / earnings / task rows are DEMONSTRATION until load & pay adapters are LIVE.
+ * Haul / earnings / telemetry rows are DEMONSTRATION until load & pay adapters are LIVE.
  * Primary action routes into the verified BOL/POD upload path (LIVE).
  */
 export function getMissionControlViewModel(
@@ -16,23 +16,25 @@ export function getMissionControlViewModel(
   return {
     driverDisplayName,
     companyLabel: company,
-    connectionLabel: navigator.onLine ? 'Online' : 'Offline',
+    connectionLabel: navigator.onLine ? 'Device online' : 'Device offline',
     dataCapability: 'DEMONSTRATION',
     exceptions: [
       {
         id: 'ex-pod',
         severity: 'critical',
-        title: 'POD required',
-        detail: 'Delivery proof is missing for the active haul. Upload before the appointment window closes.',
-        actionLabel: 'Upload POD',
+        title: 'Delivery POD required immediately',
+        detail:
+          'Active haul is at the delivery facility. Upload the signed POD to keep settlement processing on track.',
+        actionLabel: 'Upload Signed POD',
         actionHref: '/submissions/bol-pod',
         submissionType: 'BOL_POD',
+        loadNum: '48291',
       },
     ],
     activeHaul: {
       loadNum: '48291',
       loadId: 'DEMO-LOAD-48291',
-      statusLabel: 'In transit · Delivery',
+      statusLabel: 'At delivery facility',
       origin: 'Dallas, TX',
       destination: 'Atlanta, GA',
       nextMilestone: 'Delivery appointment',
@@ -41,13 +43,24 @@ export function getMissionControlViewModel(
       truckNumber: 'T-204',
       trailerNumber: 'TR-881',
       missingDocuments: ['POD'],
+      brokerLabel: company || 'Dispatch',
+      demoCommodity: 'General freight',
+      demoWeightLabel: '—',
+      demoTempLabel: '—',
+      demoGrossLabel: '—',
+      milestones: [
+        { id: 'pu', label: 'Pickup', state: 'done' },
+        { id: 'scale', label: 'Scale check', state: 'done' },
+        { id: 'del', label: 'Delivery', state: 'active' },
+      ],
     },
     primaryAction: {
-      label: 'Upload delivery POD',
+      label: 'Upload Delivery POD',
       href: '/submissions/bol-pod',
       helperText: 'Camera-first capture · verified upload path',
       capability: 'LIVE',
       submissionType: 'BOL_POD',
+      variant: 'urgent',
     },
     earnings: {
       capability: 'DEMONSTRATION',

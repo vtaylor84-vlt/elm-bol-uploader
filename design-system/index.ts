@@ -8,6 +8,7 @@ export {
   ELM_MOTION,
   ELM_VERSION,
 } from './tokens.ts';
+export type { GlassGlowColor } from './tokens.ts';
 export { default as ElmCard } from './components/ElmCard.tsx';
 export { default as ElmButton } from './components/ElmButton.tsx';
 export { default as ElmPageHeader } from './components/ElmPageHeader.tsx';
@@ -15,3 +16,9 @@ export { default as ElmStatusBadge } from './components/ElmStatusBadge.tsx';
 export { default as ElmModuleCard } from './components/ElmModuleCard.tsx';
 export { default as PageContainer } from './components/PageContainer.tsx';
 export { default as ResponsiveSplit } from './components/ResponsiveSplit.tsx';
+export { default as GlassCard } from './components/GlassCard.tsx';
+export { default as PrimaryActionButton } from './components/PrimaryActionButton.tsx';
+export type { PrimaryActionButtonProps } from './components/PrimaryActionButton.tsx';
+export { default as StatusBadge } from './components/StatusBadge.tsx';
+export type { StatusBadgeProps } from './components/StatusBadge.tsx';
+export type { GlassCardProps } from './components/GlassCard.tsx';

@@ -75,7 +75,7 @@ const ElmModuleCard: React.FC<ElmModuleCardProps> = ({
         </div>
         {interactive ? (
           <span
-            className="text-blue-400 text-xl opacity-60 group-hover:opacity-100 shrink-0 mt-1"
+            className="shrink-0 mt-0.5 flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-cyan-300 text-lg transition-colors group-hover:border-cyan-400/40 group-hover:bg-cyan-500/15"
             aria-hidden
           >
             ›

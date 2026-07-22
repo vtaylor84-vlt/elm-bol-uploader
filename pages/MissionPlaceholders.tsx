@@ -123,7 +123,7 @@ export const MorePage: React.FC = () => {
             </div>
             <div>
               <dt>Session</dt>
-              <dd>Secure · roster verified</dd>
+              <dd>Roster-verified email</dd>
             </div>
           </dl>
         </ElmCard>

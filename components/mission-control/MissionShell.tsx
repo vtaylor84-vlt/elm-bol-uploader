@@ -28,13 +28,22 @@ const MissionShell: React.FC<MissionShellProps> = ({
     navigate('/login', { replace: true });
   };
 
+  const goHome = () => navigate('/today');
+
   return (
     <div className="min-h-screen terminal-app-bg text-zinc-100 mc-app">
-      <header className="fixed top-0 left-0 right-0 z-[650] border-b terminal-app-header bg-[#030308]/95 border-blue-500/15 backdrop-blur-xl">
+      <header className="fixed top-0 left-0 right-0 z-[650] border-b terminal-app-header bg-[#050811]/95 border-cyan-500/15 backdrop-blur-xl">
         <div className={MISSION_SHELL}>
           <div className="flex items-center justify-between gap-3 py-2.5 sm:py-3 min-h-[3rem]">
             <div className="flex items-center gap-2 min-w-0 flex-1">
-              <ElmBrandLogo size="sm" subtitle={false} />
+              <button
+                type="button"
+                onClick={goHome}
+                className="min-w-0 text-left rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
+                aria-label="ELM CONNECT home — Mission Control Today"
+              >
+                <ElmBrandLogo size="sm" subtitle={false} />
+              </button>
               <div className="min-w-0">
                 <p className="text-[9px] font-black uppercase tracking-[0.35em] text-zinc-500 truncate lg:text-[10px]">
                   {title}
@@ -43,7 +52,9 @@ const MissionShell: React.FC<MissionShellProps> = ({
                   <p className="text-[10px] text-zinc-500 mt-0.5 truncate">
                     <span
                       className={`inline-block w-1.5 h-1.5 rounded-full mr-1.5 align-middle ${
-                        connectionLabel === 'Online' ? 'bg-emerald-400' : 'bg-amber-400'
+                        connectionLabel.toLowerCase().includes('offline')
+                          ? 'bg-amber-400'
+                          : 'bg-emerald-400'
                       }`}
                       aria-hidden
                     />
@@ -55,7 +66,7 @@ const MissionShell: React.FC<MissionShellProps> = ({
             <button
               type="button"
               onClick={() => setShowLogout(true)}
-              className="shrink-0 min-h-[44px] px-2.5 py-2 rounded-lg border border-zinc-600/80 bg-zinc-900/60 text-[8px] font-black uppercase tracking-widest text-zinc-200 hover:border-red-500/50 hover:text-red-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-300"
+              className="shrink-0 min-h-[44px] px-2.5 py-2 rounded-lg border border-zinc-600/80 bg-zinc-900/60 text-[8px] font-black uppercase tracking-widest text-zinc-200 hover:border-red-500/50 hover:text-red-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
             >
               Logout
             </button>
