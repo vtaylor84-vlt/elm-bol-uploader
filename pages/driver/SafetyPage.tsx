@@ -25,7 +25,7 @@ const SafetyPage: React.FC = () => {
   };
 
   return (
-    <MissionShell title="Safety" activeNav="safety">
+    <MissionShell title="Safety" activeNav="more">
       <div className="space-y-6">
         <header>
           <p className="mc-kicker">Safety</p>

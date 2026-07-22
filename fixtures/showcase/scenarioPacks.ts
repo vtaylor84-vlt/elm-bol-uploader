@@ -284,7 +284,7 @@ function applyScenario(
                 ? 'DEF sensor warning on GLX-441 (demo).'
                 : 'Trailer light circuit fault on TR-881 (demo).',
             actionLabel: 'Open truck demo',
-            actionHref: '/showcase/truck',
+            actionHref: '/showcase/equipment',
           },
         ],
         tasks: [
@@ -293,7 +293,7 @@ function applyScenario(
             title: 'Log maintenance request',
             detail: 'Simulated action',
             urgency: 'due_now',
-            href: '/showcase/truck',
+            href: '/showcase/equipment',
           },
         ],
       });
@@ -1134,7 +1134,7 @@ function buildNotifications(carrierId: CarrierId, scenarioId: ScenarioId, seed: 
       unread: true,
       priority: scenarioId === 'urgent_pod' ? 'critical' : 'info',
       category: 'appointments',
-      href: '/showcase/loads',
+      href: '/showcase/trips',
       whenLabel: 'Today',
       disclosure: 'DEMONSTRATION DATA',
     },
@@ -1159,7 +1159,7 @@ function buildNotifications(carrierId: CarrierId, scenarioId: ScenarioId, seed: 
       unread: true,
       priority: 'action',
       category: 'dispatch',
-      href: '/showcase/loads',
+      href: '/showcase/trips',
       whenLabel: 'Today',
       disclosure: 'DEMONSTRATION DATA',
     },
@@ -1186,7 +1186,7 @@ function buildNotifications(carrierId: CarrierId, scenarioId: ScenarioId, seed: 
       unread: scenarioId === 'maintenance',
       priority: scenarioId === 'maintenance' ? 'critical' : 'info',
       category: 'maintenance',
-      href: '/showcase/truck',
+      href: '/showcase/equipment',
       whenLabel: 'Today',
       disclosure: 'DEMONSTRATION DATA',
     },
@@ -1219,7 +1219,7 @@ function buildSearchIndex(
       kind: 'load',
       title: l.loadNum,
       subtitle: `${l.origin} → ${l.destination}`,
-      href: '/showcase/loads',
+      href: '/showcase/trips',
       disclosure: 'DEMONSTRATION DATA',
     });
   });

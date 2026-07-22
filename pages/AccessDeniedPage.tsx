@@ -18,10 +18,10 @@ const AccessDeniedPage: React.FC = () => {
         </p>
         <div className="flex flex-col gap-2 pt-2">
           <Link
-            to="/today"
+            to="/home"
             className="min-h-[52px] inline-flex items-center justify-center rounded-xl bg-cyan-600 text-white text-sm font-bold"
           >
-            Return to Today
+            Return to Home
           </Link>
           <Link
             to="/login"

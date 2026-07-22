@@ -6,12 +6,24 @@ import { useDriverExperience } from '../../context/DriverExperienceContext.tsx';
 import type { SearchResultKind } from '../../services/dataSource/types.ts';
 
 const KIND_LABEL: Record<SearchResultKind, string> = {
-  load: 'Loads',
+  load: 'Trips',
   document: 'Documents',
   message: 'Messages',
   pay: 'Pay',
   resource: 'Resources',
 };
+
+/** Map approved aliases into the search query before filtering. */
+function normalizeSearchQuery(raw: string): string {
+  return raw
+    .trim()
+    .toLowerCase()
+    .replace(/\bloads?\b/g, 'trip')
+    .replace(/\bassistant\b/g, 'elm ai')
+    .replace(/\btoday\b/g, 'home')
+    .replace(/\bequipment\b/g, 'vehicle')
+    .replace(/\btimeline\b/g, 'activity');
+}
 
 /** Search — filters the Showcase search index by title/subtitle. Production shows a polite empty state. */
 const SearchPage: React.FC = () => {
@@ -20,11 +32,15 @@ const SearchPage: React.FC = () => {
   const [query, setQuery] = useState('');
 
   const results = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = normalizeSearchQuery(query);
     if (!q) return index;
-    return index.filter(
-      (r) => r.title.toLowerCase().includes(q) || r.subtitle.toLowerCase().includes(q)
-    );
+    return index.filter((r) => {
+      const hay = `${r.title} ${r.subtitle} ${r.kind}`.toLowerCase();
+      const aliased = hay
+        .replace(/\bloads?\b/g, 'trip')
+        .replace(/\bassistant\b/g, 'elm ai');
+      return aliased.includes(q) || hay.includes(q);
+    });
   }, [index, query]);
 
   const grouped = useMemo(() => {
@@ -45,8 +61,8 @@ const SearchPage: React.FC = () => {
           <h1 className="mc-page-title">Find anything</h1>
           <p className="mc-section-copy">
             {mode === 'showcase'
-              ? 'Demonstration data only — searches Showcase loads, documents, messages, and resources.'
-              : 'Search across loads, documents, and messages will be available when connected.'}
+              ? 'Demonstration data only — searches Showcase trips, documents, messages, and resources. Aliases like Loads → Trips and Assistant → ELM AI are recognized.'
+              : 'Search across trips, documents, and messages will be available when connected.'}
           </p>
         </header>
 
@@ -54,14 +70,14 @@ const SearchPage: React.FC = () => {
           <EmptyState
             kicker="Search"
             title="Search isn't available yet"
-            description="Search across loads, documents, and messages will show up here once connected."
+            description="Search across trips, documents, and messages will show up here once connected."
           />
         ) : (
           <>
             <input
               type="search"
               className="elm-input"
-              placeholder="Search loads, documents, messages, resources…"
+              placeholder="Search trips, documents, messages…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               aria-label="Search"

@@ -38,36 +38,36 @@ const AssistantPage: React.FC = () => {
   };
 
   return (
-    <MissionShell title="Assistant" activeNav="more">
+    <MissionShell title="ELM AI" activeNav="more">
       <div className="space-y-6 max-w-2xl">
         <header>
-          <p className="mc-kicker">Assistant</p>
-          <h1 className="mc-page-title">ELM AI Assistant</h1>
+          <p className="mc-kicker">ELM AI</p>
+          <h1 className="mc-page-title">Ask ELM AI</h1>
           <p className="mc-section-copy">
             {mode === 'showcase'
-              ? 'Demonstration data only — this conversation never reaches dispatch, payroll, or support, and no real action is taken.'
-              : 'The AI assistant is not available in this build.'}
+              ? 'Scripted demonstration answers only — ELM AI never claims to complete an action it did not perform, and nothing reaches dispatch, payroll, or support.'
+              : 'ELM AI is not available yet in this build.'}
           </p>
         </header>
 
         {mode !== 'showcase' ? (
           <EmptyState
-            kicker="Assistant"
-            title="Assistant isn't available yet"
-            description="A conversational assistant will be available here in a future release."
+            kicker="ELM AI"
+            title="ELM AI isn't available yet"
+            description="Contextual assistance will appear here in a future release. Use Home, Trips, Capture, and Pay for your work."
           />
         ) : (
           <>
             <div className="space-y-3">
               {thread.map((t) => (
                 <ElmCard key={t.id} padding="sm" variant={t.role === 'driver' ? 'default' : 'muted'}>
-                  <p className="mc-kicker mb-1">{t.role === 'driver' ? 'You' : 'Assistant'}</p>
+                  <p className="mc-kicker mb-1">{t.role === 'driver' ? 'You' : 'ELM AI'}</p>
                   <p className="mc-section-copy">{t.text}</p>
                 </ElmCard>
               ))}
               {localTurns.map((t) => (
                 <ElmCard key={t.id} padding="sm" variant={t.role === 'driver' ? 'default' : 'muted'}>
-                  <p className="mc-kicker mb-1">{t.role === 'driver' ? 'You' : 'Assistant'}</p>
+                  <p className="mc-kicker mb-1">{t.role === 'driver' ? 'You' : 'ELM AI'}</p>
                   <p className="mc-section-copy">{t.text}</p>
                 </ElmCard>
               ))}
@@ -100,10 +100,10 @@ const AssistantPage: React.FC = () => {
               <input
                 type="text"
                 className="elm-input flex-1"
-                placeholder="Ask the demonstration assistant…"
+                placeholder="Ask ELM AI (demonstration)…"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                aria-label="Ask the assistant"
+                aria-label="Ask ELM AI"
                 disabled={busy}
               />
               <button type="submit" className="mc-exception-action" disabled={busy || !prompt.trim()}>

@@ -25,6 +25,11 @@ import NotificationsPage from './pages/driver/NotificationsPage.tsx';
 import SearchPage from './pages/driver/SearchPage.tsx';
 import AssistantPage from './pages/driver/AssistantPage.tsx';
 
+/**
+ * Driver Workspace routes.
+ * Canonical destinations: /home, /trips, /capture, /pay, /more
+ * Legacy aliases (/today, /loads, /workspace, /truck) redirect or remain reachable.
+ */
 const App: React.FC = () => (
   <AuthProvider>
     <ShowcaseProvider>
@@ -41,7 +46,7 @@ const App: React.FC = () => (
               }
             />
 
-            {/* Production Driver Experience — shared pages + production data source */}
+            {/* Production Driver Workspace */}
             <Route
               element={
                 <ProtectedRoute>
@@ -49,15 +54,17 @@ const App: React.FC = () => (
                 </ProtectedRoute>
               }
             >
-              <Route path="/today" element={<TodayPage />} />
-              <Route path="/loads" element={<LoadsPage />} />
+              <Route path="/home" element={<TodayPage />} />
+              <Route path="/today" element={<Navigate to="/home" replace />} />
+              <Route path="/trips" element={<LoadsPage />} />
+              <Route path="/loads" element={<Navigate to="/trips" replace />} />
               <Route path="/pay" element={<PayPage />} />
               <Route path="/more" element={<MorePage />} />
               <Route path="/capture" element={<WorkspacePage />} />
-              <Route path="/workspace" element={<WorkspacePage />} />
+              <Route path="/workspace" element={<Navigate to="/capture" replace />} />
               <Route path="/messages" element={<MessagesPage />} />
               <Route path="/equipment" element={<EquipmentPage />} />
-              <Route path="/truck" element={<EquipmentPage />} />
+              <Route path="/truck" element={<Navigate to="/equipment" replace />} />
               <Route path="/safety" element={<SafetyPage />} />
               <Route path="/notifications" element={<NotificationsPage />} />
               <Route path="/search" element={<SearchPage />} />
@@ -107,14 +114,16 @@ const App: React.FC = () => (
               }
             >
               <Route index element={<ShowcaseHubPage />} />
-              <Route path="today" element={<TodayPage />} />
-              <Route path="loads" element={<LoadsPage />} />
+              <Route path="home" element={<TodayPage />} />
+              <Route path="today" element={<Navigate to="/showcase/home" replace />} />
+              <Route path="trips" element={<LoadsPage />} />
+              <Route path="loads" element={<Navigate to="/showcase/trips" replace />} />
               <Route path="capture" element={<WorkspacePage />} />
               <Route path="pay" element={<PayPage />} />
               <Route path="more" element={<MorePage />} />
               <Route path="messages" element={<MessagesPage />} />
               <Route path="equipment" element={<EquipmentPage />} />
-              <Route path="truck" element={<EquipmentPage />} />
+              <Route path="truck" element={<Navigate to="/showcase/equipment" replace />} />
               <Route path="safety" element={<SafetyPage />} />
               <Route path="notifications" element={<NotificationsPage />} />
               <Route path="search" element={<SearchPage />} />
@@ -127,6 +136,12 @@ const App: React.FC = () => (
                 element={<ShowcaseFutureModulePage module="performance" />}
               />
               <Route path="timeline" element={<ShowcaseFutureModulePage module="timeline" />} />
+              <Route path="help" element={<ShowcaseFutureModulePage module="help" />} />
+              <Route
+                path="preferences"
+                element={<ShowcaseFutureModulePage module="preferences" />}
+              />
+              <Route path="rewards" element={<ShowcaseFutureModulePage module="rewards" />} />
             </Route>
 
             <Route path="/" element={<Navigate to="/login" replace />} />

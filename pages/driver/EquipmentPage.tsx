@@ -28,11 +28,11 @@ const EquipmentPage: React.FC = () => {
   };
 
   return (
-    <MissionShell title="Equipment" activeNav="equipment">
+    <MissionShell title="My vehicle" activeNav="more">
       <div className="space-y-6">
         <header>
-          <p className="mc-kicker">Equipment</p>
-          <h1 className="mc-page-title">Truck & trailer</h1>
+          <p className="mc-kicker">My vehicle</p>
+          <h1 className="mc-page-title">Assigned truck &amp; trailer</h1>
           <p className="mc-section-copy">
             {hasData
               ? 'Demonstration data only — Showcase equipment preview.'
@@ -42,16 +42,16 @@ const EquipmentPage: React.FC = () => {
 
         {!hasData ? (
           <EmptyState
-            kicker="Equipment"
-            title="Equipment details aren't available yet"
-            description="Truck number, trailer, DVIR status, and maintenance history will show here once equipment service is connected."
+            kicker="My vehicle"
+            title="Vehicle details aren't available yet"
+            description="Truck number, trailer, DVIR status, and maintenance history will show here once connected."
           />
         ) : (
           <>
-            <ElmCard variant="default" padding="md" as="section" aria-label="Equipment summary">
+            <ElmCard variant="default" padding="md" as="section" aria-label="Vehicle summary">
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div>
-                  <p className="mc-kicker mb-0">{truck.makeModelLabel || 'Assigned equipment'}</p>
+                  <p className="mc-kicker mb-0">{truck.makeModelLabel || 'Assigned truck & trailer'}</p>
                   <h2 className="mc-section-title">
                     {truck.truckNumber} · {truck.trailerNumber}
                   </h2>

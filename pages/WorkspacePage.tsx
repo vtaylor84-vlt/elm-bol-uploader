@@ -1,179 +1,266 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import MissionShell from '../components/mission-control/MissionShell.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
 import { useSubmissionDraft } from '../context/SubmissionDraftContext.tsx';
 import { useDriverExperience } from '../context/DriverExperienceContext.tsx';
-import ElmModuleCard from '../design-system/components/ElmModuleCard.tsx';
 import ElmPageHeader from '../design-system/components/ElmPageHeader.tsx';
 import PageContainer from '../design-system/components/PageContainer.tsx';
+import CapabilityStateBadge from '../components/mission-control/CapabilityStateBadge.tsx';
 import { getCompanyDisplayName } from '../utils/companyMap.ts';
+import {
+  CameraIcon,
+  DocumentTextIcon,
+  ReceiptPercentIcon,
+  PhotoIcon,
+  WrenchScrewdriverIcon,
+  ExclamationTriangleIcon,
+} from '@heroicons/react/24/outline';
 
-const CaptureDocIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-    <path
-      d="M8 3h6l4 4v14a1 1 0 01-1 1H8a1 1 0 01-1-1V4a1 1 0 011-1z"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinejoin="round"
-    />
-    <path d="M14 3v4h4M9 13h6M9 17h4" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
-  </svg>
-);
+type CaptureKind =
+  | 'trip_paperwork'
+  | 'receipt'
+  | 'freight_photos'
+  | 'vehicle_issue'
+  | 'incident_evidence';
 
-const CaptureExpenseIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-    <rect x="3" y="6" width="18" height="13" rx="2" stroke="currentColor" strokeWidth="1.75" />
-    <path d="M3 10h18M8 14h3" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
-  </svg>
-);
+interface CaptureChoice {
+  id: CaptureKind;
+  title: string;
+  description: string;
+  taskLabel: string;
+  icon: React.ReactNode;
+  /** Production path when live */
+  productionHref?: '/submissions/bol-pod' | '/submissions/receipt';
+  showcaseAction: 'pod' | 'receipt' | 'sim';
+  state: 'AVAILABLE' | 'DEMO_ONLY' | 'COMING_SOON';
+}
 
+/**
+ * Capture — camera-first action hub (not a document repository).
+ * First decision is limited to five plain-language choices.
+ */
 const WorkspacePage: React.FC = () => {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
   const { session } = useAuth();
   const { startDraft, clearDraft } = useSubmissionDraft();
-  const { mode, dataSource, actions } = useDriverExperience();
+  const { mode, routePrefix, dataSource, actions } = useDriverExperience();
   const [simMessage, setSimMessage] = useState('');
+  const [reviewKind, setReviewKind] = useState<CaptureKind | null>(null);
 
   const company = getCompanyDisplayName(session?.companyCode);
   const driverName = session?.driverName || 'Driver';
-  const modules = dataSource.getCaptureModules();
-  const requiredModules = modules.filter((m) => m.priority === 'required');
-  const optionalModules = modules.filter((m) => m.priority === 'optional');
-  const availableModules = modules.filter(
-    (m) => !m.priority || m.priority === 'available'
-  );
+  const haul = dataSource.getMissionControl().activeHaul;
+  const truck = mode === 'showcase' ? dataSource.getTruckStatus() : null;
+  const preselected = (params.get('type') || '') as CaptureKind | '';
 
-  const openBolPod = async () => {
-    if (mode === 'showcase') {
-      const result = await actions.submitPodSimulated?.();
-      if (result) setSimMessage(`${result.disclosure}: ${result.message}`);
+  const choices: CaptureChoice[] = useMemo(() => {
+    const demo = mode === 'showcase';
+    return [
+      {
+        id: 'trip_paperwork',
+        title: 'Trip paperwork',
+        description: haul
+          ? `Upload BOL or POD for trip #${haul.loadNum}`
+          : 'Upload BOL or POD for your current trip',
+        taskLabel: haul?.missingDocuments?.includes('POD')
+          ? 'Upload POD'
+          : haul?.missingDocuments?.includes('BOL')
+            ? 'Upload BOL'
+            : 'Upload BOL / POD',
+        icon: <DocumentTextIcon className="mc-capture-choice-icon" aria-hidden />,
+        productionHref: '/submissions/bol-pod',
+        showcaseAction: 'pod',
+        state: demo ? 'DEMO_ONLY' : 'AVAILABLE',
+      },
+      {
+        id: 'receipt',
+        title: 'Receipt',
+        description: 'Fuel, tolls, lumper, and repair receipts',
+        taskLabel: 'Add receipt',
+        icon: <ReceiptPercentIcon className="mc-capture-choice-icon" aria-hidden />,
+        productionHref: '/submissions/receipt',
+        showcaseAction: 'receipt',
+        state: demo ? 'DEMO_ONLY' : 'AVAILABLE',
+      },
+      {
+        id: 'freight_photos',
+        title: 'Freight photos',
+        description: haul
+          ? `Condition photos for ${haul.origin} → ${haul.destination}`
+          : 'Photograph seals, cargo, and damage',
+        taskLabel: 'Take freight photos',
+        icon: <PhotoIcon className="mc-capture-choice-icon" aria-hidden />,
+        showcaseAction: 'sim',
+        state: demo ? 'DEMO_ONLY' : 'COMING_SOON',
+      },
+      {
+        id: 'vehicle_issue',
+        title: 'Vehicle issue',
+        description: truck
+          ? `Report a problem with ${truck.truckNumber} / ${truck.trailerNumber}`
+          : 'Report a truck or trailer problem',
+        taskLabel: 'Report vehicle issue',
+        icon: <WrenchScrewdriverIcon className="mc-capture-choice-icon" aria-hidden />,
+        showcaseAction: 'sim',
+        state: demo ? 'DEMO_ONLY' : 'COMING_SOON',
+      },
+      {
+        id: 'incident_evidence',
+        title: 'Incident evidence',
+        description: 'Photos and notes for accidents, claims, or roadside events',
+        taskLabel: 'Add incident evidence',
+        icon: <ExclamationTriangleIcon className="mc-capture-choice-icon" aria-hidden />,
+        showcaseAction: 'sim',
+        state: demo ? 'DEMO_ONLY' : 'COMING_SOON',
+      },
+    ];
+  }, [mode, haul, truck]);
+
+  const ordered = useMemo(() => {
+    if (!preselected) return choices;
+    const hit = choices.find((c) => c.id === preselected);
+    if (!hit) return choices;
+    return [hit, ...choices.filter((c) => c.id !== preselected)];
+  }, [choices, preselected]);
+
+  const runChoice = async (choice: CaptureChoice) => {
+    if (choice.state === 'COMING_SOON') {
+      setSimMessage('Coming soon — this capture type is not available yet.');
       return;
     }
+
+    if (mode === 'showcase') {
+      setReviewKind(choice.id);
+      if (choice.showcaseAction === 'pod') {
+        const result = await actions.submitPodSimulated?.();
+        if (result) setSimMessage(`${result.disclosure}: ${result.message}`);
+      } else if (choice.showcaseAction === 'receipt') {
+        const result = await actions.submitReceiptSimulated?.();
+        if (result) setSimMessage(`${result.disclosure}: ${result.message}`);
+      } else {
+        setSimMessage(
+          `SIMULATED ACTION: ${choice.taskLabel} recorded for demonstration only. No production write.`
+        );
+      }
+      return;
+    }
+
+    if (!choice.productionHref) {
+      setSimMessage('Not available yet — this capture type is not connected in Production.');
+      return;
+    }
+
     clearDraft();
     startDraft({
-      submissionType: 'BOL_POD',
+      submissionType: choice.productionHref.includes('receipt') ? 'EXPENSE_RECEIPT' : 'BOL_POD',
       driverName: session?.driverName || '',
       company,
     });
-    navigate('/submissions/bol-pod');
-  };
-
-  const openReceipt = async () => {
-    if (mode === 'showcase') {
-      const result = await actions.submitReceiptSimulated?.();
-      if (result) setSimMessage(`${result.disclosure}: ${result.message}`);
-      return;
-    }
-    clearDraft();
-    startDraft({
-      submissionType: 'EXPENSE_RECEIPT',
-      driverName: session?.driverName || '',
-      company,
-    });
-    navigate('/submissions/receipt');
+    navigate(choice.productionHref);
   };
 
   return (
     <MissionShell title="Capture" activeNav="capture">
-      <PageContainer width="content" className="space-y-8 lg:space-y-10">
+      <PageContainer width="content" className="space-y-6">
         <ElmPageHeader
           eyebrow="Capture"
-          title="Document capture"
+          title="What are you submitting?"
           align="left"
           description={
             mode === 'showcase'
-              ? `${driverName} — choose what to capture for this demonstration haul.`
-              : `${driverName} — choose a live upload module. Camera-first.`
+              ? `${driverName} — camera-first demonstration capture. Simulated only.`
+              : `${driverName} — choose a live upload. Complete only when safely stopped.`
           }
         />
 
+        {haul ? (
+          <p className="mc-capture-context" role="status">
+            Current trip #{haul.loadNum} · {haul.origin} → {haul.destination}
+            {haul.appointmentLabel ? ` · ${haul.appointmentLabel}` : ''}
+          </p>
+        ) : null}
+
         {simMessage ? (
-          <p className="text-xs text-amber-300 normal-case" role="status">
+          <p className="mc-sim-status" role="status">
             {simMessage}
           </p>
         ) : null}
 
-        {requiredModules.length > 0 ? (
-          <section aria-label="Required capture modules">
-            <p className="elm-section-label mb-4 lg:mb-5">Requires your attention</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5">
-              {requiredModules.map((mod) => (
-                <ElmModuleCard
-                  key={mod.id}
-                  title={mod.title}
-                  description={mod.description}
-                  icon={mod.id.includes('expense') ? <CaptureExpenseIcon /> : <CaptureDocIcon />}
-                  accent="rose"
-                  badge={mode === 'showcase' ? 'SIMULATED ACTION' : undefined}
-                  contextLabel={mod.contextLabel}
-                  recentStatusLabel={mod.recentStatusLabel}
-                  guidanceLabel={mod.guidanceLabel}
-                  onClick={() => {
-                    if (mod.id.includes('expense')) openReceipt();
-                    else openBolPod();
-                  }}
-                />
-              ))}
-            </div>
-          </section>
-        ) : null}
-
-        {optionalModules.length > 0 ? (
-          <section aria-label="Optional capture modules">
-            <p className="elm-section-label mb-4 lg:mb-5">For this haul</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5">
-              {optionalModules.map((mod) => (
-                <ElmModuleCard
-                  key={mod.id}
-                  title={mod.title}
-                  description={mod.description}
-                  icon={mod.id.includes('expense') ? <CaptureExpenseIcon /> : <CaptureDocIcon />}
-                  accent="amber"
-                  badge={mode === 'showcase' ? 'SIMULATED ACTION' : undefined}
-                  contextLabel={mod.contextLabel}
-                  recentStatusLabel={mod.recentStatusLabel}
-                  guidanceLabel={mod.guidanceLabel}
-                  onClick={() => {
-                    if (mod.id.includes('expense')) openReceipt();
-                    else openBolPod();
-                  }}
-                />
-              ))}
-            </div>
-          </section>
-        ) : null}
-
-        {availableModules.length > 0 ? (
-          <section aria-label={mode === 'showcase' ? 'Simulated capture modules' : 'Live capture modules'}>
-            <p className="elm-section-label mb-4 lg:mb-5">
-              {requiredModules.length > 0 || optionalModules.length > 0
-                ? 'Also available'
-                : mode === 'showcase'
-                  ? 'Simulated modules'
-                  : 'Live modules'}
+        {reviewKind ? (
+          <div className="mc-capture-review" role="status">
+            <p className="mc-kicker mb-1">Review</p>
+            <p className="mc-task-title">
+              {ordered.find((c) => c.id === reviewKind)?.taskLabel || 'Submission'} queued
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5">
-              {availableModules.map((mod) => (
-                <ElmModuleCard
-                  key={mod.id}
-                  title={mod.title}
-                  description={mod.description}
-                  icon={mod.id.includes('expense') ? <CaptureExpenseIcon /> : <CaptureDocIcon />}
-                  accent={mod.id.includes('expense') ? 'cyan' : 'blue'}
-                  badge={mode === 'showcase' ? 'SIMULATED ACTION' : undefined}
-                  contextLabel={mod.contextLabel}
-                  recentStatusLabel={mod.recentStatusLabel}
-                  guidanceLabel={mod.guidanceLabel}
-                  onClick={() => {
-                    if (mod.id.includes('expense')) openReceipt();
-                    else openBolPod();
-                  }}
-                />
-              ))}
+            <p className="mc-task-detail">
+              {mode === 'showcase'
+                ? 'Demonstration status: simulated success. Nothing reached Production.'
+                : 'Continue in the live upload flow.'}
+            </p>
+            <div className="mc-home-trip-actions mt-3">
+              {haul ? (
+                <button
+                  type="button"
+                  className="mc-secondary-action"
+                  onClick={() => navigate(`${routePrefix}/trips`)}
+                >
+                  Return to trip
+                </button>
+              ) : null}
+              <button type="button" className="mc-secondary-action" onClick={() => setReviewKind(null)}>
+                Capture another
+              </button>
             </div>
-          </section>
+          </div>
         ) : null}
+
+        <ul className="mc-capture-choices">
+          {ordered.map((choice) => {
+            const unavailable = choice.state === 'COMING_SOON';
+            return (
+              <li key={choice.id}>
+                <button
+                  type="button"
+                  className={`mc-capture-choice${unavailable ? ' is-unavailable' : ''}${
+                    preselected === choice.id ? ' is-preselected' : ''
+                  }`}
+                  onClick={() => runChoice(choice)}
+                  aria-label={`${choice.title}: ${choice.taskLabel}. ${choice.description}`}
+                >
+                  <span className="mc-capture-choice-glyph" aria-hidden>
+                    {choice.icon}
+                  </span>
+                  <span className="mc-capture-choice-body">
+                    <span className="mc-capture-choice-title-row">
+                      <span className="mc-capture-choice-title">{choice.title}</span>
+                      <CapabilityStateBadge
+                        state={
+                          choice.state === 'COMING_SOON'
+                            ? 'COMING_SOON'
+                            : choice.state === 'DEMO_ONLY'
+                              ? 'DEMO_ONLY'
+                              : 'AVAILABLE'
+                        }
+                      />
+                    </span>
+                    <span className="mc-capture-choice-task">{choice.taskLabel}</span>
+                    <span className="mc-capture-choice-desc">{choice.description}</span>
+                  </span>
+                  <span className="mc-capture-choice-cam" aria-hidden>
+                    <CameraIcon className="mc-capture-choice-icon" />
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+
+        <p className="mc-safe-driving-note">
+          Capture requires attention — use only while safely stopped. Do not photograph or submit
+          while driving.
+        </p>
       </PageContainer>
     </MissionShell>
   );

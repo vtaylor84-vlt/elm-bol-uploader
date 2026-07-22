@@ -2,18 +2,22 @@ import { expect, test } from '@playwright/test';
 import { driverSession, gotoAuthed, gotoShowcase } from './helpers/session';
 
 test.describe('Showcase experience workflows', () => {
-  test('Today shows demonstration banner and current load', async ({ page }) => {
-    await gotoShowcase(page, '/showcase/today', 'GLX');
-    await expect(
-      page.getByText(/Showcase Mode — Demonstration data only/i).first()
-    ).toBeVisible();
+  test('Home shows demo chrome and current trip', async ({ page }) => {
+    await gotoShowcase(page, '/showcase/home', 'GLX');
+    await expect(page.getByText(/DEMO — SHOWCASE/i).first()).toBeVisible();
     await expect(page.getByText('GLX-7721').first()).toBeVisible();
     await expect(page.getByRole('navigation', { name: 'Primary' }).first()).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Next step/i })).toBeVisible();
   });
 
-  test('Loads filters and detail work', async ({ page }) => {
-    await gotoShowcase(page, '/showcase/loads', 'GLX');
-    await expect(page.getByRole('heading', { name: /Active & history/i })).toBeVisible();
+  test('legacy /showcase/today redirects to Home', async ({ page }) => {
+    await gotoShowcase(page, '/showcase/today', 'GLX');
+    await expect(page).toHaveURL(/\/showcase\/home/);
+  });
+
+  test('Trips filters and detail work', async ({ page }) => {
+    await gotoShowcase(page, '/showcase/trips', 'GLX');
+    await expect(page.getByRole('heading', { name: /Your trips/i })).toBeVisible();
     await expect(page.getByText('GLX-7721').first()).toBeVisible();
     const upcoming = page.getByRole('tab', { name: /Upcoming/i });
     if (await upcoming.count()) {
@@ -25,37 +29,40 @@ test.describe('Showcase experience workflows', () => {
     }
   });
 
-  test('Capture modules prioritize required work', async ({ page }) => {
+  test('Capture presents five plain-language choices', async ({ page }) => {
     await gotoShowcase(page, '/showcase/capture', 'BST');
-    await expect(page.getByRole('heading', { name: /Document capture/i })).toBeVisible({
+    await expect(page.getByRole('heading', { name: /What are you submitting/i })).toBeVisible({
       timeout: 15_000,
     });
-    await expect(page.getByText(/Requires your attention/i)).toBeVisible();
-    await expect(page.getByText(/Freight photos|Inspection evidence|Receipts/i).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: /Trip paperwork/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Receipt/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Freight photos/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Vehicle issue/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Incident evidence/i })).toBeVisible();
   });
 
   test('Pay demonstration shows settlement lines without production claims', async ({ page }) => {
     await gotoShowcase(page, '/showcase/pay', 'GLX');
-    await expect(page.getByRole('heading', { name: 'Settlement', exact: true })).toBeVisible({
+    await expect(page.getByRole('heading', { name: 'Your pay', exact: true })).toBeVisible({
       timeout: 15_000,
     });
-    await expect(page.getByText(/Showcase settlement preview/i)).toBeVisible();
-    await expect(page.getByText(/\$4,820/)).toBeVisible();
-    await expect(page.getByRole('button', { name: /Report a pay question/i })).toBeVisible();
+    await expect(page.getByText(/Demonstration settlement|Demo settlement|not a live payroll/i)).toBeVisible();
+    await expect(page.getByText(/\$4,820/).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: /Ask about pay/i })).toBeVisible();
   });
 
-  test('Messages equipment safety screens render', async ({ page }) => {
+  test('Messages vehicle safety screens render under More', async ({ page }) => {
     await gotoShowcase(page, '/showcase/messages', 'GLX');
     await expect(page.getByRole('heading', { name: 'Inbox' })).toBeVisible();
 
     await gotoShowcase(page, '/showcase/equipment', 'GLX');
-    await expect(page.getByRole('heading', { name: 'Truck & trailer' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Assigned truck/i })).toBeVisible();
 
     await gotoShowcase(page, '/showcase/safety', 'GLX');
     await expect(page.getByRole('heading', { name: /Hours, credentials/i })).toBeVisible();
   });
 
-  test('Notifications search and assistant render', async ({ page }) => {
+  test('Notifications search and ELM AI render', async ({ page }) => {
     await gotoShowcase(page, '/showcase/notifications', 'GLX');
     await expect(page.getByRole('heading', { name: 'Alert center' })).toBeVisible();
 
@@ -64,44 +71,61 @@ test.describe('Showcase experience workflows', () => {
     await expect(page.getByRole('searchbox', { name: 'Search' })).toBeVisible();
 
     await gotoShowcase(page, '/showcase/assistant', 'GLX');
-    await expect(page.getByRole('heading', { name: /ELM AI Assistant/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Ask ELM AI/i })).toBeVisible();
   });
 
-  test('desktop rail includes Messages Equipment Safety in Showcase', async ({ page }) => {
+  test('desktop rail keeps five destinations only', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
-    await gotoShowcase(page, '/showcase/today', 'GLX');
+    await gotoShowcase(page, '/showcase/home', 'GLX');
     const nav = page.getByRole('navigation', { name: 'Primary' }).first();
-    await expect(nav.getByText('Messages')).toBeVisible();
-    await expect(nav.getByText('Equipment')).toBeVisible();
-    await expect(nav.getByText('Safety')).toBeVisible();
+    await expect(nav.getByText('Home')).toBeVisible();
+    await expect(nav.getByText('Trips')).toBeVisible();
+    await expect(nav.getByText('Capture')).toBeVisible();
+    await expect(nav.getByText('Pay')).toBeVisible();
+    await expect(nav.getByText('More')).toBeVisible();
+    await expect(nav.getByText('Messages')).toHaveCount(0);
+    await expect(nav.getByText('Equipment')).toHaveCount(0);
+    await expect(nav.getByText('Safety')).toHaveCount(0);
   });
 
   test('mobile bottom nav stays five primary destinations', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await gotoShowcase(page, '/showcase/today', 'GLX');
+    await gotoShowcase(page, '/showcase/home', 'GLX');
     const bottom = page.locator('.mc-bottom-nav');
-    await expect(bottom.getByText('Today')).toBeVisible();
+    await expect(bottom.getByText('Home')).toBeVisible();
+    await expect(bottom.getByText('Trips')).toBeVisible();
     await expect(bottom.getByText('More')).toBeVisible();
     await expect(bottom.getByText('Messages')).toHaveCount(0);
   });
 
+  test('Demo controls open and exit Showcase', async ({ page }) => {
+    await gotoShowcase(page, '/showcase/home', 'GLX');
+    const demoBtn = page.getByRole('button', { name: 'Demo controls' }).first();
+    await demoBtn.scrollIntoViewIfNeeded();
+    await demoBtn.click({ force: true });
+    await expect(page.getByRole('dialog', { name: 'Demo controls' })).toBeVisible();
+    await expect(page.getByLabel('Scenario')).toBeVisible();
+    await page.getByRole('button', { name: 'Exit Showcase' }).first().click({ force: true });
+    await expect(page).toHaveURL(/\/home/);
+  });
+
   test('driver cannot open Showcase', async ({ page }) => {
-    await gotoAuthed(page, '/showcase/today', driverSession('GLX'));
+    await gotoAuthed(page, '/showcase/home', driverSession('GLX'));
     await expect(page.getByText(/Access denied|Showcase Mode unavailable/i).first()).toBeVisible();
     await expect(page.getByText('GLX-7721')).toHaveCount(0);
   });
 
   test('production pay stays disconnected', async ({ page }) => {
     await gotoAuthed(page, '/pay', driverSession('BST'));
-    await expect(page.getByText('NOT CONNECTED TO PRODUCTION')).toBeVisible();
+    await expect(page.getByText('NOT CONNECTED TO PRODUCTION').first()).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Settlement not connected' })).toBeVisible();
   });
 
   test('direct showcase route refresh keeps access after mock grant', async ({ page }) => {
     await gotoShowcase(page, '/showcase/more', 'GLX');
-    await expect(page.getByRole('heading', { name: 'Account & support' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Account & tools/i })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Exit Showcase' })).toBeVisible();
     await page.reload();
-    await expect(page.getByRole('heading', { name: 'Account & support' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Account & tools/i })).toBeVisible();
   });
 });

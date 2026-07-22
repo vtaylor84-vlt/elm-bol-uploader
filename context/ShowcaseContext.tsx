@@ -22,6 +22,8 @@ interface ShowcaseState {
   personaRole: ShowcasePersonaRole;
   personaId: string;
   scenarioId: ScenarioId;
+  /** Admin-only View As preview is active when persona differs from default driver baseline. */
+  viewAsActive: boolean;
 }
 
 interface ShowcaseContextValue {
@@ -31,22 +33,29 @@ interface ShowcaseContextValue {
   setCarrier: (id: CarrierId) => void;
   setPersonaRole: (role: ShowcasePersonaRole) => void;
   setScenario: (id: ScenarioId) => void;
+  /** Restore carrier/persona/scenario to known fixture baseline without exiting Showcase. */
+  resetShowcase: () => void;
   isShowcaseActive: boolean;
 }
 
 const ShowcaseContext = createContext<ShowcaseContextValue | null>(null);
 
-const initialState = (): ShowcaseState => {
+const baselineState = (): Omit<ShowcaseState, 'active' | 'grantValid'> => {
   const persona = personaFor('GLX', 'driver');
   return {
-    active: false,
-    grantValid: false,
     carrierId: 'GLX',
     personaRole: 'driver',
     personaId: persona.id,
     scenarioId: 'normal',
+    viewAsActive: false,
   };
 };
+
+const initialState = (): ShowcaseState => ({
+  active: false,
+  grantValid: false,
+  ...baselineState(),
+});
 
 export const ShowcaseProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { session } = useAuth();
@@ -69,30 +78,64 @@ export const ShowcaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setState((s) => ({ ...s, active: false, grantValid: false }));
       return 'denied';
     }
-    setState((s) => ({ ...s, active: true, grantValid: true }));
+    setState((s) => ({
+      ...s,
+      active: true,
+      grantValid: true,
+      ...baselineState(),
+    }));
     return 'ok';
   }, [session]);
 
   const exitShowcase = useCallback(() => {
-    setState((s) => ({ ...s, active: false }));
+    // Exit clears View As and returns to Production identity context.
+    // Grant is intentionally retained so the admin can re-enter without re-login
+    // until the grant expires (existing security model).
+    setState((s) => ({
+      ...s,
+      active: false,
+      viewAsActive: false,
+      personaRole: 'driver',
+      personaId: personaFor(s.carrierId, 'driver').id,
+    }));
   }, []);
 
   const setCarrier = useCallback((carrierId: CarrierId) => {
     setState((s) => {
       const persona = personaFor(carrierId, s.personaRole);
-      return { ...s, carrierId, personaId: persona.id };
+      return {
+        ...s,
+        carrierId,
+        personaId: persona.id,
+        viewAsActive: s.personaRole !== 'driver',
+      };
     });
   }, []);
 
   const setPersonaRole = useCallback((personaRole: ShowcasePersonaRole) => {
     setState((s) => {
+      // Prevent nested View As — selecting a role replaces the current preview subject.
       const persona = personaFor(s.carrierId, personaRole);
-      return { ...s, personaRole, personaId: persona.id };
+      return {
+        ...s,
+        personaRole,
+        personaId: persona.id,
+        viewAsActive: personaRole !== 'driver',
+      };
     });
   }, []);
 
   const setScenario = useCallback((scenarioId: ScenarioId) => {
     setState((s) => ({ ...s, scenarioId }));
+  }, []);
+
+  const resetShowcase = useCallback(() => {
+    setState((s) => ({
+      ...s,
+      ...baselineState(),
+      active: s.active,
+      grantValid: s.grantValid,
+    }));
   }, []);
 
   const value = useMemo(
@@ -103,9 +146,18 @@ export const ShowcaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setCarrier,
       setPersonaRole,
       setScenario,
+      resetShowcase,
       isShowcaseActive: state.active && state.grantValid,
     }),
-    [state, enterShowcase, exitShowcase, setCarrier, setPersonaRole, setScenario]
+    [
+      state,
+      enterShowcase,
+      exitShowcase,
+      setCarrier,
+      setPersonaRole,
+      setScenario,
+      resetShowcase,
+    ]
   );
 
   return <ShowcaseContext.Provider value={value}>{children}</ShowcaseContext.Provider>;

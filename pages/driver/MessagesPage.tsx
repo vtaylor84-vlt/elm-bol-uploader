@@ -53,7 +53,7 @@ const MessagesPage: React.FC = () => {
   };
 
   return (
-    <MissionShell title="Messages" activeNav="messages">
+    <MissionShell title="Messages" activeNav="more">
       <div className="space-y-6">
         <header>
           <p className="mc-kicker">Messages</p>

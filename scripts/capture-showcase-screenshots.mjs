@@ -21,8 +21,8 @@ const VIEWPORTS = [
 ];
 
 const ROUTES = [
-  { id: 'today', path: '/showcase/today' },
-  { id: 'loads', path: '/showcase/loads' },
+  { id: 'home', path: '/showcase/home' },
+  { id: 'trips', path: '/showcase/trips' },
   { id: 'capture', path: '/showcase/capture' },
   { id: 'pay', path: '/showcase/pay' },
   { id: 'messages', path: '/showcase/messages' },

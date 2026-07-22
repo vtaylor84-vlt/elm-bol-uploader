@@ -32,7 +32,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ active, routePrefix = '' }) => {
                 }
                 aria-current={isSelected ? 'page' : undefined}
                 aria-label={item.label}
-                end={item.path === '/today'}
+                end={item.path === '/home'}
               >
                 <span className="mc-bottom-nav-icon">{item.icon}</span>
                 <span className="mc-bottom-nav-label">{item.label}</span>

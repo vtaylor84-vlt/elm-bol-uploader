@@ -13,18 +13,24 @@ type FutureModule =
   | 'documents'
   | 'performance'
   | 'timeline'
-  | 'assistant';
+  | 'assistant'
+  | 'help'
+  | 'preferences'
+  | 'rewards';
 
 const TITLES: Record<FutureModule, string> = {
   messages: 'Messages',
-  truck: 'Truck',
+  truck: 'My vehicle',
   safety: 'Safety',
-  'home-time': 'Home Time',
+  'home-time': 'Schedule & availability',
   benefits: 'Benefits',
   documents: 'Documents',
   performance: 'Performance',
-  timeline: 'Driver Timeline',
-  assistant: 'AI Assistant',
+  timeline: 'Activity',
+  assistant: 'ELM AI',
+  help: 'Help',
+  preferences: 'Notification preferences',
+  rewards: 'Rewards',
 };
 
 interface ShowcaseFutureModulePageProps {
@@ -51,7 +57,7 @@ const ShowcaseFutureModulePage: React.FC<ShowcaseFutureModulePageProps> = ({ mod
         <header>
           <p className="mc-kicker">Showcase</p>
           <h1 className="mc-page-title">{TITLES[module]}</h1>
-          <p className="mc-section-copy">FUTURE CAPABILITY · DEMONSTRATION DATA · NOT CONNECTED TO PRODUCTION</p>
+          <p className="mc-section-copy">Demonstration data · Coming soon / demo module · Not connected to Production</p>
         </header>
 
         {status ? (
@@ -244,6 +250,21 @@ const ShowcaseFutureModulePage: React.FC<ShowcaseFutureModulePageProps> = ({ mod
               Simulate assistant question
             </button>
           </div>
+        ) : null}
+
+        {module === 'help' || module === 'preferences' || module === 'rewards' ? (
+          <ElmCard padding="md">
+            <p className="mc-section-copy">
+              {module === 'help'
+                ? 'Showcase help explains demonstration data, Demo controls, and how to exit safely. No production support ticket is created.'
+                : module === 'preferences'
+                  ? 'Notification preferences are demonstration-only in Showcase.'
+                  : 'Rewards is a future capability preview — Coming soon in Production.'}
+            </p>
+            <span className="mc-capability-chip mt-3 inline-flex">
+              {module === 'rewards' ? 'FUTURE CAPABILITY' : 'DEMONSTRATION DATA'}
+            </span>
+          </ElmCard>
         ) : null}
 
         <p className="text-center">
