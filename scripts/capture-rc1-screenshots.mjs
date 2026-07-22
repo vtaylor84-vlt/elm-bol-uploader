@@ -8,8 +8,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const OUT = path.resolve(__dirname, '../docs/evidence/rc1-screenshots');
-const BASE = 'http://127.0.0.1:4173';
+const OUT = path.resolve(__dirname, '../docs/evidence/rc1-screenshots-prod-fix');
+const BASE = process.env.PREVIEW_BASE || 'http://127.0.0.1:4173';
+
+/**
+ * IMPORTANT: Serve the Vite *production* preview (npm run build && npm run preview),
+ * never `npm run dev`. Evidence must reflect the Netlify publish output.
+ */
 
 const VIEWPORTS = [
   { name: 'mobile', width: 390, height: 844 },

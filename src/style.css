@@ -1,6 +1,17 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@config "../tailwind.config.js";
+@source "../index.html";
+@source "../index.tsx";
+@source "../App.tsx";
+@source "../components/**/*.{ts,tsx}";
+@source "../pages/**/*.{ts,tsx}";
+@source "../design-system/**/*.{ts,tsx}";
+@source "../context/**/*.{ts,tsx}";
+@source "../assets/**/*.{ts,tsx}";
+@source "../hooks/**/*.{ts,tsx}";
+@source "../utils/**/*.{ts,tsx}";
+@source "../services/**/*.{ts,tsx}";
+@source "../fixtures/**/*.{ts,tsx}";
 
 /* --- Custom Cyberpunk Global Styles --- */
 
@@ -619,6 +630,52 @@ body.elm-login-page #root {
 .elm-card-muted {
   border-color: rgba(39, 39, 42, 0.8);
   background: rgba(9, 9, 14, 0.6);
+}
+
+/* Capture / module cards — durable surface styles (do not rely on utilities alone) */
+.elm-module-card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border-radius: 1rem;
+  border: 1px solid rgba(59, 130, 246, 0.28);
+  background: linear-gradient(180deg, rgba(17, 24, 39, 0.95) 0%, rgba(10, 15, 24, 0.98) 100%);
+  color: #f4f4f5;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(10px);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.elm-module-card:hover {
+  border-color: rgba(34, 211, 238, 0.45);
+  box-shadow: 0 0 28px rgba(59, 130, 246, 0.16);
+}
+
+.elm-module-card:focus-visible {
+  outline: 2px solid #67e8f9;
+  outline-offset: 2px;
+}
+
+.elm-module-card[aria-disabled='true'] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.elm-disconnected-panel {
+  border-radius: 1rem;
+  border: 1px solid rgba(113, 113, 122, 0.45);
+  background: rgba(9, 12, 22, 0.92);
+  padding: 1.35rem 1.4rem;
+}
+
+.elm-disconnected-panel h2 {
+  margin: 0.35rem 0 0;
+  color: #f4f4f5;
+  font-size: 1.15rem;
+  font-weight: 700;
 }
 
 .elm-btn:focus-visible {

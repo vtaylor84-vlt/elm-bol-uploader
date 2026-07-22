@@ -60,6 +60,9 @@ test.describe('RC1 production routes', () => {
   test('pay isolation shows disconnected disclosure', async ({ page }) => {
     await gotoAuthed(page, '/pay', driverSession('BST'));
     await expect(page.getByText('NOT CONNECTED TO PRODUCTION')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Settlement not connected' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Settlement layout' })).toHaveCount(0);
+    await expect(page.locator('dt', { hasText: 'Gross' })).toHaveCount(0);
   });
 
   test('BOL/POD workflow navigates without submission', async ({ page }) => {
