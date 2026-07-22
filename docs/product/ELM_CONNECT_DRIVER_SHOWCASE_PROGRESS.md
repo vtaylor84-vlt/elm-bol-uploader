@@ -18,7 +18,7 @@
 | **4** | Supporting modules (Messages, Equipment, Safety, More, Notifications, Search, AI) | **Complete** |
 | **5** | Polish & driver language | **Complete** |
 | **6** | Quality & local evidence | **Complete** (local prod-build screenshots) |
-| **7** | Push / draft PR / Deploy Preview | **Partial** — branch pushed; draft PR blocked (GitHub CLI not authenticated) |
+| **7** | Push / draft PR / Deploy Preview | **Partial** — draft [PR #8](https://github.com/vtaylor84-vlt/elm-bol-uploader/pull/8) open; Actions skip non-`main` base; Netlify DP pending |
 
 ---
 
@@ -29,21 +29,21 @@
 3. `6e84d0cc` — feat(driver): upgrade navigation and shared experience components  
 4. `0f916250` — feat(driver): build showcase today loads capture pay messages equipment safety and more (+ tests)  
 5. `5a52fd69` — docs(driver): add production-preview evidence and handoff  
+6. `2cd328ad` — docs(driver): note push complete and PR auth blocker  
 
-**Tip SHA:** `5a52fd69`
+**PR #8 head at open (confirmed):** `2cd328ad` on `origin/feature/driver-experience-showcase`
 
 ---
 
-## Blocker for Deploy Preview
+## PR #8 / CI diagnosis (2026-07-22)
 
-GitHub CLI is installed but not logged in (`gh auth login` required).  
-Open a draft PR manually:
+**Confirmed:** draft PR #8 → base `codex/driver-rc1-desktop-shell`, head `feature/driver-experience-showcase` @ `2cd328ad`. Local HEAD, remote tip, and PR head SHA matched.
 
-https://github.com/vtaylor84-vlt/elm-bol-uploader/pull/new/feature/driver-experience-showcase  
+**Why GitHub showed 0 checks:** `.github/workflows/quality.yml` only runs for `pull_request` events whose **base branch is `main`**. PR #8 targets `codex/driver-rc1-desktop-shell`, so Quality Pipeline never matches. API showed `workflow_runs: []` and `check_runs: []` for this tip — expected with the current filter.
 
-Base branch: `codex/driver-rc1-desktop-shell`
+**Why Netlify Deploy Preview #8 may be missing:** separate from Actions. At tip `2cd328ad`, GitHub reported empty commit statuses and empty deployments. Likely Netlify site settings / GitHub App linkage after repo rename (`qlm-bol-uploader` → `elm-bol-uploader`), draft-PR preview policy, or ignored-branch rules — verify in Netlify UI.
 
-After the draft PR exists, Netlify can create a Deploy Preview. Visually inspect that URL before declaring owner-ready.
+**Sync poke:** this docs-only progress update is pushed to fire `pull_request` `synchronize` for Netlify (and any other PR listeners). GitHub Actions Quality will still skip until the workflow base-branch filter includes this PR’s base (or the PR is retargeted to `main`).
 
 ---
 
@@ -57,8 +57,6 @@ After the draft PR exists, Netlify can create a Deploy Preview. Visually inspect
 | Playwright (RC1 + Showcase) | 111 passed / 1 intermittent wide-desktop Capture flake mitigated with longer timeout |
 | Production build | Pass |
 | Local prod-build screenshots | 52 files in `docs/evidence/showcase-prod-build/` |
-
-GitHub Actions and Netlify Deploy Preview: **not verified from this agent session** (no authenticated `gh` / no PR yet).
 
 ---
 
