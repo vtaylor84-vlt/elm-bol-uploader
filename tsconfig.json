@@ -1,12 +1,48 @@
 {
   "compilerOptions": {
-    // ... other options
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "noEmit": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"]
-    },
-    // Required to resolve file extension issues robustly
-    "moduleResolution": "bundler" 
+      "@/*": ["./*"],
+      "constants": ["./node_modules/@types/node/constants.d.ts"]
+    }
   },
-  "include": ["src", "components", "hooks", "services", "assets", "index.tsx", "App.tsx"]
+  "include": [
+    "index.tsx",
+    "App.tsx",
+    "pages/**/*.ts",
+    "pages/**/*.tsx",
+    "context/**/*.ts",
+    "context/**/*.tsx",
+    "design-system/**/*.ts",
+    "design-system/**/*.tsx",
+    "utils/**/*.ts",
+    "utils/**/*.tsx",
+    "types/**/*.ts",
+    "assets/**/*.ts",
+    "assets/**/*.tsx",
+    "services/driverLoginService.ts",
+    "services/terminalDataService.ts",
+    "components/terminal/**/*.ts",
+    "components/terminal/**/*.tsx",
+    "components/expense/**/*.ts",
+    "components/expense/**/*.tsx",
+    "components/routing/**/*.ts",
+    "components/routing/**/*.tsx",
+    "components/TerminalLogin.tsx",
+    "components/icons/**/*.ts",
+    "components/icons/**/*.tsx"
+  ],
+  "exclude": ["node_modules", "dist", "gas", "netlify"]
 }

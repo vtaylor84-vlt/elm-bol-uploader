@@ -1,2 +1,15 @@
+# Dependencies and build output
+node_modules/
+dist/
+
 # Local Netlify folder
 .netlify
+
+# Quality / audit artifacts
+.lighthouseci/
+chrome/
+.tmp-lh/
+
+# Editor / local clutter
+.cursor/
+desktop.ini
