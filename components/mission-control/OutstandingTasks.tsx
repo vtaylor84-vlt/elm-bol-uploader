@@ -1,7 +1,7 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import ElmCard from '../../design-system/components/ElmCard.tsx';
 import type { OutstandingTask } from '../../types/missionControl.ts';
+import type { SubmissionType } from '../../types/submission.ts';
 
 const urgencyLabel: Record<OutstandingTask['urgency'], string> = {
   due_now: 'Due now',
@@ -17,9 +17,13 @@ const urgencyClass: Record<OutstandingTask['urgency'], string> = {
 
 interface OutstandingTasksProps {
   tasks: OutstandingTask[];
+  onActivateTask?: (target: {
+    submissionType: SubmissionType;
+    href: string;
+  }) => void;
 }
 
-const OutstandingTasks: React.FC<OutstandingTasksProps> = ({ tasks }) => (
+const OutstandingTasks: React.FC<OutstandingTasksProps> = ({ tasks, onActivateTask }) => (
   <ElmCard variant="default" padding="md" as="section" className="mc-section" aria-label="Outstanding tasks">
     <p className="mc-kicker mb-2">Outstanding tasks</p>
     <h2 className="mc-section-title mb-4">What needs attention</h2>
@@ -39,12 +43,24 @@ const OutstandingTasks: React.FC<OutstandingTasksProps> = ({ tasks }) => (
             </>
           );
 
+          const { href, submissionType } = task;
+          const canActivate = Boolean(href && submissionType && onActivateTask);
+
           return (
             <li key={task.id}>
-              {task.href ? (
-                <Link to={task.href} className="mc-task-row mc-task-row-link">
+              {canActivate && href && submissionType && onActivateTask ? (
+                <button
+                  type="button"
+                  className="mc-task-row mc-task-row-link"
+                  onClick={() =>
+                    onActivateTask({
+                      submissionType,
+                      href,
+                    })
+                  }
+                >
                   {body}
-                </Link>
+                </button>
               ) : (
                 <div className="mc-task-row">{body}</div>
               )}

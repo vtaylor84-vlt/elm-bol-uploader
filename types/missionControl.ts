@@ -3,6 +3,8 @@
  * Capability labels follow DEC-0011.
  */
 
+import type { SubmissionType } from './submission.ts';
+
 export type CapabilityClass =
   | 'LIVE'
   | 'READY_FOR_INTEGRATION'
@@ -18,6 +20,8 @@ export interface MissionException {
   detail: string;
   actionLabel?: string;
   actionHref?: string;
+  /** When set with actionHref, seeds draft before navigation */
+  submissionType?: SubmissionType;
 }
 
 export interface ActiveHaul {
@@ -40,6 +44,7 @@ export interface PrimaryAction {
   helperText: string;
   /** LIVE actions hit existing upload/workspace routes */
   capability: CapabilityClass;
+  submissionType: SubmissionType;
 }
 
 export interface EarningsSummary {
@@ -57,6 +62,8 @@ export interface OutstandingTask {
   detail: string;
   urgency: TaskUrgency;
   href?: string;
+  /** When set with href, seeds draft before navigation */
+  submissionType?: SubmissionType;
 }
 
 export interface MissionControlViewModel {

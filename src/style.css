@@ -924,12 +924,14 @@ body.elm-login-page #root {
   border: 1px solid rgba(255, 255, 255, 0.25);
   background: rgba(0, 0, 0, 0.35);
   color: #fff;
+  font-family: inherit;
   font-size: 0.65rem;
   font-weight: 800;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   text-decoration: none;
   white-space: nowrap;
+  cursor: pointer;
 }
 
 .mc-exception-action:focus-visible {
@@ -1056,8 +1058,12 @@ body.elm-login-page #root {
 }
 
 .mc-task-row-link {
+  width: 100%;
+  font-family: inherit;
+  text-align: left;
   text-decoration: none;
   color: inherit;
+  cursor: pointer;
   transition: border-color 0.15s ease, background 0.15s ease;
 }
 

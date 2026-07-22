@@ -44,3 +44,13 @@ export function companyCodeLabel(code?: string): string {
   if (c === 'GLX') return 'Greenleaf Xpress';
   return c || '—';
 }
+
+/** Human-readable carrier name for driver UI chrome and draft seeding */
+export function getCompanyDisplayName(code?: string): string {
+  const c = normalizeCompanyCode(code);
+  if (c === 'BST') return 'BST Expedite Inc';
+  if (c === 'GLX') return 'Greenleaf Xpress';
+  if (c === 'ELM') return 'ELM CONNECT';
+  const raw = String(code || '').trim();
+  return raw || 'Carrier';
+}

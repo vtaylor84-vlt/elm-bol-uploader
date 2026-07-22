@@ -1,13 +1,6 @@
 import type { DriverSessionProfile } from '../utils/driverSession.ts';
 import type { MissionControlViewModel } from '../types/missionControl.ts';
-
-function companyLabel(code?: string): string {
-  const c = String(code || '').trim().toUpperCase();
-  if (c === 'BST') return 'BST Expedite Inc';
-  if (c === 'GLX') return 'Greenleaf Xpress';
-  if (c === 'ELM') return 'ELM CONNECT';
-  return code || 'Carrier';
-}
+import { getCompanyDisplayName } from '../utils/companyMap.ts';
 
 /**
  * Builds the Mission Control view model.
@@ -18,7 +11,7 @@ export function getMissionControlViewModel(
   session: DriverSessionProfile | null
 ): MissionControlViewModel {
   const driverDisplayName = session?.driverName || 'Driver';
-  const company = companyLabel(session?.companyCode);
+  const company = getCompanyDisplayName(session?.companyCode);
 
   return {
     driverDisplayName,
@@ -33,6 +26,7 @@ export function getMissionControlViewModel(
         detail: 'Delivery proof is missing for the active haul. Upload before the appointment window closes.',
         actionLabel: 'Upload POD',
         actionHref: '/submissions/bol-pod',
+        submissionType: 'BOL_POD',
       },
     ],
     activeHaul: {
@@ -53,6 +47,7 @@ export function getMissionControlViewModel(
       href: '/submissions/bol-pod',
       helperText: 'Camera-first capture · verified upload path',
       capability: 'LIVE',
+      submissionType: 'BOL_POD',
     },
     earnings: {
       capability: 'DEMONSTRATION',
@@ -67,6 +62,7 @@ export function getMissionControlViewModel(
         detail: 'Load 48291 · delivery proof',
         urgency: 'due_now',
         href: '/submissions/bol-pod',
+        submissionType: 'BOL_POD',
       },
       {
         id: 'task-ack',
@@ -80,6 +76,7 @@ export function getMissionControlViewModel(
         detail: 'Optional expense capture',
         urgency: 'due_soon',
         href: '/submissions/receipt',
+        submissionType: 'EXPENSE_RECEIPT',
       },
     ],
   };
