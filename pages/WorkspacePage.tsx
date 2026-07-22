@@ -6,20 +6,14 @@ import { useSubmissionDraft } from '../context/SubmissionDraftContext.tsx';
 import ElmModuleCard from '../design-system/components/ElmModuleCard.tsx';
 import ElmPageHeader from '../design-system/components/ElmPageHeader.tsx';
 import PageContainer from '../design-system/components/PageContainer.tsx';
-
-const getCarrierDisplayName = (code?: string) => {
-  const c = String(code || '').trim().toUpperCase();
-  if (c === 'BST') return 'BST Expedite Inc';
-  if (c === 'GLX') return 'Greenleaf Xpress';
-  return code || '';
-};
+import { getCompanyDisplayName } from '../utils/companyMap.ts';
 
 const WorkspacePage: React.FC = () => {
   const navigate = useNavigate();
   const { session } = useAuth();
   const { startDraft, clearDraft } = useSubmissionDraft();
 
-  const company = getCarrierDisplayName(session?.companyCode);
+  const company = getCompanyDisplayName(session?.companyCode);
   const driverName = session?.driverName || 'Driver';
 
   const openBolPod = () => {

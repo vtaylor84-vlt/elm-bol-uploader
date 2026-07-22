@@ -40,7 +40,7 @@ const ConnectingPage: React.FC = () => {
 
       <div className="relative z-10 w-full max-w-md lg:max-w-4xl grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
         <div className="text-center lg:text-left space-y-6">
-          <ElmBrandLogo size="lg" align="center" />
+          <ElmBrandLogo size="lg" align="center" as="h1" />
           <p className="text-[9px] font-black uppercase tracking-[0.45em] text-blue-400/80">
             Driver Terminal
           </p>

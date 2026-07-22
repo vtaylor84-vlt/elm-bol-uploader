@@ -621,6 +621,11 @@ body.elm-login-page #root {
   background: rgba(9, 9, 14, 0.6);
 }
 
+.elm-btn:focus-visible {
+  outline: 2px solid #93c5fd;
+  outline-offset: 2px;
+}
+
 .elm-btn-primary {
   color: #fff;
   background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 55%, #1e3a8a 100%);
@@ -1076,11 +1081,21 @@ body.elm-login-page #root {
   transition: border-color 0.15s ease, background 0.15s ease;
 }
 
-.mc-task-row-link:hover,
+.mc-task-row-link:hover {
+  border-color: rgba(59, 130, 246, 0.4);
+  background: rgba(59, 130, 246, 0.08);
+}
+
 .mc-task-row-link:focus-visible {
   border-color: rgba(59, 130, 246, 0.4);
   background: rgba(59, 130, 246, 0.08);
-  outline: none;
+  outline: 2px solid #93c5fd;
+  outline-offset: 2px;
+}
+
+.mc-bottom-nav-item:focus-visible {
+  outline: 2px solid #93c5fd;
+  outline-offset: 2px;
 }
 
 .mc-task-title {

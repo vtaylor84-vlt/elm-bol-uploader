@@ -2,6 +2,10 @@
  * Accessibility audit for the production build.
  * Uses a persistent Chrome user-data dir to avoid Windows/OneDrive
  * EPERM failures during chrome-launcher temp cleanup.
+ *
+ * Audits:
+ * - /login (public)
+ * - /today (authenticated demo session via evaluateOnNewDocument)
  */
 import http from 'node:http';
 import fs from 'node:fs';
@@ -9,6 +13,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import lighthouse from 'lighthouse';
 import * as chromeLauncher from 'chrome-launcher';
+import puppeteer from 'puppeteer-core';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
@@ -16,6 +21,17 @@ const distDir = path.join(root, 'dist');
 const outDir = path.join(root, '.lighthouseci');
 const profileDir = path.join(root, '.tmp-lh', 'chrome-profile');
 const minA11y = 0.9;
+
+const DEMO_SESSION = {
+  authRole: 'driver',
+  driverId: 'DEMO-DRIVER',
+  driverName: 'Jordan Rivers',
+  companyCode: 'BST',
+  maskedEmail: 'j***@example.com',
+  uploaderAllowed: true,
+  active: true,
+  canSelectAnyDriver: false,
+};
 
 function assertDistExists() {
   if (!fs.existsSync(path.join(distDir, 'index.html'))) {
@@ -67,14 +83,54 @@ function startStaticServer() {
   });
 }
 
+async function runA11yAudit(chromePort, url, reportName, page) {
+  const result = await lighthouse(
+    url,
+    {
+      port: chromePort,
+      output: 'json',
+      onlyCategories: ['accessibility'],
+      formFactor: 'desktop',
+      screenEmulation: { disabled: true },
+    },
+    undefined,
+    page
+  );
+
+  if (!result || !result.lhr) {
+    throw new Error(`Lighthouse returned no result for ${url}`);
+  }
+
+  const reportPath = path.join(outDir, reportName);
+  fs.writeFileSync(reportPath, result.report);
+
+  const score = result.lhr.categories.accessibility?.score;
+  if (typeof score !== 'number') {
+    throw new Error(`Accessibility category score missing for ${url}`);
+  }
+
+  console.log(`[audit:a11y] url=${url}`);
+  console.log(`[audit:a11y] accessibility_score=${score}`);
+  console.log(`[audit:a11y] report=${reportPath}`);
+
+  if (score < minA11y) {
+    throw new Error(
+      `Accessibility score ${score} for ${url} is below required minimum ${minA11y}`
+    );
+  }
+
+  return score;
+}
+
 async function main() {
   assertDistExists();
   fs.mkdirSync(outDir, { recursive: true });
   fs.mkdirSync(profileDir, { recursive: true });
 
   const { server, port } = await startStaticServer();
-  const url = `http://127.0.0.1:${port}/login`;
+  const origin = `http://127.0.0.1:${port}`;
   let chrome;
+  let browser;
 
   try {
     chrome = await chromeLauncher.launch({
@@ -83,38 +139,31 @@ async function main() {
       chromeFlags: ['--headless=new', '--no-sandbox', '--disable-dev-shm-usage'],
     });
 
-    const result = await lighthouse(url, {
-      port: chrome.port,
-      output: 'json',
-      onlyCategories: ['accessibility'],
-      formFactor: 'desktop',
-      screenEmulation: { disabled: true },
+    browser = await puppeteer.connect({
+      browserURL: `http://127.0.0.1:${chrome.port}`,
+      defaultViewport: null,
     });
 
-    if (!result || !result.lhr) {
-      throw new Error('Lighthouse returned no result');
-    }
+    const loginPage = await browser.newPage();
+    await runA11yAudit(chrome.port, `${origin}/login`, 'login-a11y.json', loginPage);
+    await loginPage.close();
 
-    const reportPath = path.join(outDir, 'login-a11y.json');
-    fs.writeFileSync(reportPath, result.report);
-
-    const score = result.lhr.categories.accessibility?.score;
-    if (typeof score !== 'number') {
-      throw new Error('Accessibility category score missing');
-    }
-
-    console.log(`[audit:a11y] url=${url}`);
-    console.log(`[audit:a11y] accessibility_score=${score}`);
-    console.log(`[audit:a11y] report=${reportPath}`);
-
-    if (score < minA11y) {
-      throw new Error(
-        `Accessibility score ${score} is below required minimum ${minA11y}`
-      );
-    }
+    const todayPage = await browser.newPage();
+    await todayPage.evaluateOnNewDocument((session) => {
+      sessionStorage.setItem('elm_driver_session', JSON.stringify(session));
+    }, DEMO_SESSION);
+    await runA11yAudit(chrome.port, `${origin}/today`, 'today-a11y.json', todayPage);
+    await todayPage.close();
 
     console.log('[audit:a11y] PASS');
   } finally {
+    if (browser) {
+      try {
+        browser.disconnect();
+      } catch {
+        /* ignore */
+      }
+    }
     if (chrome) {
       try {
         await chrome.kill();

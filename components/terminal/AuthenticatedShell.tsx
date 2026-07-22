@@ -52,7 +52,7 @@ const AuthenticatedShell: React.FC<AuthenticatedShellProps> = ({
             <button
               type="button"
               onClick={() => setShowLogoutConfirm(true)}
-              className="shrink-0 px-2.5 py-2 rounded-lg border border-zinc-600/80 bg-zinc-900/60 text-[8px] font-black uppercase tracking-widest text-zinc-200 hover:border-red-500/50 hover:text-red-400"
+              className="shrink-0 min-h-[44px] px-2.5 py-2 rounded-lg border border-zinc-600/80 bg-zinc-900/60 text-[8px] font-black uppercase tracking-widest text-zinc-200 hover:border-red-500/50 hover:text-red-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-300"
             >
               Logout
             </button>
