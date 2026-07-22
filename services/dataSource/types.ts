@@ -38,7 +38,7 @@ export interface PaySummaryView {
 
 export interface MessageItem {
   id: string;
-  carrierId: CarrierId;
+  carrierId?: CarrierId;
   from: string;
   subject: string;
   preview: string;
@@ -47,7 +47,8 @@ export interface MessageItem {
 }
 
 export interface TruckStatusView {
-  carrierId: CarrierId;
+  /** Present only when branded from the active carrier configuration. */
+  carrierId?: CarrierId;
   truckNumber: string;
   trailerNumber: string;
   statusLabel: string;
@@ -56,14 +57,14 @@ export interface TruckStatusView {
 }
 
 export interface SafetyStatusView {
-  carrierId: CarrierId;
+  carrierId?: CarrierId;
   scoreLabel: string;
   openItems: string[];
   disclosure: DisclosureKind;
 }
 
 export interface HomeTimeRequestView {
-  carrierId: CarrierId;
+  carrierId?: CarrierId;
   statusLabel: string;
   requestedWindow: string;
   disclosure: DisclosureKind;
@@ -71,7 +72,7 @@ export interface HomeTimeRequestView {
 
 export interface BenefitItem {
   id: string;
-  carrierId: CarrierId;
+  carrierId?: CarrierId;
   title: string;
   detail: string;
   disclosure: DisclosureKind;
@@ -79,14 +80,14 @@ export interface BenefitItem {
 
 export interface DocumentItem {
   id: string;
-  carrierId: CarrierId;
+  carrierId?: CarrierId;
   title: string;
   statusLabel: string;
   disclosure: DisclosureKind;
 }
 
 export interface PerformanceView {
-  carrierId: CarrierId;
+  carrierId?: CarrierId;
   onTimeLabel: string;
   safetyLabel: string;
   note: string;
@@ -95,7 +96,7 @@ export interface PerformanceView {
 
 export interface TimelineEvent {
   id: string;
-  carrierId: CarrierId;
+  carrierId?: CarrierId;
   whenLabel: string;
   title: string;
   detail: string;

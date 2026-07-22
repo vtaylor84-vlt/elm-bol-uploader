@@ -32,9 +32,11 @@
     "types/**/*.ts",
     "assets/**/*.ts",
     "assets/**/*.tsx",
+    "fixtures/**/*.ts",
     "services/driverLoginService.ts",
     "services/terminalDataService.ts",
     "services/missionControlAdapter.ts",
+    "services/dataSource/**/*.ts",
     "components/terminal/**/*.ts",
     "components/terminal/**/*.tsx",
     "components/expense/**/*.ts",
@@ -43,9 +45,12 @@
     "components/routing/**/*.tsx",
     "components/mission-control/**/*.ts",
     "components/mission-control/**/*.tsx",
+    "components/showcase/**/*.ts",
+    "components/showcase/**/*.tsx",
     "components/TerminalLogin.tsx",
     "components/icons/**/*.ts",
-    "components/icons/**/*.tsx"
+    "components/icons/**/*.tsx",
+    "tests/**/*.ts"
   ],
-  "exclude": ["node_modules", "dist", "gas", "netlify"]
+  "exclude": ["node_modules", "dist", "gas", "netlify", "e2e", "playwright.config.ts"]
 }

@@ -1,14 +1,37 @@
 import type { DriverSessionProfile } from '../../utils/driverSession.ts';
+import { resolveCarrierId } from '../../utils/companyMap.ts';
 import { getMissionControlViewModel } from '../missionControlAdapter.ts';
-import type { DriverDataSource } from './types.ts';
+import type { CarrierId, DisclosureKind } from '../../types/showcase.ts';
+import type {
+  DriverDataSource,
+  HomeTimeRequestView,
+  PerformanceView,
+  SafetyStatusView,
+  TruckStatusView,
+} from './types.ts';
+
+function futurePlaceholder(
+  carrierId: CarrierId | undefined,
+  fields: Omit<TruckStatusView, 'carrierId' | 'disclosure'> & {
+    disclosure?: DisclosureKind;
+  }
+): TruckStatusView {
+  return {
+    ...(carrierId ? { carrierId } : {}),
+    ...fields,
+    disclosure: fields.disclosure || 'FUTURE CAPABILITY',
+  };
+}
 
 /**
  * Production data source — wraps existing adapters.
- * Future modules return honest empty / future placeholders.
+ * Future modules return honest empty / future placeholders scoped to the active carrier only.
  */
 export function createProductionDriverDataSource(
   session: DriverSessionProfile | null
 ): DriverDataSource {
+  const carrierId = resolveCarrierId(session?.companyCode) ?? undefined;
+
   return {
     mode: 'production',
     getMissionControl: () => getMissionControlViewModel(session),
@@ -38,30 +61,29 @@ export function createProductionDriverDataSource(
       },
     ],
     getMessages: () => [],
-    getTruckStatus: () => ({
-      carrierId: 'BST',
-      truckNumber: '—',
-      trailerNumber: '—',
-      statusLabel: 'Not connected',
-      nextServiceLabel: '—',
-      disclosure: 'FUTURE CAPABILITY',
-    }),
-    getSafetyStatus: () => ({
-      carrierId: 'BST',
+    getTruckStatus: (): TruckStatusView =>
+      futurePlaceholder(carrierId, {
+        truckNumber: '—',
+        trailerNumber: '—',
+        statusLabel: 'Not connected',
+        nextServiceLabel: '—',
+      }),
+    getSafetyStatus: (): SafetyStatusView => ({
+      ...(carrierId ? { carrierId } : {}),
       scoreLabel: '—',
       openItems: [],
       disclosure: 'FUTURE CAPABILITY',
     }),
-    getHomeTime: () => ({
-      carrierId: 'BST',
+    getHomeTime: (): HomeTimeRequestView => ({
+      ...(carrierId ? { carrierId } : {}),
       statusLabel: 'Not available',
       requestedWindow: '—',
       disclosure: 'FUTURE CAPABILITY',
     }),
     getBenefits: () => [],
     getDocuments: () => [],
-    getPerformance: () => ({
-      carrierId: 'BST',
+    getPerformance: (): PerformanceView => ({
+      ...(carrierId ? { carrierId } : {}),
       onTimeLabel: '—',
       safetyLabel: '—',
       note: 'FUTURE CAPABILITY',

@@ -10,7 +10,8 @@
     "preview": "node ./node_modules/vite/bin/vite.js preview",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "biome lint .",
-    "test": "node --test netlify/functions/_shared/allowedOrigins.test.js netlify/functions/_shared/showcaseGrant.test.js",
+    "test": "node --experimental-strip-types --test netlify/functions/_shared/allowedOrigins.test.js netlify/functions/_shared/showcaseGrant.test.js tests/rc1-isolation.test.ts tests/auth-cleanup.test.ts",
+    "test:e2e": "playwright test",
     "audit:a11y": "node ./scripts/audit-a11y.mjs"
   },
   "keywords": [],
@@ -26,6 +27,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
+    "@playwright/test": "^1.52.0",
     "@tailwindcss/postcss": "^4.1.17",
     "@types/node": "^20.19.0",
     "@types/react": "^19.2.5",

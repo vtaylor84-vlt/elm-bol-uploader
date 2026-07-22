@@ -9,6 +9,11 @@ dist/
 .lighthouseci/
 chrome/
 .tmp-lh/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+docs/evidence/screenshots/.tmp/
 
 # Editor / local clutter
 .cursor/
