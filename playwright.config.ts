@@ -2,6 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 /**
  * Deterministic browser coverage for RC1 Driver Experience.
+ * Chromium-only across viewports (no WebKit dependency on Windows CI agents).
  * Uses Vite preview + sessionStorage auth fixtures — no real credentials.
  */
 export default defineConfig({
@@ -16,6 +17,7 @@ export default defineConfig({
     baseURL: 'http://127.0.0.1:4173',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+    ...devices['Desktop Chrome'],
   },
   webServer: {
     command: 'npm run build && npm run preview -- --host 127.0.0.1 --port 4173',
@@ -26,11 +28,19 @@ export default defineConfig({
   projects: [
     {
       name: 'mobile',
-      use: { ...devices['iPhone 12'], viewport: { width: 390, height: 844 } },
+      use: {
+        viewport: { width: 390, height: 844 },
+        isMobile: true,
+        hasTouch: true,
+      },
     },
     {
       name: 'tablet',
-      use: { viewport: { width: 768, height: 1024 }, isMobile: true, hasTouch: true },
+      use: {
+        viewport: { width: 768, height: 1024 },
+        isMobile: true,
+        hasTouch: true,
+      },
     },
     {
       name: 'desktop',

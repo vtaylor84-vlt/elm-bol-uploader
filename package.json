@@ -12,7 +12,8 @@
     "lint": "biome lint .",
     "test": "node --experimental-strip-types --test netlify/functions/_shared/allowedOrigins.test.js netlify/functions/_shared/showcaseGrant.test.js tests/rc1-isolation.test.ts tests/auth-cleanup.test.ts",
     "test:e2e": "playwright test",
-    "audit:a11y": "node ./scripts/audit-a11y.mjs"
+    "audit:a11y": "node ./scripts/audit-a11y.mjs",
+    "shots:rc1": "node ./scripts/capture-rc1-screenshots.mjs"
   },
   "keywords": [],
   "author": "",

@@ -29,7 +29,12 @@ const ElmPageHeader: React.FC<ElmPageHeaderProps> = ({
       {title}
     </h1>
     {description ? (
-      <p className="text-sm sm:text-base text-zinc-400 normal-case max-w-2xl mx-auto leading-relaxed">
+      <p
+        className={[
+          'text-sm sm:text-base text-zinc-400 normal-case leading-relaxed',
+          align === 'center' ? 'max-w-2xl mx-auto' : 'max-w-3xl',
+        ].join(' ')}
+      >
         {description}
       </p>
     ) : null}

@@ -56,6 +56,7 @@ const WorkspacePage: React.FC = () => {
         <ElmPageHeader
           eyebrow="Capture"
           title="Document capture"
+          align="left"
           description={
             mode === 'showcase'
               ? `${driverName} — SIMULATED ACTION modules. NOT CONNECTED TO PRODUCTION.`

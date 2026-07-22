@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import MissionShell from '../components/mission-control/MissionShell.tsx';
 import ElmCard from '../design-system/components/ElmCard.tsx';
+import EmptyState from '../design-system/components/EmptyState.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
 import { useDriverExperience } from '../context/DriverExperienceContext.tsx';
 import { useShowcaseOptional } from '../context/ShowcaseContext.tsx';
@@ -32,22 +33,20 @@ export const LoadsPage: React.FC = () => {
         </header>
 
         {loads.length === 0 ? (
-          <ElmCard variant="default" padding="md" as="section" aria-label="Active loads">
-            <div className="flex items-start justify-between gap-3 mb-3">
-              <div>
-                <p className="mc-kicker">Active</p>
-                <h2 className="mc-section-title">No live load list yet</h2>
-              </div>
-              <span className="mc-capability-chip">Ready for integration</span>
-            </div>
-            <p className="mc-section-copy">
-              When the load service is connected, your current haul and recent history will show here.
-              Use Capture for live BOL/POD and expense uploads.
-            </p>
-            <Link to={captureTo === '/capture' ? '/capture' : captureTo} className="mc-exception-action mt-5 inline-flex no-underline">
-              Open Capture
-            </Link>
-          </ElmCard>
+          <EmptyState
+            kicker="Active"
+            title="No live load list yet"
+            chip="Ready for integration"
+            description="When the load service is connected, your current haul and recent history will show here. Use Capture for live BOL/POD and expense uploads."
+            action={
+              <Link
+                to={captureTo === '/capture' ? '/capture' : captureTo}
+                className="mc-exception-action inline-flex no-underline"
+              >
+                Open Capture
+              </Link>
+            }
+          />
         ) : (
           <ul className="space-y-3">
             {loads.map((load) => (
