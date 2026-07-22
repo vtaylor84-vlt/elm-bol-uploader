@@ -51,8 +51,15 @@ const ActiveHaulCard: React.FC<ActiveHaulCardProps> = ({ haul, dataCapability })
           <dd>{haul.appointmentLabel}</dd>
         </div>
         <div>
-          <dt>Countdown</dt>
-          <dd className="text-amber-300">{haul.countdownLabel}</dd>
+          <dt>Timing</dt>
+          <dd className="text-amber-300">
+            {haul.countdownLabel}
+            {dataCapability === 'DEMONSTRATION' ? (
+              <span className="block text-[10px] font-medium text-zinc-500 normal-case tracking-normal mt-0.5">
+                Sample timing — not live ETA
+              </span>
+            ) : null}
+          </dd>
         </div>
         {haul.truckNumber ? (
           <div>

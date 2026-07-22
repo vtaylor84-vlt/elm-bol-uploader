@@ -97,13 +97,13 @@ const TerminalLogin: React.FC<TerminalLoginProps> = ({ onLogin }) => {
     <div className="terminal-login-root min-h-screen text-zinc-100 font-sans overflow-x-hidden relative flex flex-col">
       <div className="login-page-gradient" aria-hidden />
 
-      <div className="relative z-10 flex flex-col items-center w-full max-w-[400px] mx-auto px-5 pt-8 pb-10 sm:pt-12 sm:pb-14 min-h-screen">
+      <div className="relative z-10 flex flex-col items-center w-full max-w-[400px] lg:max-w-[420px] mx-auto px-5 pt-8 pb-10 sm:pt-12 sm:pb-14 min-h-screen">
         <LoginBrandHero />
 
         <div className="login-signin-card login-card-enter w-full mt-6 sm:mt-8 p-6 sm:p-8">
-          <p className="text-center text-[10px] font-semibold uppercase tracking-[0.38em] text-indigo-300/80 mb-6">
+          <h1 className="text-center text-[10px] font-semibold uppercase tracking-[0.38em] text-indigo-300/80 mb-6">
             Sign In To Your Account
-          </p>
+          </h1>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -123,6 +123,8 @@ const TerminalLogin: React.FC<TerminalLoginProps> = ({ onLogin }) => {
                   value={email}
                   onChange={(ev) => setEmail(ev.target.value)}
                   disabled={isSubmitting}
+                  aria-invalid={Boolean(error)}
+                  aria-describedby={error ? 'login-error' : undefined}
                   className="login-input w-full pl-10"
                 />
               </div>
@@ -140,7 +142,7 @@ const TerminalLogin: React.FC<TerminalLoginProps> = ({ onLogin }) => {
               </label>
               <button
                 type="button"
-                className="text-[12px] text-zinc-500 normal-case hover:text-zinc-400 transition-colors min-h-[44px] px-1"
+                className="text-[12px] text-zinc-500 normal-case hover:text-zinc-400 transition-colors min-h-[44px] px-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-300 rounded"
                 onClick={() =>
                   setError('Contact your dispatcher or admin if you need help with your login email.')
                 }
@@ -154,6 +156,7 @@ const TerminalLogin: React.FC<TerminalLoginProps> = ({ onLogin }) => {
               variant="primary"
               fullWidth
               disabled={isSubmitting}
+              aria-busy={isSubmitting}
               trailing={
                 !isSubmitting ? (
                   <span aria-hidden className="text-base leading-none font-normal">
@@ -167,7 +170,11 @@ const TerminalLogin: React.FC<TerminalLoginProps> = ({ onLogin }) => {
             </ElmButton>
 
             {error ? (
-              <p className="text-center text-[11px] text-red-400 normal-case" role="alert">
+              <p
+                id="login-error"
+                className="text-center text-[11px] text-red-400 normal-case"
+                role="alert"
+              >
                 {error}
               </p>
             ) : null}
