@@ -117,7 +117,7 @@ Release hardening and a separable desktop shell were completed locally on stacke
 | | |
 |--|--|
 | **Branch** | `codex/driver-rc1-desktop-shell` |
-| **Commit** | `66c07a5067826ec2ae7fa44125bfa7a59de20a17` (includes desktop shell `690d63a2` + overnight report) |
+| **Commit** | `30ec33e4b3297bef2b9658359bcc9ed673411545` (desktop shell + overnight report) |
 | **Based on** | hardening `0f1aadff` |
 | **Push / PR** | **Not pushed**. No PR created. |
 | **Review URL** | N/A until push |
@@ -296,6 +296,6 @@ gh pr create --base codex/driver-rc1-release-hardening --head codex/driver-rc1-d
 ```
 RC1 baseline:     53691102  feature/driver-experience-cursor
 Hardening:        0f1aadff  codex/driver-rc1-release-hardening
-Desktop shell:    66c07a50  codex/driver-rc1-desktop-shell (shell 690d63a2 + report)
+Desktop shell:    30ec33e4  codex/driver-rc1-desktop-shell
 Production main:  b2c1f105  deploy 6a600fc332744c00088d4f1a
 ```
