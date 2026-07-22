@@ -1,0 +1,69 @@
+{
+  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "files": {
+    "include": [
+      "App.tsx",
+      "index.tsx",
+      "pages/**/*.ts",
+      "pages/**/*.tsx",
+      "context/**/*.ts",
+      "context/**/*.tsx",
+      "design-system/**/*.ts",
+      "design-system/**/*.tsx",
+      "utils/**/*.ts",
+      "utils/**/*.tsx",
+      "types/**/*.ts",
+      "assets/**/*.ts",
+      "assets/**/*.tsx",
+      "services/driverLoginService.ts",
+      "services/terminalDataService.ts",
+      "components/terminal/**/*.ts",
+      "components/terminal/**/*.tsx",
+      "components/expense/**/*.ts",
+      "components/expense/**/*.tsx",
+      "components/routing/**/*.ts",
+      "components/routing/**/*.tsx",
+      "components/TerminalLogin.tsx",
+      "components/icons/**/*.ts",
+      "components/icons/**/*.tsx"
+    ],
+    "ignore": [
+      "node_modules/**",
+      "dist/**",
+      ".netlify/**",
+      ".lighthouseci/**",
+      "gas/**",
+      "netlify/**"
+    ]
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "style": {
+        "useImportType": "warn",
+        "noUnusedTemplateLiteral": "warn",
+        "useSelfClosingElements": "warn",
+        "useTemplate": "warn",
+        "useNumberNamespace": "warn",
+        "noNonNullAssertion": "warn"
+      },
+      "suspicious": {
+        "noExplicitAny": "warn"
+      },
+      "a11y": {
+        "noSvgWithoutTitle": "warn",
+        "useSemanticElements": "warn",
+        "useButtonType": "warn",
+        "useKeyWithClickEvents": "warn",
+        "useAltText": "warn"
+      },
+      "complexity": {
+        "noForEach": "warn"
+      },
+      "correctness": {
+        "useExhaustiveDependencies": "warn"
+      }
+    }
+  }
+}
