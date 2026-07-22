@@ -7,6 +7,7 @@ import { useDriverExperience } from '../context/DriverExperienceContext.tsx';
 import { useShowcaseOptional } from '../context/ShowcaseContext.tsx';
 import { getCompanyDisplayName } from '../utils/companyMap.ts';
 import { ELM_VERSION } from '../design-system/tokens.ts';
+import { getReleaseIdentity } from '../utils/releaseIdentity.ts';
 import {
   isShowcaseGrantPresentAndUnexpired,
 } from '../utils/showcaseGrantStorage.ts';
@@ -264,16 +265,39 @@ export const MorePage: React.FC = () => {
 
         <ElmCard variant="muted" padding="md" as="section" aria-label="System">
           <p className="mc-kicker mb-2">System</p>
-          <dl className="mc-meta-grid">
-            <div>
-              <dt>Platform</dt>
-              <dd>ELM CONNECT</dd>
-            </div>
-            <div>
-              <dt>App version</dt>
-              <dd className="font-mono">{ELM_VERSION}</dd>
-            </div>
-          </dl>
+          {(() => {
+            const release = getReleaseIdentity();
+            return (
+              <>
+                <dl className="mc-meta-grid">
+                  <div>
+                    <dt>Platform</dt>
+                    <dd>ELM CONNECT</dd>
+                  </div>
+                  <div>
+                    <dt>App version</dt>
+                    <dd className="font-mono">{ELM_VERSION}</dd>
+                  </div>
+                  <div>
+                    <dt>Release</dt>
+                    <dd className="font-mono text-[11px] normal-case tracking-normal">
+                      {release.shortSha} · {release.environment}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Built</dt>
+                    <dd className="font-mono text-[11px] normal-case tracking-normal">
+                      {release.buildTimestamp}
+                    </dd>
+                  </div>
+                </dl>
+                <p className="text-[10px] text-zinc-600 mt-3 normal-case tracking-normal">
+                  Non-sensitive build identity for support. Compare Live vs Preview SHA to detect
+                  drift.
+                </p>
+              </>
+            );
+          })()}
         </ElmCard>
       </div>
     </MissionShell>

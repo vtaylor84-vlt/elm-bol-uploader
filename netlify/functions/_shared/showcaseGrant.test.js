@@ -55,6 +55,27 @@ describe('showcaseGrant', () => {
     assert.ok(getShowcasePayloadRejection({ showcase: true }));
     assert.ok(getShowcasePayloadRejection({ demo: true }));
     assert.ok(getShowcasePayloadRejection({ mode: 'SHOWCASE' }));
+    assert.ok(getShowcasePayloadRejection({ source: 'showcase' }));
     assert.equal(getShowcasePayloadRejection({ company: 'BST' }), null);
+  });
+
+  it('fails closed when SHOWCASE_GRANT_SECRET is unavailable', () => {
+    const nestedPrev = process.env.SHOWCASE_GRANT_SECRET;
+    delete process.env.SHOWCASE_GRANT_SECRET;
+    try {
+      assert.equal(
+        mintShowcaseGrant({
+          adminKey: 'abc',
+          authRole: 'admin',
+          canSelectAnyDriver: true,
+        }),
+        null
+      );
+      const verified = verifyShowcaseGrant('anything.here');
+      assert.equal(verified.ok, false);
+      assert.match(String(verified.error || ''), /secret not configured/i);
+    } finally {
+      process.env.SHOWCASE_GRANT_SECRET = nestedPrev;
+    }
   });
 });

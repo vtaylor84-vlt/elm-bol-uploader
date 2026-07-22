@@ -11,11 +11,24 @@ interface ActiveHaulCardProps {
 const ActiveHaulCard: React.FC<ActiveHaulCardProps> = ({ haul, dataCapability }) => {
   if (!haul) {
     return (
-      <GlassCard glowColor="none" padding="md" as="section" className="mc-section">
-        <p className="mc-kicker">Active haul</p>
-        <h2 className="mc-section-title">No active load</h2>
+      <GlassCard
+        glowColor="none"
+        padding="md"
+        as="section"
+        className="mc-section"
+        aria-label="Active haul unavailable"
+      >
+        <div className="flex items-start justify-between gap-3 mb-2">
+          <p className="mc-kicker mb-0">Active haul</p>
+          {dataCapability === 'READY_FOR_INTEGRATION' || dataCapability === 'FUTURE' ? (
+            <span className="mc-capability-chip">Not connected</span>
+          ) : null}
+        </div>
+        <h2 className="mc-section-title">No current load available</h2>
         <p className="mc-section-copy">
-          When a load is assigned, it will appear here with the next milestone.
+          There is no assigned load to display right now, or live load connectivity is not yet
+          available. Capture remains available for BOL/POD and expense uploads when you have
+          documents ready.
         </p>
       </GlassCard>
     );
