@@ -45,6 +45,10 @@
 
 **Sync poke:** this docs-only progress update is pushed to fire `pull_request` `synchronize` for Netlify (and any other PR listeners). GitHub Actions Quality will still skip until the workflow base-branch filter includes this PR’s base (or the PR is retargeted to `main`).
 
+### 2026-07-22 — Netlify preview eligibility for RC1 base
+
+Netlify Deploy Preview eligibility was enabled for the PR base branch `codex/driver-rc1-desktop-shell`. A new documentation-only commit is being pushed on `feature/driver-experience-showcase` so Netlify can evaluate PR #8 after that configuration change.
+
 ---
 
 ## Local quality (this machine)
