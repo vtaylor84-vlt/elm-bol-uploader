@@ -18,6 +18,12 @@ import SubmissionSuccessPage from './pages/SubmissionSuccessPage.tsx';
 import { LoadsPage, MorePage, PayPage } from './pages/MissionPlaceholders.tsx';
 import ShowcaseHubPage from './pages/showcase/ShowcaseHubPage.tsx';
 import ShowcaseFutureModulePage from './pages/showcase/ShowcaseFutureModulePage.tsx';
+import MessagesPage from './pages/driver/MessagesPage.tsx';
+import EquipmentPage from './pages/driver/EquipmentPage.tsx';
+import SafetyPage from './pages/driver/SafetyPage.tsx';
+import NotificationsPage from './pages/driver/NotificationsPage.tsx';
+import SearchPage from './pages/driver/SearchPage.tsx';
+import AssistantPage from './pages/driver/AssistantPage.tsx';
 
 const App: React.FC = () => (
   <AuthProvider>
@@ -49,6 +55,13 @@ const App: React.FC = () => (
               <Route path="/more" element={<MorePage />} />
               <Route path="/capture" element={<WorkspacePage />} />
               <Route path="/workspace" element={<WorkspacePage />} />
+              <Route path="/messages" element={<MessagesPage />} />
+              <Route path="/equipment" element={<EquipmentPage />} />
+              <Route path="/truck" element={<EquipmentPage />} />
+              <Route path="/safety" element={<SafetyPage />} />
+              <Route path="/notifications" element={<NotificationsPage />} />
+              <Route path="/search" element={<SearchPage />} />
+              <Route path="/assistant" element={<AssistantPage />} />
             </Route>
 
             <Route
@@ -99,9 +112,13 @@ const App: React.FC = () => (
               <Route path="capture" element={<WorkspacePage />} />
               <Route path="pay" element={<PayPage />} />
               <Route path="more" element={<MorePage />} />
-              <Route path="messages" element={<ShowcaseFutureModulePage module="messages" />} />
-              <Route path="truck" element={<ShowcaseFutureModulePage module="truck" />} />
-              <Route path="safety" element={<ShowcaseFutureModulePage module="safety" />} />
+              <Route path="messages" element={<MessagesPage />} />
+              <Route path="equipment" element={<EquipmentPage />} />
+              <Route path="truck" element={<EquipmentPage />} />
+              <Route path="safety" element={<SafetyPage />} />
+              <Route path="notifications" element={<NotificationsPage />} />
+              <Route path="search" element={<SearchPage />} />
+              <Route path="assistant" element={<AssistantPage />} />
               <Route path="home-time" element={<ShowcaseFutureModulePage module="home-time" />} />
               <Route path="benefits" element={<ShowcaseFutureModulePage module="benefits" />} />
               <Route path="documents" element={<ShowcaseFutureModulePage module="documents" />} />
@@ -110,7 +127,6 @@ const App: React.FC = () => (
                 element={<ShowcaseFutureModulePage module="performance" />}
               />
               <Route path="timeline" element={<ShowcaseFutureModulePage module="timeline" />} />
-              <Route path="assistant" element={<ShowcaseFutureModulePage module="assistant" />} />
             </Route>
 
             <Route path="/" element={<Navigate to="/login" replace />} />

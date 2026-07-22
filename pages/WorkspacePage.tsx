@@ -38,6 +38,11 @@ const WorkspacePage: React.FC = () => {
   const company = getCompanyDisplayName(session?.companyCode);
   const driverName = session?.driverName || 'Driver';
   const modules = dataSource.getCaptureModules();
+  const requiredModules = modules.filter((m) => m.priority === 'required');
+  const optionalModules = modules.filter((m) => m.priority === 'optional');
+  const availableModules = modules.filter(
+    (m) => !m.priority || m.priority === 'available'
+  );
 
   const openBolPod = async () => {
     if (mode === 'showcase') {
@@ -78,8 +83,8 @@ const WorkspacePage: React.FC = () => {
           align="left"
           description={
             mode === 'showcase'
-              ? `${driverName} — SIMULATED ACTION modules. NOT CONNECTED TO PRODUCTION.`
-              : `${driverName} — choose a live upload module. Camera-first, verified path.`
+              ? `${driverName} — choose what to capture for this demonstration haul.`
+              : `${driverName} — choose a live upload module. Camera-first.`
           }
         />
 
@@ -89,27 +94,86 @@ const WorkspacePage: React.FC = () => {
           </p>
         ) : null}
 
-        <section aria-label={mode === 'showcase' ? 'Simulated capture modules' : 'Live capture modules'}>
-          <p className="elm-section-label mb-4 lg:mb-5">
-            {mode === 'showcase' ? 'Simulated modules' : 'Live modules'}
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5">
-            {modules.map((mod) => (
-              <ElmModuleCard
-                key={mod.id}
-                title={mod.title}
-                description={mod.description}
-                icon={mod.id.includes('expense') ? <CaptureExpenseIcon /> : <CaptureDocIcon />}
-                accent={mod.id.includes('expense') ? 'cyan' : 'blue'}
-                badge={mode === 'showcase' ? 'SIMULATED ACTION' : undefined}
-                onClick={() => {
-                  if (mod.id.includes('expense')) openReceipt();
-                  else openBolPod();
-                }}
-              />
-            ))}
-          </div>
-        </section>
+        {requiredModules.length > 0 ? (
+          <section aria-label="Required capture modules">
+            <p className="elm-section-label mb-4 lg:mb-5">Requires your attention</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5">
+              {requiredModules.map((mod) => (
+                <ElmModuleCard
+                  key={mod.id}
+                  title={mod.title}
+                  description={mod.description}
+                  icon={mod.id.includes('expense') ? <CaptureExpenseIcon /> : <CaptureDocIcon />}
+                  accent="rose"
+                  badge={mode === 'showcase' ? 'SIMULATED ACTION' : undefined}
+                  contextLabel={mod.contextLabel}
+                  recentStatusLabel={mod.recentStatusLabel}
+                  guidanceLabel={mod.guidanceLabel}
+                  onClick={() => {
+                    if (mod.id.includes('expense')) openReceipt();
+                    else openBolPod();
+                  }}
+                />
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {optionalModules.length > 0 ? (
+          <section aria-label="Optional capture modules">
+            <p className="elm-section-label mb-4 lg:mb-5">For this haul</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5">
+              {optionalModules.map((mod) => (
+                <ElmModuleCard
+                  key={mod.id}
+                  title={mod.title}
+                  description={mod.description}
+                  icon={mod.id.includes('expense') ? <CaptureExpenseIcon /> : <CaptureDocIcon />}
+                  accent="amber"
+                  badge={mode === 'showcase' ? 'SIMULATED ACTION' : undefined}
+                  contextLabel={mod.contextLabel}
+                  recentStatusLabel={mod.recentStatusLabel}
+                  guidanceLabel={mod.guidanceLabel}
+                  onClick={() => {
+                    if (mod.id.includes('expense')) openReceipt();
+                    else openBolPod();
+                  }}
+                />
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {availableModules.length > 0 ? (
+          <section aria-label={mode === 'showcase' ? 'Simulated capture modules' : 'Live capture modules'}>
+            <p className="elm-section-label mb-4 lg:mb-5">
+              {requiredModules.length > 0 || optionalModules.length > 0
+                ? 'Also available'
+                : mode === 'showcase'
+                  ? 'Simulated modules'
+                  : 'Live modules'}
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5">
+              {availableModules.map((mod) => (
+                <ElmModuleCard
+                  key={mod.id}
+                  title={mod.title}
+                  description={mod.description}
+                  icon={mod.id.includes('expense') ? <CaptureExpenseIcon /> : <CaptureDocIcon />}
+                  accent={mod.id.includes('expense') ? 'cyan' : 'blue'}
+                  badge={mode === 'showcase' ? 'SIMULATED ACTION' : undefined}
+                  contextLabel={mod.contextLabel}
+                  recentStatusLabel={mod.recentStatusLabel}
+                  guidanceLabel={mod.guidanceLabel}
+                  onClick={() => {
+                    if (mod.id.includes('expense')) openReceipt();
+                    else openBolPod();
+                  }}
+                />
+              ))}
+            </div>
+          </section>
+        ) : null}
       </PageContainer>
     </MissionShell>
   );
