@@ -42,5 +42,11 @@ export function createShowcaseDriverActionPort(): DriverActionPort {
       const clipped = String(prompt || '').trim().slice(0, 120) || 'your question';
       return ok(`Simulated assistant reply about “${clipped}”. NOT CONNECTED TO PRODUCTION.`);
     },
+    async reportPayQuestion() {
+      return ok('Simulated pay question routed to demo payroll contact. No real inquiry was sent.');
+    },
+    async markNotificationRead(notificationId: string) {
+      return ok(`Simulated notification ${notificationId} marked read in Showcase only.`);
+    },
   };
 }
