@@ -5,11 +5,13 @@ import { SubmissionDraftProvider } from './context/SubmissionDraftContext.tsx';
 import ProtectedRoute from './components/routing/ProtectedRoute.tsx';
 import LoginPage from './pages/LoginPage.tsx';
 import ConnectingPage from './pages/ConnectingPage.tsx';
+import TodayPage from './pages/TodayPage.tsx';
 import WorkspacePage from './pages/WorkspacePage.tsx';
 import BolPodWorkflow from './pages/BolPodWorkflow.tsx';
 import ReceiptPage from './pages/ReceiptPage.tsx';
 import SubmissionReviewPage from './pages/SubmissionReviewPage.tsx';
 import SubmissionSuccessPage from './pages/SubmissionSuccessPage.tsx';
+import { LoadsPage, MorePage, PayPage } from './pages/MissionPlaceholders.tsx';
 
 const App: React.FC = () => (
   <AuthProvider>
@@ -22,6 +24,38 @@ const App: React.FC = () => (
             element={
               <ProtectedRoute>
                 <ConnectingPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/today"
+            element={
+              <ProtectedRoute>
+                <TodayPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/loads"
+            element={
+              <ProtectedRoute>
+                <LoadsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/pay"
+            element={
+              <ProtectedRoute>
+                <PayPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/more"
+            element={
+              <ProtectedRoute>
+                <MorePage />
               </ProtectedRoute>
             }
           />

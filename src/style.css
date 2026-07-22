@@ -836,3 +836,342 @@ body.elm-login-page #root {
     0 8px 32px rgba(0, 0, 0, 0.45),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
+
+/* --- Mission Control --- */
+.mc-app {
+  background-color: #030308;
+}
+
+.mc-kicker {
+  margin: 0;
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #71717a;
+}
+
+.mc-page-title {
+  margin: 0.35rem 0 0;
+  font-size: clamp(1.5rem, 4vw, 1.85rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #f4f4f5;
+  line-height: 1.2;
+}
+
+.mc-section-title {
+  margin: 0.2rem 0 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #f4f4f5;
+  letter-spacing: -0.01em;
+}
+
+.mc-section-copy {
+  margin: 0.4rem 0 0;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: #a1a1aa;
+}
+
+.mc-exception {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.85rem 1rem;
+  padding: 1rem 1.1rem;
+  border-radius: 1rem;
+  border: 1px solid transparent;
+}
+
+.mc-exception-critical {
+  background: rgba(239, 68, 68, 0.14);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.mc-exception-warning {
+  background: rgba(245, 158, 11, 0.14);
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.mc-exception-info {
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
+.mc-exception-title {
+  margin: 0.2rem 0 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #fef2f2;
+}
+
+.mc-exception-detail {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: #e4e4e7;
+}
+
+.mc-exception-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0.55rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.mc-exception-action:focus-visible {
+  outline: 2px solid #93c5fd;
+  outline-offset: 2px;
+}
+
+.mc-haul-route {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.55rem;
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #e4e4e7;
+}
+
+.mc-haul-arrow {
+  color: #60a5fa;
+}
+
+.mc-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.9rem 1rem;
+  margin: 0;
+}
+
+.mc-meta-grid dt {
+  margin: 0;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #71717a;
+}
+
+.mc-meta-grid dd {
+  margin: 0.2rem 0 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #f4f4f5;
+}
+
+.mc-doc-chip,
+.mc-status-pill,
+.mc-capability-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.75rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.mc-doc-chip {
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.12);
+  color: #fecaca;
+}
+
+.mc-status-pill {
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  background: rgba(59, 130, 246, 0.12);
+  color: #93c5fd;
+  text-align: right;
+  max-width: 11rem;
+  line-height: 1.25;
+}
+
+.mc-capability-chip {
+  border: 1px solid rgba(161, 161, 170, 0.35);
+  background: rgba(39, 39, 42, 0.8);
+  color: #a1a1aa;
+}
+
+.mc-capability-inline {
+  color: #86efac;
+}
+
+.mc-primary-action {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.mc-primary-helper {
+  margin: 0;
+  text-align: center;
+  font-size: 0.75rem;
+  color: #71717a;
+}
+
+.mc-earnings-value {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: #f4f4f5;
+}
+
+.mc-task-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.mc-task-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 52px;
+  padding: 0.75rem 0.85rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(59, 130, 246, 0.15);
+  background: rgba(9, 9, 14, 0.55);
+}
+
+.mc-task-row-link {
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.mc-task-row-link:hover,
+.mc-task-row-link:focus-visible {
+  border-color: rgba(59, 130, 246, 0.4);
+  background: rgba(59, 130, 246, 0.08);
+  outline: none;
+}
+
+.mc-task-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #f4f4f5;
+}
+
+.mc-task-detail {
+  margin: 0.15rem 0 0;
+  font-size: 0.8rem;
+  color: #a1a1aa;
+}
+
+.mc-task-urgency {
+  flex-shrink: 0;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.35rem 0.55rem;
+  border-radius: 999px;
+}
+
+.mc-task-urgency-now {
+  color: #fecaca;
+  background: rgba(239, 68, 68, 0.16);
+}
+
+.mc-task-urgency-soon {
+  color: #fde68a;
+  background: rgba(245, 158, 11, 0.14);
+}
+
+.mc-task-urgency-blocked {
+  color: #d4d4d8;
+  background: rgba(63, 63, 70, 0.8);
+}
+
+.mc-bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 640;
+  padding: 0.4rem 0.75rem calc(0.4rem + env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(59, 130, 246, 0.18);
+  background: rgba(3, 3, 8, 0.96);
+  backdrop-filter: blur(16px);
+}
+
+.mc-bottom-nav-list {
+  list-style: none;
+  margin: 0 auto;
+  padding: 0;
+  max-width: 36rem;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.15rem;
+}
+
+.mc-bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  min-height: 52px;
+  padding: 0.35rem 0.2rem;
+  border-radius: 0.75rem;
+  color: #71717a;
+  text-decoration: none;
+}
+
+.mc-bottom-nav-item.is-active {
+  color: #93c5fd;
+  background: rgba(59, 130, 246, 0.12);
+}
+
+.mc-bottom-nav-label {
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (min-width: 1024px) {
+  .mc-bottom-nav {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+
+  .mc-meta-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}

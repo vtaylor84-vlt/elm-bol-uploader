@@ -28,7 +28,7 @@ const ConnectingPage: React.FC = () => {
       timers.push(window.setTimeout(() => setStepIndex(i), i * 480));
     });
     timers.push(
-      window.setTimeout(() => navigate('/workspace', { replace: true }), CONNECT_STEPS.length * 480 + 400)
+      window.setTimeout(() => navigate('/today', { replace: true }), CONNECT_STEPS.length * 480 + 400)
     );
 
     return () => timers.forEach((t) => window.clearTimeout(t));

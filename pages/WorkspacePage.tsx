@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import AuthenticatedShell from '../components/terminal/AuthenticatedShell.tsx';
+import MissionShell from '../components/mission-control/MissionShell.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
 import { useSubmissionDraft } from '../context/SubmissionDraftContext.tsx';
 import ElmModuleCard from '../design-system/components/ElmModuleCard.tsx';
@@ -13,33 +13,6 @@ const getCarrierDisplayName = (code?: string) => {
   if (c === 'GLX') return 'Greenleaf Xpress';
   return code || '';
 };
-
-const FUTURE_MODULES = [
-  {
-    title: 'Messages',
-    description: 'Dispatcher updates and load communications.',
-    icon: '💬',
-    accent: 'violet' as const,
-  },
-  {
-    title: 'Safety',
-    description: 'Incident reports, inspections, and compliance.',
-    icon: '🛡️',
-    accent: 'emerald' as const,
-  },
-  {
-    title: 'Payroll',
-    description: 'Settlement summaries and pay documents.',
-    icon: '💰',
-    accent: 'amber' as const,
-  },
-  {
-    title: 'Announcements',
-    description: 'Company news and operational bulletins.',
-    icon: '📢',
-    accent: 'rose' as const,
-  },
-];
 
 const WorkspacePage: React.FC = () => {
   const navigate = useNavigate();
@@ -70,16 +43,16 @@ const WorkspacePage: React.FC = () => {
   };
 
   return (
-    <AuthenticatedShell title="Driver Workspace">
+    <MissionShell title="Capture" activeNav="capture">
       <PageContainer width="full" className="space-y-8 lg:space-y-10">
         <ElmPageHeader
-          eyebrow="Driver Workspace"
-          title={`Welcome, ${driverName}`}
-          description="What would you like to do? Select a module to continue."
+          eyebrow="Capture"
+          title="Document modules"
+          description={`${driverName} — select a live upload module.`}
         />
 
         <section aria-label="Active modules">
-          <p className="elm-section-label mb-4 lg:mb-5">Active Modules</p>
+          <p className="elm-section-label mb-4 lg:mb-5">Live modules</p>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-5">
             <ElmModuleCard
               title="BOL / POD"
@@ -109,29 +82,8 @@ const WorkspacePage: React.FC = () => {
             />
           </div>
         </section>
-
-        <section aria-label="Coming soon">
-          <p className="elm-section-label mb-4 lg:mb-5">Platform Modules · Coming Soon</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-5">
-            {FUTURE_MODULES.map((mod) => (
-              <ElmModuleCard
-                key={mod.title}
-                title={mod.title}
-                description={mod.description}
-                icon={mod.icon}
-                accent={mod.accent}
-                disabled
-                badge="Soon"
-              />
-            ))}
-          </div>
-        </section>
-
-        <p className="text-center text-[8px] font-mono uppercase tracking-widest text-zinc-600 pt-2">
-          Secure session · {session?.maskedEmail || 'Connected'}
-        </p>
       </PageContainer>
-    </AuthenticatedShell>
+    </MissionShell>
   );
 };
 

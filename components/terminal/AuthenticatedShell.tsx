@@ -36,7 +36,7 @@ const AuthenticatedShell: React.FC<AuthenticatedShellProps> = ({
               {showBack ? (
                 <button
                   type="button"
-                  onClick={onBack || (() => navigate('/workspace'))}
+                  onClick={onBack || (() => navigate('/today'))}
                   className="shrink-0 px-2.5 py-2 rounded-lg border border-zinc-700/80 text-[8px] font-black uppercase tracking-widest text-zinc-300 hover:border-blue-500/40 hover:text-blue-300"
                 >
                   Back
