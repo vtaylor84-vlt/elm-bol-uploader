@@ -10,8 +10,8 @@
     "preview": "node ./node_modules/vite/bin/vite.js preview",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "biome lint .",
-    "audit:a11y": "node ./scripts/audit-a11y.mjs",
-    "test": "echo \"No automated test suite configured yet\""
+    "test": "node --test netlify/functions/_shared/allowedOrigins.test.js",
+    "audit:a11y": "node ./scripts/audit-a11y.mjs"
   },
   "keywords": [],
   "author": "",

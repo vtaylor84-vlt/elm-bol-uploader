@@ -1,3 +1,9 @@
+import {
+  isOriginAllowed,
+  parseAllowedOrigins,
+  resolveCorsOrigin,
+} from './_shared/allowedOrigins.js';
+
 const MAX_FILES = 20;
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const MAX_TOTAL_BYTES = 50 * 1024 * 1024;
@@ -181,10 +187,7 @@ function parseJsonBody(event) {
 }
 
 function getAllowedOrigins() {
-  return (process.env.ALLOWED_ORIGINS || '')
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean);
+  return parseAllowedOrigins(process.env.ALLOWED_ORIGINS);
 }
 
 function validateServerConfig() {
@@ -197,17 +200,6 @@ function validateServerConfig() {
 function getHeader(event, name) {
   const headers = event.headers || {};
   return headers[name] || headers[name.toLowerCase()] || '';
-}
-
-function resolveCorsOrigin(requestOrigin, allowedOrigins) {
-  if (requestOrigin && allowedOrigins.includes(requestOrigin)) {
-    return requestOrigin;
-  }
-  return null;
-}
-
-function isOriginAllowed(requestOrigin, allowedOrigins) {
-  return Boolean(requestOrigin && allowedOrigins.includes(requestOrigin));
 }
 
 function buildCorsHeaders(corsOrigin) {
