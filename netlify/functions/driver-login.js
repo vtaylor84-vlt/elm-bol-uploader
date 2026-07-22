@@ -3,6 +3,7 @@ import {
   parseAllowedOrigins,
   resolveCorsOrigin,
 } from './_shared/allowedOrigins.js';
+import { adminKeyFromEmail, mintShowcaseGrant } from './_shared/showcaseGrant.js';
 
 const MAX_EMAIL_LENGTH = 254;
 
@@ -179,11 +180,27 @@ export const handler = async (event) => {
         canSelectAnyDriver: gasResult.profile.canSelectAnyDriver,
         ...loginDiag,
       });
-      return jsonResponse(200, {
+
+      const profile = gasResult.profile;
+      const responseBody = {
         success: true,
-        profile: gasResult.profile,
+        profile,
         loginDiag,
-      }, corsOrigin);
+      };
+
+      if (profile.authRole === 'admin' && profile.canSelectAnyDriver === true) {
+        const minted = mintShowcaseGrant({
+          adminKey: adminKeyFromEmail(email),
+          authRole: 'admin',
+          canSelectAnyDriver: true,
+        });
+        if (minted) {
+          responseBody.showcaseGrant = minted.grant;
+          responseBody.showcaseGrantExpiresAt = minted.expiresAt;
+        }
+      }
+
+      return jsonResponse(200, responseBody, corsOrigin);
     }
 
     logLoginDiag('login_denied', {

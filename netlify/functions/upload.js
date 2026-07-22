@@ -3,6 +3,7 @@ import {
   parseAllowedOrigins,
   resolveCorsOrigin,
 } from './_shared/allowedOrigins.js';
+import { getShowcasePayloadRejection } from './_shared/showcaseGrant.js';
 
 const MAX_FILES = 20;
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
@@ -108,6 +109,12 @@ export const handler = async (event) => {
   try {
     logUploadDiag('parse_body');
     const data = parseJsonBody(event);
+
+    const showcaseReject = getShowcasePayloadRejection(data);
+    if (showcaseReject) {
+      logUploadDiag('showcase_payload_rejected');
+      return jsonResponse(403, { success: false, error: showcaseReject, code: 'SHOWCASE_PAYLOAD_REJECTED' }, corsOrigin);
+    }
 
     logUploadDiag('validate_submission');
     const validation = validateSubmission(data);
