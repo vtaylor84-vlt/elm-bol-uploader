@@ -17,8 +17,8 @@
 | **3** | Core workflows (Today, Loads, Capture, Pay) | **Complete** |
 | **4** | Supporting modules (Messages, Equipment, Safety, More, Notifications, Search, AI) | **Complete** |
 | **5** | Polish & driver language | **Complete** |
-| **6** | Quality & evidence | **In progress** |
-| **7** | Push / draft PR / Deploy Preview | **In progress** |
+| **6** | Quality & local evidence | **Complete** (local prod-build screenshots) |
+| **7** | Push / draft PR / Deploy Preview | **Partial** — branch pushed; draft PR blocked (GitHub CLI not authenticated) |
 
 ---
 
@@ -27,7 +27,38 @@
 1. `852cc247` — docs(driver): translate driver app vision into showcase specification  
 2. `306c1136` — feat(driver): add typed showcase fixture data foundation  
 3. `6e84d0cc` — feat(driver): upgrade navigation and shared experience components  
-4. `0f916250` — feat(driver): build showcase today loads capture pay messages equipment safety and more (+ tests)
+4. `0f916250` — feat(driver): build showcase today loads capture pay messages equipment safety and more (+ tests)  
+5. `5a52fd69` — docs(driver): add production-preview evidence and handoff  
+
+**Tip SHA:** `5a52fd69`
+
+---
+
+## Blocker for Deploy Preview
+
+GitHub CLI is installed but not logged in (`gh auth login` required).  
+Open a draft PR manually:
+
+https://github.com/vtaylor84-vlt/elm-bol-uploader/pull/new/feature/driver-experience-showcase  
+
+Base branch: `codex/driver-rc1-desktop-shell`
+
+After the draft PR exists, Netlify can create a Deploy Preview. Visually inspect that URL before declaring owner-ready.
+
+---
+
+## Local quality (this machine)
+
+| Gate | Result |
+|------|--------|
+| Typecheck | Pass |
+| Lint (errors) | Pass |
+| Unit tests | 37/37 pass |
+| Playwright (RC1 + Showcase) | 111 passed / 1 intermittent wide-desktop Capture flake mitigated with longer timeout |
+| Production build | Pass |
+| Local prod-build screenshots | 52 files in `docs/evidence/showcase-prod-build/` |
+
+GitHub Actions and Netlify Deploy Preview: **not verified from this agent session** (no authenticated `gh` / no PR yet).
 
 ---
 
