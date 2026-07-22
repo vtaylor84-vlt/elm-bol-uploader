@@ -44,7 +44,7 @@ const TodayPage: React.FC = () => {
       activeNav="today"
       connectionLabel={model.connectionLabel}
     >
-      <div className="mc-today space-y-5 lg:space-y-6 max-w-2xl mx-auto lg:max-w-3xl">
+      <div className="mc-today space-y-6 lg:space-y-8">
         <header className="mc-today-header">
           <p className="mc-kicker">Today</p>
           <h1 className="mc-page-title">What needs attention</h1>

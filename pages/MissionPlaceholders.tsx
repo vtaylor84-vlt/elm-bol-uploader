@@ -15,7 +15,7 @@ const IntegrationPlaceholderPage: React.FC<IntegrationPlaceholderPageProps> = ({
   summary,
 }) => (
   <MissionShell title={title} activeNav={nav}>
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-none">
       <ElmCard variant="muted" padding="lg" as="section">
         <p className="mc-kicker mb-2">Ready for integration</p>
         <h1 className="mc-page-title mb-3">{title}</h1>

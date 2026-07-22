@@ -921,9 +921,9 @@ body.elm-login-page #root {
   min-height: 44px;
   padding: 0.55rem 1rem;
   border-radius: 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  background: rgba(0, 0, 0, 0.35);
-  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: transparent;
+  color: #f4f4f5;
   font-family: inherit;
   font-size: 0.65rem;
   font-weight: 800;
@@ -932,6 +932,11 @@ body.elm-login-page #root {
   text-decoration: none;
   white-space: nowrap;
   cursor: pointer;
+}
+
+.mc-exception-action:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(0, 0, 0, 0.25);
 }
 
 .mc-exception-action:focus-visible {
@@ -1020,6 +1025,10 @@ body.elm-login-page #root {
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
+}
+
+.mc-primary-action .elm-btn-primary {
+  box-shadow: 0 6px 28px rgba(37, 99, 235, 0.55);
 }
 
 .mc-primary-helper {
@@ -1128,7 +1137,7 @@ body.elm-login-page #root {
   list-style: none;
   margin: 0 auto;
   padding: 0;
-  max-width: 36rem;
+  max-width: 42rem;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.15rem;
@@ -1178,6 +1187,10 @@ body.elm-login-page #root {
   }
 
   .mc-meta-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mc-today-header {
+    margin-bottom: 0.25rem;
   }
 }

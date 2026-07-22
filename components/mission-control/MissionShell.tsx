@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.tsx';
 import ElmBrandLogo from '../terminal/ElmBrandLogo.tsx';
 import LogoutConfirmDialog from '../terminal/LogoutConfirmDialog.tsx';
-import { TERMINAL_SHELL } from '../terminal/terminalLayout.ts';
+import { MISSION_SHELL } from '../terminal/terminalLayout.ts';
 import BottomNav, { type BottomNavId } from './BottomNav.tsx';
 
 interface MissionShellProps {
@@ -31,7 +31,7 @@ const MissionShell: React.FC<MissionShellProps> = ({
   return (
     <div className="min-h-screen terminal-app-bg text-zinc-100 mc-app">
       <header className="fixed top-0 left-0 right-0 z-[650] border-b terminal-app-header bg-[#030308]/95 border-blue-500/15 backdrop-blur-xl">
-        <div className={TERMINAL_SHELL}>
+        <div className={MISSION_SHELL}>
           <div className="flex items-center justify-between gap-3 py-2.5 sm:py-3 min-h-[3rem]">
             <div className="flex items-center gap-2 min-w-0 flex-1">
               <ElmBrandLogo size="sm" subtitle={false} />
@@ -69,7 +69,7 @@ const MissionShell: React.FC<MissionShellProps> = ({
         onCancel={() => setShowLogout(false)}
       />
 
-      <main className={`${TERMINAL_SHELL} pt-[4.5rem] pb-28`}>{children}</main>
+      <main className={`${MISSION_SHELL} pt-[4.5rem] pb-28`}>{children}</main>
       <BottomNav active={activeNav} />
     </div>
   );

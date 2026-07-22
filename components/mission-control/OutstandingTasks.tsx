@@ -24,9 +24,9 @@ interface OutstandingTasksProps {
 }
 
 const OutstandingTasks: React.FC<OutstandingTasksProps> = ({ tasks, onActivateTask }) => (
-  <ElmCard variant="default" padding="md" as="section" className="mc-section" aria-label="Outstanding tasks">
+  <ElmCard variant="default" padding="md" as="section" className="mc-section" aria-label="Open tasks">
     <p className="mc-kicker mb-2">Outstanding tasks</p>
-    <h2 className="mc-section-title mb-4">What needs attention</h2>
+    <h2 className="mc-section-title mb-4">Open tasks</h2>
 
     {tasks.length === 0 ? (
       <p className="mc-section-copy">No open tasks.</p>
