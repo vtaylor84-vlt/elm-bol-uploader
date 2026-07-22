@@ -5,7 +5,7 @@ import ElmBrandLogo from '../terminal/ElmBrandLogo.tsx';
 import LogoutConfirmDialog from '../terminal/LogoutConfirmDialog.tsx';
 import { MISSION_SHELL } from '../terminal/terminalLayout.ts';
 import BottomNav from './BottomNav.tsx';
-import type { BottomNavId } from './shellNav.tsx';
+import type { BottomNavId, PrimaryNavId } from './shellNav.tsx';
 import DesktopNavRail from './DesktopNavRail.tsx';
 import { useDriverExperienceOptional } from '../../context/DriverExperienceContext.tsx';
 import { useShowcaseOptional } from '../../context/ShowcaseContext.tsx';
@@ -13,7 +13,7 @@ import { getCompanyDisplayName } from '../../utils/companyMap.ts';
 
 interface MissionShellProps {
   title: string;
-  activeNav: BottomNavId;
+  activeNav: PrimaryNavId | BottomNavId;
   connectionLabel?: string;
   children: React.ReactNode;
 }
@@ -91,7 +91,16 @@ const MissionShell: React.FC<MissionShellProps> = ({
         />
 
         <main className={`${MISSION_SHELL} mc-shell-content`}>{children}</main>
-        <BottomNav active={activeNav} routePrefix={routePrefix} />
+        <BottomNav
+          active={
+            (['today', 'loads', 'capture', 'pay', 'more'] as const).includes(
+              activeNav as BottomNavId
+            )
+              ? (activeNav as BottomNavId)
+              : 'more'
+          }
+          routePrefix={routePrefix as '' | '/showcase'}
+        />
       </div>
     </div>
   );

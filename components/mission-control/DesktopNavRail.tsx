@@ -1,9 +1,15 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { SHELL_NAV_ITEMS, isShellNavActive, type BottomNavId } from './shellNav.tsx';
+import {
+  desktopNavItems,
+  isShellNavActive,
+  type PrimaryNavId,
+  type BottomNavId,
+} from './shellNav.tsx';
+import { useDriverExperienceOptional } from '../../context/DriverExperienceContext.tsx';
 
 interface DesktopNavRailProps {
-  active: BottomNavId;
+  active: PrimaryNavId | BottomNavId;
   routePrefix?: '' | '/showcase';
   onLogout: () => void;
 }
@@ -19,6 +25,13 @@ const DesktopNavRail: React.FC<DesktopNavRailProps> = ({
 }) => {
   const { pathname } = useLocation();
   const prefix = routePrefix || '';
+  const experience = useDriverExperienceOptional();
+  const mode = experience?.mode || 'production';
+  const items = desktopNavItems(mode);
+  const unreadMessages =
+    mode === 'showcase'
+      ? (experience?.dataSource.getMessages().filter((m) => m.unread).length ?? 0)
+      : 0;
 
   return (
     <aside className="mc-desktop-rail" aria-label="Application">
@@ -29,23 +42,33 @@ const DesktopNavRail: React.FC<DesktopNavRailProps> = ({
 
       <nav className="mc-desktop-rail-nav" aria-label="Primary">
         <ul className="mc-desktop-rail-list">
-          {SHELL_NAV_ITEMS.map((item) => {
+          {items.map((item) => {
             const to = `${prefix}${item.path}`;
             const selected = isShellNavActive(pathname, item, prefix, active);
+            const showBadge = item.badgeKey === 'messages' && unreadMessages > 0;
             return (
               <li key={item.id}>
                 <NavLink
                   to={to}
+                  title={item.label}
                   className={() =>
                     `mc-desktop-rail-item${selected ? ' is-active' : ''}${
                       item.id === 'capture' ? ' mc-desktop-rail-item--capture' : ''
                     }`
                   }
                   aria-current={selected ? 'page' : undefined}
+                  aria-label={
+                    showBadge ? `${item.label}, ${unreadMessages} unread` : item.label
+                  }
                   end={item.path === '/today'}
                 >
                   <span className="mc-desktop-rail-icon">{item.icon}</span>
                   <span className="mc-desktop-rail-label">{item.label}</span>
+                  {showBadge ? (
+                    <span className="mc-nav-badge" aria-hidden>
+                      {unreadMessages}
+                    </span>
+                  ) : null}
                 </NavLink>
               </li>
             );
@@ -54,6 +77,34 @@ const DesktopNavRail: React.FC<DesktopNavRailProps> = ({
       </nav>
 
       <div className="mc-desktop-rail-footer">
+        {mode === 'showcase' ? (
+          <div className="mc-desktop-rail-utils" aria-label="Utilities">
+            <NavLink
+              to={`${prefix}/search`}
+              className="mc-desktop-rail-util"
+              title="Search"
+              aria-label="Open search"
+            >
+              Search
+            </NavLink>
+            <NavLink
+              to={`${prefix}/notifications`}
+              className="mc-desktop-rail-util"
+              title="Notifications"
+              aria-label="Open notifications"
+            >
+              Alerts
+            </NavLink>
+            <NavLink
+              to={`${prefix}/assistant`}
+              className="mc-desktop-rail-util"
+              title="ELM AI Assistant"
+              aria-label="Open assistant"
+            >
+              Assistant
+            </NavLink>
+          </div>
+        ) : null}
         <button type="button" className="mc-desktop-rail-logout" onClick={onLogout}>
           Logout
         </button>
