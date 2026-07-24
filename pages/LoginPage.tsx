@@ -9,7 +9,7 @@ const LoginPage: React.FC = () => {
   const [redirecting, setRedirecting] = useState(false);
 
   if (isAuthenticated && !redirecting) {
-    return <Navigate to="/workspace" replace />;
+    return <Navigate to="/home" replace />;
   }
 
   return (

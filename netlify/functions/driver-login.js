@@ -1,3 +1,10 @@
+import {
+  isOriginAllowed,
+  parseAllowedOrigins,
+  resolveCorsOrigin,
+} from './_shared/allowedOrigins.js';
+import { adminKeyFromEmail, mintShowcaseGrant } from './_shared/showcaseGrant.js';
+
 const MAX_EMAIL_LENGTH = 254;
 
 /** Login-enabled ELM_CONNECT_UPLOADER deployment (@42). Upload keeps APPS_SCRIPT_WEB_APP_URL. */
@@ -6,26 +13,12 @@ const LOGIN_APPS_SCRIPT_WEB_APP_URL =
   'https://script.google.com/macros/s/AKfycbxT_Zl6T-iP7NemVqxJ3rFILPMtsEofJ-lyX1ghOeKqeuyJecTjAElheGazedvVpkXx/exec';
 
 function getAllowedOrigins() {
-  return (process.env.ALLOWED_ORIGINS || '')
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean);
+  return parseAllowedOrigins(process.env.ALLOWED_ORIGINS);
 }
 
 function getHeader(event, name) {
   const headers = event.headers || {};
   return headers[name] || headers[name.toLowerCase()] || '';
-}
-
-function resolveCorsOrigin(requestOrigin, allowedOrigins) {
-  if (requestOrigin && allowedOrigins.includes(requestOrigin)) {
-    return requestOrigin;
-  }
-  return null;
-}
-
-function isOriginAllowed(requestOrigin, allowedOrigins) {
-  return Boolean(requestOrigin && allowedOrigins.includes(requestOrigin));
 }
 
 function buildCorsHeaders(corsOrigin) {
@@ -187,11 +180,27 @@ export const handler = async (event) => {
         canSelectAnyDriver: gasResult.profile.canSelectAnyDriver,
         ...loginDiag,
       });
-      return jsonResponse(200, {
+
+      const profile = gasResult.profile;
+      const responseBody = {
         success: true,
-        profile: gasResult.profile,
+        profile,
         loginDiag,
-      }, corsOrigin);
+      };
+
+      if (profile.authRole === 'admin' && profile.canSelectAnyDriver === true) {
+        const minted = mintShowcaseGrant({
+          adminKey: adminKeyFromEmail(email),
+          authRole: 'admin',
+          canSelectAnyDriver: true,
+        });
+        if (minted) {
+          responseBody.showcaseGrant = minted.grant;
+          responseBody.showcaseGrantExpiresAt = minted.expiresAt;
+        }
+      }
+
+      return jsonResponse(200, responseBody, corsOrigin);
     }
 
     logLoginDiag('login_denied', {

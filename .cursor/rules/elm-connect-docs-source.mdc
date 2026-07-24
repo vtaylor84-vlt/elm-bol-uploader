@@ -1,0 +1,29 @@
+---
+description: Do not block on Notion/MCP auth; prefer in-repo docs
+alwaysApply: true
+---
+
+# ELM CONNECT — Documentation Source of Truth
+
+## Notion and MCP
+
+- Do **not** search Notion or use the Notion MCP server for ELM CONNECT work unless the Product Owner **explicitly** requests it in the active task.
+- Do **not** wait for MCP authentication, Notion login, or other external doc-tool setup before continuing engineering work.
+- Do **not** change or disable other MCP tools globally as a workaround.
+
+## Authority order
+
+1. Documentation **committed in this repository** (`docs/`, `AGENTS.md`, `.cursor/rules/`, governance files) is the primary authority.
+2. Verified requirements stated in the **active Product Owner task** are binding for the current assignment.
+3. External systems (Notion, Drive, email, other chats) are not required to proceed unless the Product Owner explicitly points to them.
+
+## Missing referenced documents
+
+If an authoritative document is named but **not present in the repository**:
+
+1. Report that clearly (document title + that it is missing from the repo).
+2. Continue using the verified requirements provided in the active task.
+3. Do **not** search unrelated external systems to recover it.
+4. Do **not** invent or rewrite the missing document as if it were the approved original.
+
+Ask the Product Owner for a single next action only when the missing document is required and the active task does not already supply enough verified requirements to proceed safely.

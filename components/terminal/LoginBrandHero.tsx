@@ -17,7 +17,7 @@ const LoginBrandHero: React.FC = () => (
       Driver Terminal
     </p>
     <p className="mt-1.5 text-[13px] text-zinc-500 normal-case tracking-normal login-subtitle-enter">
-      Secure. Simple. Connected.
+      Secure driver access
     </p>
   </div>
 );

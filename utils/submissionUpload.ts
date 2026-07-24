@@ -6,6 +6,25 @@ import type {
 } from '../types/submission.ts';
 import type { ExpenseRecord } from '../types/submission.ts';
 
+/** Set while Showcase Mode is active — production upload clients must refuse. */
+let showcaseWriteBlock = false;
+
+export function setShowcaseProductionWriteBlock(active: boolean): void {
+  showcaseWriteBlock = active;
+}
+
+export function isShowcaseProductionWriteBlocked(): boolean {
+  return showcaseWriteBlock;
+}
+
+function assertProductionWritesAllowed(operation: string): void {
+  if (showcaseWriteBlock) {
+    throw new Error(
+      `Production ${operation} blocked while Showcase Mode is active. NOT CONNECTED TO PRODUCTION.`
+    );
+  }
+}
+
 export async function filesToBase64Payload(
   files: { category: UploadFilePayload['category']; file: File | Blob }[]
 ): Promise<UploadFilePayload[]> {
@@ -75,6 +94,8 @@ export function buildExpenseUploadPayload(params: {
 export async function submitDocumentUpload(
   payload: SubmissionUploadPayload
 ): Promise<{ success: boolean; url?: string | null; error?: string }> {
+  assertProductionWritesAllowed('upload');
+
   const response = await fetch('/.netlify/functions/upload', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -96,6 +117,7 @@ export async function submitDocumentUpload(
 }
 
 export function savePayloadToVault(payload: SubmissionUploadPayload): void {
+  assertProductionWritesAllowed('vault save');
   const currentVault = JSON.parse(localStorage.getItem('multi_vault') || '[]');
   localStorage.setItem(
     'multi_vault',

@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   validate:
-    name: Build, lint, typecheck, accessibility
+    name: Build, lint, typecheck, test, accessibility
     runs-on: ubuntu-latest
 
     steps:
@@ -24,7 +24,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Install dependencies
@@ -38,6 +38,9 @@ jobs:
 
       - name: Type check
         run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
 
       - name: Install Chrome
         uses: browser-actions/setup-chrome@v2

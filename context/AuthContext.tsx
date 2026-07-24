@@ -5,6 +5,7 @@ import {
   type DriverSessionProfile,
   writeDriverSession,
 } from '../utils/driverSession.ts';
+import { clearShowcaseGrant } from '../utils/showcaseGrantStorage.ts';
 
 interface AuthContextValue {
   session: DriverSessionProfile | null;
@@ -25,6 +26,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = useCallback(() => {
     clearDriverSession();
+    clearShowcaseGrant();
     setSession(null);
   }, []);
 

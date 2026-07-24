@@ -6,6 +6,7 @@ import ExpenseSummaryCard from '../components/expense/ExpenseSummaryCard.tsx';
 import ReceiptPreviewPanel from '../components/expense/ReceiptPreviewPanel.tsx';
 import ElmButton from '../design-system/components/ElmButton.tsx';
 import ElmPageHeader from '../design-system/components/ElmPageHeader.tsx';
+import GlassCard from '../design-system/components/GlassCard.tsx';
 import PageContainer from '../design-system/components/PageContainer.tsx';
 import ResponsiveSplit from '../design-system/components/ResponsiveSplit.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
@@ -30,7 +31,7 @@ const SubmissionReviewPage: React.FC = () => {
 
   useEffect(() => {
     if (!draft || draft.submissionType !== 'EXPENSE_RECEIPT' || !draft.expense) {
-      navigate('/workspace', { replace: true });
+      navigate('/capture', { replace: true });
     }
   }, [draft, navigate]);
 
@@ -116,23 +117,25 @@ const SubmissionReviewPage: React.FC = () => {
         <ElmPageHeader
           eyebrow="Review"
           title="Confirm & submit"
-          description="Verify everything looks correct before transmitting."
+          description="Verify everything looks correct before submitting."
         />
 
         <ExpenseStepper current="Review" />
 
-        <ResponsiveSplit
-          mobileOrder="primary-first"
-          primary={
-            <ExpenseSummaryCard
-              expense={expense}
-              driverName={draft.driverName}
-              showReimbursementStatus={isAdmin}
-              embedReceipt={false}
-            />
-          }
-          secondary={<ReceiptPreviewPanel preview={preview} className="lg:sticky lg:top-24" />}
-        />
+        <GlassCard glowColor="cyan" padding="lg" className="space-y-6">
+          <ResponsiveSplit
+            mobileOrder="primary-first"
+            primary={
+              <ExpenseSummaryCard
+                expense={expense}
+                driverName={draft.driverName}
+                showReimbursementStatus={isAdmin}
+                embedReceipt={false}
+              />
+            }
+            secondary={<ReceiptPreviewPanel preview={preview} className="lg:sticky lg:top-24" />}
+          />
+        </GlassCard>
 
         {companyValidationError ? (
           <p className="text-[12px] text-red-400 normal-case text-center px-2" role="alert">
@@ -155,7 +158,7 @@ const SubmissionReviewPage: React.FC = () => {
             trailing={<span aria-hidden>›</span>}
             className="sm:flex-1"
           >
-            {isSubmitting ? 'Submitting...' : 'Submit Expense'}
+            {isSubmitting ? 'Submitting…' : 'Submit Expense'}
           </ElmButton>
           <ElmButton
             variant="secondary"
