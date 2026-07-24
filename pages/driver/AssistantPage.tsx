@@ -54,7 +54,7 @@ const AssistantPage: React.FC = () => {
           <EmptyState
             kicker="ELM AI"
             title="ELM AI isn't available yet"
-            description="Contextual assistance will appear here in a future release. Use Home, Trips, Capture, and Pay for your work."
+            description="Contextual assistance will appear here in a future release. Use Home, Trips, Submit, and Pay for your work."
           />
         ) : (
           <>

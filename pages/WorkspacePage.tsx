@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import MissionShell from '../components/mission-control/MissionShell.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
@@ -9,9 +9,14 @@ import PageContainer from '../design-system/components/PageContainer.tsx';
 import CapabilityStateBadge from '../components/mission-control/CapabilityStateBadge.tsx';
 import { getCompanyDisplayName } from '../utils/companyMap.ts';
 import {
+  ArrowRightIcon,
+  ArrowTopRightOnSquareIcon,
   CameraIcon,
-  DocumentTextIcon,
+  ClipboardDocumentCheckIcon,
+  DocumentArrowUpIcon,
+  ExclamationTriangleIcon,
   ReceiptPercentIcon,
+  WrenchScrewdriverIcon,
 } from '@heroicons/react/24/outline';
 import {
   openPayrollTripSubmission,
@@ -19,22 +24,45 @@ import {
   PAYROLL_TRIP_SUBMISSION_LABEL,
 } from '../utils/payrollTripSubmission.ts';
 
-type CaptureKind = 'bol_pod' | 'receipt' | 'trip_paperwork';
+type FutureKind = 'receipt' | 'freight' | 'vehicle' | 'incident';
 
-interface CaptureChoice {
-  id: CaptureKind;
+interface FutureSubmission {
+  id: FutureKind;
   title: string;
   description: string;
-  taskLabel: string;
   icon: React.ReactNode;
-  productionHref?: '/submissions/bol-pod';
-  showcaseAction: 'pod' | 'receipt';
-  state: 'AVAILABLE' | 'DEMO_ONLY' | 'COMING_SOON';
 }
 
+const FUTURE_SUBMISSIONS: FutureSubmission[] = [
+  {
+    id: 'receipt',
+    title: 'Add receipt',
+    description: 'Fuel, tolls, lumper, and repair receipts',
+    icon: <ReceiptPercentIcon className="mc-submit-card-icon" aria-hidden />,
+  },
+  {
+    id: 'freight',
+    title: 'Freight photos',
+    description: 'Cargo condition photos for your trip',
+    icon: <CameraIcon className="mc-submit-card-icon" aria-hidden />,
+  },
+  {
+    id: 'vehicle',
+    title: 'Vehicle issue',
+    description: 'Report truck or trailer problems with photos',
+    icon: <WrenchScrewdriverIcon className="mc-submit-card-icon" aria-hidden />,
+  },
+  {
+    id: 'incident',
+    title: 'Incident evidence',
+    description: 'Capture evidence for an incident report',
+    icon: <ExclamationTriangleIcon className="mc-submit-card-icon" aria-hidden />,
+  },
+];
+
 /**
- * Capture — document actions. Live: Upload BOL / POD. Coming soon: Add receipt.
- * Submit Trip Form is a separate live action (not document capture).
+ * Submit — live Upload BOL / POD + Submit Trip Form, then coming-soon submissions.
+ * Route remains /capture for link stability.
  */
 const WorkspacePage: React.FC = () => {
   const navigate = useNavigate();
@@ -43,78 +71,17 @@ const WorkspacePage: React.FC = () => {
   const { startDraft, clearDraft } = useSubmissionDraft();
   const { mode, routePrefix, dataSource, actions } = useDriverExperience();
   const [simMessage, setSimMessage] = useState('');
-  const [reviewKind, setReviewKind] = useState<CaptureKind | null>(null);
 
   const company = getCompanyDisplayName(session?.companyCode);
-  const driverName = session?.driverName || 'Driver';
   const haul = dataSource.getMissionControl().activeHaul;
-  const rawType = params.get('type') || '';
-  const preselected = (
-    rawType === 'trip_paperwork' ? 'bol_pod' : rawType
-  ) as CaptureKind | '';
+  const rawType = (params.get('type') || '').toLowerCase();
+  const prefersBol =
+    rawType === 'bol_pod' || rawType === 'trip_paperwork' || rawType === 'bol' || rawType === 'pod';
 
-  const choices: CaptureChoice[] = useMemo(() => {
-    const demo = mode === 'showcase';
-    return [
-      {
-        id: 'bol_pod',
-        title: 'Upload BOL / POD',
-        description: haul
-          ? `Upload BOL or POD for trip #${haul.loadNum}`
-          : 'Upload BOL or POD for your current trip',
-        taskLabel: haul?.missingDocuments?.includes('POD')
-          ? 'Upload POD'
-          : haul?.missingDocuments?.includes('BOL')
-            ? 'Upload BOL'
-            : 'Upload BOL / POD',
-        icon: <DocumentTextIcon className="mc-capture-choice-icon" aria-hidden />,
-        productionHref: '/submissions/bol-pod',
-        showcaseAction: 'pod',
-        state: demo ? 'DEMO_ONLY' : 'AVAILABLE',
-      },
-      {
-        id: 'receipt',
-        title: 'Add receipt',
-        description: 'Fuel, tolls, lumper, and repair receipts',
-        taskLabel: 'Add receipt',
-        icon: <ReceiptPercentIcon className="mc-capture-choice-icon" aria-hidden />,
-        showcaseAction: 'receipt',
-        state: demo ? 'DEMO_ONLY' : 'COMING_SOON',
-      },
-    ];
-  }, [mode, haul]);
-
-  const ordered = useMemo(() => {
-    if (!preselected) return choices;
-    const hit = choices.find((c) => c.id === preselected);
-    if (!hit) return choices;
-    return [hit, ...choices.filter((c) => c.id !== preselected)];
-  }, [choices, preselected]);
-
-  const runChoice = async (choice: CaptureChoice) => {
-    if (choice.state === 'COMING_SOON') {
-      if (choice.id === 'receipt') {
-        setSimMessage('Receipt submission is being connected and is not available yet.');
-      } else {
-        setSimMessage('Coming soon — this capture type is not available yet.');
-      }
-      return;
-    }
-
+  const openBolPod = async () => {
     if (mode === 'showcase') {
-      setReviewKind(choice.id);
-      if (choice.showcaseAction === 'pod') {
-        const result = await actions.submitPodSimulated?.();
-        if (result) setSimMessage(`${result.disclosure}: ${result.message}`);
-      } else if (choice.showcaseAction === 'receipt') {
-        const result = await actions.submitReceiptSimulated?.();
-        if (result) setSimMessage(`${result.disclosure}: ${result.message}`);
-      }
-      return;
-    }
-
-    if (!choice.productionHref) {
-      setSimMessage('Not available yet — this capture type is not connected in Production.');
+      const result = await actions.submitPodSimulated?.();
+      if (result) setSimMessage(`${result.disclosure}: ${result.message}`);
       return;
     }
 
@@ -124,21 +91,21 @@ const WorkspacePage: React.FC = () => {
       driverName: session?.driverName || '',
       company,
     });
-    navigate(choice.productionHref);
+    navigate('/submissions/bol-pod');
   };
 
+  const bolDescription = haul
+    ? `Upload paperwork for trip #${haul.loadNum}.`
+    : 'Upload paperwork for your current trip.';
+
   return (
-    <MissionShell title="Capture" activeNav="capture">
-      <PageContainer width="content" className="space-y-6">
+    <MissionShell title="Submit" activeNav="capture">
+      <PageContainer width="content" className="space-y-6 mc-submit-page">
         <ElmPageHeader
-          eyebrow="Documents"
-          title="What are you submitting?"
+          eyebrow="Submissions"
+          title="What do you need to send?"
           align="left"
-          description={
-            mode === 'showcase'
-              ? `${driverName} — camera-first demonstration capture. Simulated only.`
-              : `${driverName} — choose a live upload. Complete only when safely stopped.`
-          }
+          description="Choose an option below. Only upload documents when safely stopped."
         />
 
         {haul ? (
@@ -154,120 +121,86 @@ const WorkspacePage: React.FC = () => {
           </p>
         ) : null}
 
-        {reviewKind ? (
-          <div className="mc-capture-review" role="status">
-            <p className="mc-kicker mb-1">Review</p>
-            <p className="mc-task-title">
-              {ordered.find((c) => c.id === reviewKind)?.taskLabel || 'Submission'} queued
-            </p>
-            <p className="mc-task-detail">
-              {mode === 'showcase'
-                ? 'Demonstration status: simulated success. Nothing reached Production.'
-                : 'Continue in the live upload flow.'}
-            </p>
-            <div className="mc-home-trip-actions mt-3">
-              {haul ? (
-                <button
-                  type="button"
-                  className="mc-secondary-action"
-                  onClick={() => navigate(`${routePrefix}/trips`)}
-                >
-                  View trip
-                </button>
-              ) : null}
-              <button type="button" className="mc-secondary-action" onClick={() => setReviewKind(null)}>
-                Upload another
-              </button>
-            </div>
-          </div>
-        ) : null}
+        <section className="mc-submit-section" aria-labelledby="submit-available-heading">
+          <h2 id="submit-available-heading" className="mc-submit-section-title">
+            Available now
+          </h2>
+          <div className="mc-submit-live-grid">
+            <button
+              type="button"
+              className={`mc-submit-live-card${prefersBol ? ' is-hinted' : ''}`}
+              onClick={() => openBolPod()}
+              aria-label="Upload BOL / POD. Upload paperwork for your current trip."
+              data-submit-action="bol-pod"
+            >
+              <span className="mc-submit-live-card-glyph" aria-hidden>
+                <DocumentArrowUpIcon className="mc-submit-card-icon" />
+              </span>
+              <span className="mc-submit-live-card-body">
+                <span className="mc-submit-live-card-title">Upload BOL / POD</span>
+                <span className="mc-submit-live-card-copy">{bolDescription}</span>
+              </span>
+              <span className="mc-submit-live-card-trail" aria-hidden>
+                <ArrowRightIcon className="mc-submit-card-icon mc-submit-card-icon--trail" />
+              </span>
+            </button>
 
-        <ul className="mc-capture-choices">
-          {ordered
-            .filter((c) => c.id === 'bol_pod')
-            .map((choice) => (
-              <li key={choice.id}>
-                <button
-                  type="button"
-                  className={`mc-capture-choice mc-capture-choice--live${
-                    preselected === choice.id ? ' is-preselected' : ''
-                  }`}
-                  onClick={() => runChoice(choice)}
-                  aria-label={`${choice.title}. ${choice.description}`}
+            <button
+              type="button"
+              className="mc-submit-live-card"
+              onClick={() => openPayrollTripSubmission()}
+              aria-label={`${PAYROLL_TRIP_SUBMISSION_LABEL}. ${PAYROLL_TRIP_SUBMISSION_HELPER} Opens in a new tab.`}
+              data-submit-action="trip-form"
+            >
+              <span className="mc-submit-live-card-glyph" aria-hidden>
+                <ClipboardDocumentCheckIcon className="mc-submit-card-icon" />
+              </span>
+              <span className="mc-submit-live-card-body">
+                <span className="mc-submit-live-card-title">{PAYROLL_TRIP_SUBMISSION_LABEL}</span>
+                <span className="mc-submit-live-card-copy">{PAYROLL_TRIP_SUBMISSION_HELPER}</span>
+              </span>
+              <span className="mc-submit-live-card-trail" aria-hidden>
+                <ArrowTopRightOnSquareIcon className="mc-submit-card-icon mc-submit-card-icon--trail" />
+              </span>
+            </button>
+          </div>
+        </section>
+
+        <section className="mc-submit-section" aria-labelledby="submit-more-heading">
+          <h2 id="submit-more-heading" className="mc-submit-section-title">
+            More submissions
+          </h2>
+          <ul className="mc-submit-future-list">
+            {FUTURE_SUBMISSIONS.map((item) => (
+              <li key={item.id}>
+                <div
+                  className="mc-submit-future-card"
+                  aria-disabled="true"
+                  data-submit-future={item.id}
                 >
-                  <span className="mc-capture-choice-glyph" aria-hidden>
-                    {choice.icon}
+                  <span className="mc-submit-future-card-glyph" aria-hidden>
+                    {item.icon}
                   </span>
-                  <span className="mc-capture-choice-body">
-                    <span className="mc-capture-choice-title-row">
-                      <span className="mc-capture-choice-title">{choice.title}</span>
+                  <span className="mc-submit-future-card-body">
+                    <span className="mc-submit-future-card-title-row">
+                      <span className="mc-submit-future-card-title">{item.title}</span>
+                      <CapabilityStateBadge state="COMING_SOON" />
                     </span>
-                    <span className="mc-capture-choice-task">{choice.taskLabel}</span>
-                    <span className="mc-capture-choice-desc">{choice.description}</span>
+                    <span className="mc-submit-future-card-copy">{item.description}</span>
                   </span>
-                  <span className="mc-capture-choice-cam" aria-hidden>
-                    <CameraIcon className="mc-capture-choice-icon" />
-                  </span>
-                </button>
+                </div>
               </li>
             ))}
-        </ul>
+          </ul>
+        </section>
 
-        <button
-          type="button"
-          className="mc-live-action w-full text-left"
-          onClick={() => openPayrollTripSubmission()}
-          aria-label={PAYROLL_TRIP_SUBMISSION_LABEL}
-        >
-          <span className="mc-live-action-kicker">Trip form</span>
-          <span className="mc-live-action-title">{PAYROLL_TRIP_SUBMISSION_LABEL}</span>
-          <span className="mc-live-action-copy">{PAYROLL_TRIP_SUBMISSION_HELPER}</span>
-        </button>
-
-        <ul className="mc-capture-choices">
-          {ordered
-            .filter((c) => c.id !== 'bol_pod')
-            .map((choice) => {
-              const unavailable = choice.state === 'COMING_SOON';
-              return (
-                <li key={choice.id}>
-                  <button
-                    type="button"
-                    className={`mc-capture-choice${unavailable ? ' is-unavailable' : ''}`}
-                    onClick={() => runChoice(choice)}
-                    aria-label={`${choice.title}: ${choice.taskLabel}. ${choice.description}`}
-                  >
-                    <span className="mc-capture-choice-glyph" aria-hidden>
-                      {choice.icon}
-                    </span>
-                    <span className="mc-capture-choice-body">
-                      <span className="mc-capture-choice-title-row">
-                        <span className="mc-capture-choice-title">{choice.title}</span>
-                        <CapabilityStateBadge
-                          state={
-                            choice.state === 'COMING_SOON'
-                              ? 'COMING_SOON'
-                              : choice.state === 'DEMO_ONLY'
-                                ? 'DEMO_ONLY'
-                                : 'AVAILABLE'
-                          }
-                        />
-                      </span>
-                      <span className="mc-capture-choice-task">{choice.taskLabel}</span>
-                      <span className="mc-capture-choice-desc">{choice.description}</span>
-                    </span>
-                    <span className="mc-capture-choice-cam" aria-hidden>
-                      <CameraIcon className="mc-capture-choice-icon" />
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-        </ul>
-
-        <p className="mc-safe-driving-note">
-          Upload documents only when safely stopped. Do not photograph or submit while driving.
-        </p>
+        {mode === 'showcase' ? (
+          <p className="mc-section-copy">
+            Showcase can simulate Upload BOL / POD from Available now. Future submission types stay
+            Coming soon and do not write to Production.
+            {routePrefix ? ` Demo path: ${routePrefix}/capture.` : ''}
+          </p>
+        ) : null}
       </PageContainer>
     </MissionShell>
   );

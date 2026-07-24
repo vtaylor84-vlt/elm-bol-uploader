@@ -41,9 +41,9 @@ export const SHELL_NAV_ITEMS: ShellNavItem[] = [
   },
   {
     id: 'capture',
-    label: 'Capture',
+    label: 'Submit',
     path: '/capture',
-    icon: <ShellIcons.Capture />,
+    icon: <ShellIcons.Submit />,
     matchSuffixes: ['/capture', '/workspace'],
     mobilePrimary: true,
   },

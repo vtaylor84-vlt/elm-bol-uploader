@@ -2,7 +2,7 @@ import React from 'react';
 import {
   HomeIcon,
   MapIcon,
-  CameraIcon,
+  DocumentArrowUpIcon,
   WalletIcon,
   ChatBubbleLeftRightIcon,
   TruckIcon,
@@ -11,6 +11,7 @@ import {
   MagnifyingGlassIcon,
   BellIcon,
   SparklesIcon,
+  ArrowRightOnRectangleIcon,
 } from '@heroicons/react/24/outline';
 
 const iconClass = 'mc-shell-icon';
@@ -23,7 +24,9 @@ export const ShellIcons = {
   Trips: () => <MapIcon className={iconClass} aria-hidden />,
   /** @deprecated Use Trips */
   Loads: () => <MapIcon className={iconClass} aria-hidden />,
-  Capture: () => <CameraIcon className={iconClass} aria-hidden />,
+  /** Submit covers BOL/POD, trip form, and future evidence uploads. */
+  Capture: () => <DocumentArrowUpIcon className={iconClass} aria-hidden />,
+  Submit: () => <DocumentArrowUpIcon className={iconClass} aria-hidden />,
   Pay: () => <WalletIcon className={iconClass} aria-hidden />,
   Messages: () => <ChatBubbleLeftRightIcon className={iconClass} aria-hidden />,
   Equipment: () => <TruckIcon className={iconClass} aria-hidden />,
@@ -34,4 +37,5 @@ export const ShellIcons = {
   ElmAi: () => <SparklesIcon className={iconClass} aria-hidden />,
   /** @deprecated Use ElmAi */
   Assistant: () => <SparklesIcon className={iconClass} aria-hidden />,
+  SignOut: () => <ArrowRightOnRectangleIcon className={iconClass} aria-hidden />,
 } as const;

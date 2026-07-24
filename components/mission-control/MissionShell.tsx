@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.tsx';
 import ElmBrandLogo from '../terminal/ElmBrandLogo.tsx';
 import BrandMark from '../brand/BrandMark.tsx';
@@ -135,13 +135,16 @@ const MissionShell: React.FC<MissionShellProps> = ({
                     <ShellIcons.ElmAi />
                   </NavLink>
                 </>
-              ) : (
-                <Link to="/more" className="mc-shell-util" aria-label="Help and account" title="More">
-                  <ShellIcons.More />
-                </Link>
-              )}
-              <button type="button" onClick={openLogout} className="mc-shell-header-logout">
-                Sign out
+              ) : null}
+              <button
+                type="button"
+                onClick={openLogout}
+                className="mc-shell-header-logout"
+                aria-label="Sign out"
+                title="Sign out"
+              >
+                <ShellIcons.SignOut />
+                <span className="mc-shell-header-logout-label">Sign out</span>
               </button>
             </div>
           </div>

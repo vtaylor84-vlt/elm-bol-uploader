@@ -18,7 +18,7 @@ const ReceiptPage: React.FC = () => {
     <AuthenticatedShell title="Receipt">
       <PageContainer width="content">
         <ElmPageHeader
-          eyebrow="Capture"
+          eyebrow="Submit"
           title="Receipt"
           align="left"
           description="This capture type is not open in Production yet."
@@ -31,7 +31,7 @@ const ReceiptPage: React.FC = () => {
             reopens in Production.
           </p>
           <ElmButton type="button" variant="secondary" onClick={() => navigate('/capture')}>
-            Back to Capture
+            Back to Submit
           </ElmButton>
         </GlassCard>
       </PageContainer>

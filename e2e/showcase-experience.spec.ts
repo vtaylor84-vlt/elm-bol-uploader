@@ -31,14 +31,16 @@ test.describe('Showcase experience workflows', () => {
     }
   });
 
-  test('Capture presents Upload BOL / POD and Add receipt', async ({ page }) => {
+  test('Submit presents Available now live cards and Coming soon list', async ({ page }) => {
     await gotoShowcase(page, '/showcase/capture', 'BST');
-    await expect(page.getByRole('heading', { name: /What are you submitting/i })).toBeVisible({
+    await expect(page.getByRole('heading', { name: /What do you need to send/i })).toBeVisible({
       timeout: 15_000,
     });
+    await expect(page.getByRole('heading', { name: 'Available now' })).toBeVisible();
     await expect(page.getByRole('button', { name: /Upload BOL \/ POD/i }).first()).toBeVisible();
-    await expect(page.getByRole('button', { name: /Add receipt/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /Submit Trip Form/i }).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: /Add receipt/i })).toHaveCount(0);
+    await expect(page.locator('[data-submit-future="receipt"]')).toBeVisible();
     await expect(page.getByText(/Trip paperwork/i)).toHaveCount(0);
   });
 
@@ -81,7 +83,8 @@ test.describe('Showcase experience workflows', () => {
     const nav = page.getByRole('navigation', { name: 'Primary' }).first();
     await expect(nav.getByText('Home')).toBeVisible();
     await expect(nav.getByText('Trips')).toBeVisible();
-    await expect(nav.getByText('Capture')).toBeVisible();
+    await expect(nav.getByText('Submit')).toBeVisible();
+    await expect(nav.getByText('Capture')).toHaveCount(0);
     await expect(nav.getByText('Pay')).toBeVisible();
     await expect(nav.getByText('More')).toBeVisible();
     await expect(nav.getByText('Messages')).toHaveCount(0);
@@ -124,15 +127,15 @@ test.describe('Showcase experience workflows', () => {
     await expect(page.getByText(/Submit trip for payroll/i)).toHaveCount(0);
   });
 
-  test('Submit Trip Form entry is present on Capture after Upload BOL / POD', async ({ page }) => {
+  test('Submit Trip Form entry is present on Submit after Upload BOL / POD', async ({ page }) => {
     await gotoAuthed(page, '/capture', driverSession('GLX'));
+    await expect(page).toHaveURL(/\/capture/);
     const bol = page.getByRole('button', { name: /Upload BOL \/ POD/i }).first();
     const form = page.getByRole('button', { name: /Submit Trip Form/i }).first();
     await expect(bol).toBeVisible();
     await expect(form).toBeVisible();
-    const bolBox = await bol.boundingBox();
-    const formBox = await form.boundingBox();
-    expect(bolBox && formBox && bolBox.y < formBox.y).toBeTruthy();
+    const available = page.getByRole('heading', { name: 'Available now' });
+    await expect(available).toBeVisible();
     const popupPromise = page.waitForEvent('popup');
     await form.click();
     const popup = await popupPromise;

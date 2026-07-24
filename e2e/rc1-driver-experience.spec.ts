@@ -39,11 +39,28 @@ test.describe('RC1 authenticated shells', () => {
 
   test('logout clears session and returns to login', async ({ page }) => {
     await gotoAuthed(page, '/home', driverSession('GLX'));
-    await page.getByRole('button', { name: /Sign out|Logout/i }).first().click();
+    await expect(page.getByRole('link', { name: 'Help and account' })).toHaveCount(0);
+    const headerSignOut = page.locator('.mc-shell-header-logout');
+    await expect(headerSignOut).toBeVisible();
+    await expect(headerSignOut).toHaveAttribute('aria-label', 'Sign out');
+    await headerSignOut.click();
     await page.getByRole('dialog').getByRole('button', { name: /Logout|Sign out/i }).click();
     await expect(page).toHaveURL(/\/login/);
     await page.goto('/home');
     await expect(page).toHaveURL(/\/login/);
+  });
+
+  test('header Sign out is visible across key widths', async ({ page }) => {
+    await gotoAuthed(page, '/home', driverSession('BST'));
+    for (const width of [390, 768, 1024, 1440, 1920]) {
+      await page.setViewportSize({ width, height: 900 });
+      const headerSignOut = page.locator('.mc-shell-header-logout');
+      await expect(headerSignOut).toBeVisible();
+      await expect(headerSignOut).toHaveAttribute('aria-label', 'Sign out');
+      await expect(page.getByRole('link', { name: 'Help and account' })).toHaveCount(0);
+      const box = await headerSignOut.boundingBox();
+      expect(box && box.height >= 44).toBeTruthy();
+    }
   });
 });
 
@@ -53,8 +70,8 @@ test.describe('RC1 production routes', () => {
     { path: '/today', heading: /Your work|Assigned trips|What do you need to do/i },
     { path: '/trips', heading: /Your trips|Assigned trips/i },
     { path: '/loads', heading: /Your trips|Assigned trips/i },
-    { path: '/capture', heading: /What are you submitting/i },
-    { path: '/workspace', heading: /What are you submitting/i },
+    { path: '/capture', heading: /What do you need to send/i },
+    { path: '/workspace', heading: /What do you need to send/i },
     { path: '/pay', heading: /Your pay|Earnings|Submit Trip Form/i },
     { path: '/more', heading: /Account & tools/i },
   ] as const;
@@ -86,11 +103,52 @@ test.describe('RC1 production routes', () => {
 
   test('expense workflow is Coming soon in Production', async ({ page }) => {
     await gotoAuthed(page, '/capture', driverSession('BST'));
-    await page.getByRole('button', { name: /Receipt|Add receipt/i }).first().click();
-    await expect(page).not.toHaveURL(/\/submissions\/receipt/);
-    await expect(
-      page.getByText(/Receipt submission is being connected and is not available yet/i).first()
-    ).toBeVisible();
+    const receipt = page.locator('[data-submit-future="receipt"]');
+    await expect(receipt).toBeVisible();
+    await expect(receipt).toHaveAttribute('aria-disabled', 'true');
+    await expect(page.getByRole('button', { name: /Add receipt/i })).toHaveCount(0);
+    await expect(page).toHaveURL(/\/capture/);
+    await expect(page.getByText(/Coming soon/i).first()).toBeVisible();
+  });
+
+  test('Submit page shows equal live cards and separated coming soon', async ({ page }) => {
+    await gotoAuthed(page, '/capture', driverSession('GLX'));
+    await expect(page.getByRole('heading', { name: 'Available now' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'More submissions' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /What do you need to send/i })).toBeVisible();
+    await expect(page.getByText('Documents', { exact: true })).toHaveCount(0);
+
+    const bol = page.locator('[data-submit-action="bol-pod"]');
+    const form = page.locator('[data-submit-action="trip-form"]');
+    await expect(bol).toBeVisible();
+    await expect(form).toBeVisible();
+    await expect(bol).not.toHaveClass(/is-selected|is-active/);
+    await expect(form).not.toHaveClass(/is-selected|is-active/);
+
+    const bolBox = await bol.boundingBox();
+    const formBox = await form.boundingBox();
+    expect(bolBox && formBox).toBeTruthy();
+    if (bolBox && formBox) {
+      expect(Math.abs(bolBox.height - formBox.height)).toBeLessThan(48);
+    }
+
+    await expect(bol.locator('svg').first()).toBeVisible();
+    await expect(form.locator('[class*="ArrowTopRight"], svg').first()).toBeVisible();
+    // Trip form must not use a camera icon path
+    const formHtml = await form.innerHTML();
+    expect(formHtml.toLowerCase()).not.toContain('camera');
+
+    await expect(page.locator('[data-submit-future="receipt"]')).toBeVisible();
+    await expect(page.locator('[data-submit-future="freight"]')).toBeVisible();
+    await expect(page.locator('[data-submit-future="vehicle"]')).toBeVisible();
+    await expect(page.locator('[data-submit-future="incident"]')).toBeVisible();
+    await expect(page.locator('.mc-capture-choice-cam')).toHaveCount(0);
+
+    const safety = page.getByText('Only upload documents when safely stopped.');
+    await expect(safety).toHaveCount(1);
+
+    await expect(page.getByRole('navigation', { name: 'Primary' }).getByText('Submit')).toBeVisible();
+    await expect(page.getByRole('navigation', { name: 'Primary' }).getByText('Capture')).toHaveCount(0);
   });
 
   test('receipt deep link stays unavailable', async ({ page }) => {

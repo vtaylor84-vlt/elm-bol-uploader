@@ -58,7 +58,7 @@ const ShowcaseHubPage: React.FC = () => {
             {[
               ['home', 'Home'],
               ['trips', 'Trips'],
-              ['capture', 'Capture'],
+              ['capture', 'Submit'],
               ['pay', 'Pay'],
               ['more', 'More'],
             ].map(([path, label]) => (

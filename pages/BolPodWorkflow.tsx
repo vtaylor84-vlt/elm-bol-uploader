@@ -2233,7 +2233,7 @@ const BolPodWorkflow: React.FC = () => {
           onClick={() => navigate('/capture')}
           className="text-[8px] font-black uppercase tracking-widest text-blue-400 hover:text-blue-300"
         >
-          ← Back to Capture
+          ← Back to Submit
         </button>
       </div>
 
