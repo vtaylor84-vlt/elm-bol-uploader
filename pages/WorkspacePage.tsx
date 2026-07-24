@@ -15,7 +15,12 @@ import {
   PhotoIcon,
   WrenchScrewdriverIcon,
   ExclamationTriangleIcon,
+  BanknotesIcon,
 } from '@heroicons/react/24/outline';
+import {
+  openPayrollTripSubmission,
+  PAYROLL_TRIP_SUBMISSION_LABEL,
+} from '../utils/payrollTripSubmission.ts';
 
 type CaptureKind =
   | 'trip_paperwork'
@@ -181,6 +186,30 @@ const WorkspacePage: React.FC = () => {
             {haul.appointmentLabel ? ` · ${haul.appointmentLabel}` : ''}
           </p>
         ) : null}
+
+        <section className="mc-payroll-submit-card" aria-labelledby="payroll-submit-heading">
+          <div className="mc-payroll-submit-card-main">
+            <span className="mc-capture-choice-glyph" aria-hidden>
+              <BanknotesIcon className="mc-capture-choice-icon" />
+            </span>
+            <div className="min-w-0">
+              <h2 id="payroll-submit-heading" className="mc-capture-choice-title">
+                {PAYROLL_TRIP_SUBMISSION_LABEL}
+              </h2>
+              <p className="mc-capture-choice-desc">
+                Continue to the payroll trip-submission workflow for completed trips. Your Driver
+                Workspace session stays open. Submission status is not synced back here yet.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="mc-exception-action"
+            onClick={() => openPayrollTripSubmission()}
+          >
+            Open trip submission
+          </button>
+        </section>
 
         {simMessage ? (
           <p className="mc-sim-status" role="status">

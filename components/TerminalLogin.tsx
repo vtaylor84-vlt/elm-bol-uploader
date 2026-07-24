@@ -107,10 +107,10 @@ const TerminalLogin: React.FC<TerminalLoginProps> = ({ onLogin }) => {
     <GlassCard glowColor="cyan" padding="lg" className="w-full login-card-enter">
       <div className="text-center space-y-1.5 mb-6">
         <h1 className="text-lg sm:text-xl font-bold text-white tracking-tight normal-case">
-          Sign in to Driver Terminal
+          Sign in to Driver Workspace
         </h1>
         <p className="text-xs text-zinc-500 normal-case">
-          Enter your authorized email to open the Driver Workspace.
+          Your work, trips, paperwork, and pay—all in one place.
         </p>
       </div>
 
@@ -212,14 +212,14 @@ const TerminalLogin: React.FC<TerminalLoginProps> = ({ onLogin }) => {
               Secure driver access
             </p>
             <h2 className="text-4xl xl:text-5xl font-extrabold tracking-tight text-white leading-tight normal-case">
-              Operational command for{' '}
+              Your work, trips, paperwork, and pay—{' '}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-300">
-                professional fleet drivers
+                all in one place
               </span>
             </h2>
             <p className="text-zinc-400 text-sm leading-relaxed max-w-lg normal-case">
-              Sign in with your approved email, open your Driver Workspace, and submit BOL/POD and
-              expense documents through the verified upload path.
+              Sign in with your approved email to open the Driver Workspace. Submit trip paperwork,
+              receipts, and continue to payroll trip submission when a trip is ready.
             </p>
             <div className="grid grid-cols-2 gap-3 max-w-md pt-1">
               <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 flex items-center gap-3">

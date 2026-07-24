@@ -2830,6 +2830,31 @@ body.elm-login-page #root {
   background: linear-gradient(180deg, rgba(8, 13, 26, 0.98), rgba(8, 13, 26, 0.92));
 }
 
+/*
+ * Root cause (tablet Demo controls): mobile/tablet shell header is position:fixed
+ * at top:0 and covered the sticky demo chrome hit targets. In Showcase, keep the
+ * shell header in normal flow so Demo controls remain clickable without force-click.
+ */
+.showcase-layout .mc-shell-header {
+  position: relative;
+  top: auto;
+  left: auto;
+  right: auto;
+  z-index: 1;
+}
+
+.showcase-layout .mc-shell-content {
+  padding-top: 1.25rem;
+}
+
+@media (min-width: 1024px) {
+  .showcase-layout .mc-shell-header {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+  }
+}
+
 .demo-chrome-bar {
   display: flex;
   flex-wrap: wrap;
@@ -3046,10 +3071,35 @@ body.elm-login-page #root {
   margin-right: 0.35rem;
 }
 
-.mc-attention-card--warning {
-  border-color: rgba(245, 158, 11, 0.35);
-  background: rgba(245, 158, 11, 0.08);
+.mc-payroll-submit-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1rem 1.05rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  background: linear-gradient(160deg, rgba(6, 78, 59, 0.35), rgba(9, 12, 22, 0.9));
 }
+
+.mc-payroll-submit-card-main {
+  display: flex;
+  gap: 0.85rem;
+  align-items: flex-start;
+}
+
+@media (min-width: 640px) {
+  .mc-payroll-submit-card {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.mc-attention-card--info {
+  border-color: rgba(56, 189, 248, 0.3);
+  background: rgba(56, 189, 248, 0.07);
+}
+
 
 @media (min-width: 1440px) {
   .mc-home {

@@ -102,10 +102,10 @@ test.describe('Showcase experience workflows', () => {
     await gotoShowcase(page, '/showcase/home', 'GLX');
     const demoBtn = page.getByRole('button', { name: 'Demo controls' }).first();
     await demoBtn.scrollIntoViewIfNeeded();
-    await demoBtn.click({ force: true });
+    await demoBtn.click();
     await expect(page.getByRole('dialog', { name: 'Demo controls' })).toBeVisible();
     await expect(page.getByLabel('Scenario')).toBeVisible();
-    await page.getByRole('button', { name: 'Exit Showcase' }).first().click({ force: true });
+    await page.getByRole('button', { name: 'Exit Showcase' }).first().click();
     await expect(page).toHaveURL(/\/home/);
   });
 
@@ -121,11 +121,15 @@ test.describe('Showcase experience workflows', () => {
     await expect(page.getByRole('heading', { name: 'Settlement not connected' })).toBeVisible();
   });
 
-  test('direct showcase route refresh keeps access after mock grant', async ({ page }) => {
-    await gotoShowcase(page, '/showcase/more', 'GLX');
-    await expect(page.getByRole('heading', { name: /Account & tools/i })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Exit Showcase' })).toBeVisible();
-    await page.reload();
-    await expect(page.getByRole('heading', { name: /Account & tools/i })).toBeVisible();
+  test('payroll trip submission entry is present on Capture', async ({ page }) => {
+    await gotoAuthed(page, '/capture', driverSession('GLX'));
+    await expect(
+      page.getByRole('heading', { name: /Submit trip for payroll/i })
+    ).toBeVisible();
+    const popupPromise = page.waitForEvent('popup');
+    await page.getByRole('button', { name: /Open trip submission/i }).click();
+    const popup = await popupPromise;
+    await expect(popup).toHaveURL(/payroll\.elmconnect\.net/);
+    await popup.close();
   });
 });

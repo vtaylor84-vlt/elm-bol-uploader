@@ -16,6 +16,10 @@ import {
   activateMissionCapture,
   type MissionCaptureTarget,
 } from '../utils/missionCapture.ts';
+import {
+  openPayrollTripSubmission,
+  PAYROLL_TRIP_SUBMISSION_LABEL,
+} from '../utils/payrollTripSubmission.ts';
 
 function greetingForNow(): string {
   const hour = new Date().getHours();
@@ -175,6 +179,43 @@ const TodayPage: React.FC = () => {
           </div>
           <ExceptionBanner exceptions={model.exceptions} onActivateAction={openCapture} />
           <OutstandingTasks tasks={model.tasks} onActivateTask={openCapture} />
+
+          {(model.activeHaul?.missingDocuments?.length ||
+            model.exceptions.some((e) => (e.title || '').toLowerCase().includes('paper'))) ? (
+            <div className="mc-attention-card mc-attention-card--info">
+              <div className="min-w-0">
+                <p className="mc-kicker mb-1">Trip submission</p>
+                <p className="mc-section-copy">
+                  When paperwork is ready, continue to the payroll trip-submission workflow. Status
+                  is not synced back to this screen yet.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="mc-exception-action shrink-0"
+                onClick={() => openPayrollTripSubmission()}
+              >
+                {PAYROLL_TRIP_SUBMISSION_LABEL}
+              </button>
+            </div>
+          ) : (
+            <div className="mc-attention-card mc-attention-card--info">
+              <div className="min-w-0">
+                <p className="mc-kicker mb-1">Trip submission</p>
+                <p className="mc-section-copy">
+                  Submit a completed trip for payroll when you are ready. Opens in a new tab so this
+                  workspace stays open.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="mc-secondary-action shrink-0"
+                onClick={() => openPayrollTripSubmission()}
+              >
+                {PAYROLL_TRIP_SUBMISSION_LABEL}
+              </button>
+            </div>
+          )}
 
           {mode === 'showcase' && ackMessage ? (
             <div className="mc-attention-card mc-attention-card--critical">

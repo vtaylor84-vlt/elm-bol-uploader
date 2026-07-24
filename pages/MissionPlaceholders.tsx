@@ -13,6 +13,10 @@ import { ELM_VERSION } from '../design-system/tokens.ts';
 import { getReleaseIdentity } from '../utils/releaseIdentity.ts';
 import { isShowcaseGrantPresentAndUnexpired } from '../utils/showcaseGrantStorage.ts';
 import type { LoadBucket, LoadListItem } from '../services/dataSource/types.ts';
+import {
+  openPayrollTripSubmission,
+  PAYROLL_TRIP_SUBMISSION_LABEL,
+} from '../utils/payrollTripSubmission.ts';
 
 const BUCKET_LABEL: Record<LoadBucket, string> = {
   current: 'Current',
@@ -312,6 +316,16 @@ export const LoadsPage: React.FC = () => {
                     >
                       Submit paperwork
                     </Link>
+                    {bucket === 'completed' ||
+                    (selected.statusLabel || '').toLowerCase().includes('deliver') ? (
+                      <button
+                        type="button"
+                        className="mc-exception-action"
+                        onClick={() => openPayrollTripSubmission()}
+                      >
+                        {PAYROLL_TRIP_SUBMISSION_LABEL}
+                      </button>
+                    ) : null}
                     {mode === 'showcase' ? (
                       <Link
                         to={messagesTo}
@@ -536,6 +550,22 @@ export const PayPage: React.FC = () => {
             </ElmCard>
           </>
         )}
+
+        <ElmCard variant="muted" padding="md" as="section" aria-label="Trip submission">
+          <p className="mc-kicker mb-2">Completed trips</p>
+          <h2 className="mc-section-title">{PAYROLL_TRIP_SUBMISSION_LABEL}</h2>
+          <p className="mc-section-copy">
+            Continue to the payroll trip-submission workflow when a trip is ready. Pay details and
+            statements will appear here when connected — this link does not calculate pay.
+          </p>
+          <button
+            type="button"
+            className="mc-exception-action mt-4"
+            onClick={() => openPayrollTripSubmission()}
+          >
+            Open trip submission
+          </button>
+        </ElmCard>
       </div>
     </MissionShell>
   );
