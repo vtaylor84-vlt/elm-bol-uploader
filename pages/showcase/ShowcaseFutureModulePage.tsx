@@ -247,7 +247,7 @@ const ShowcaseFutureModulePage: React.FC<ShowcaseFutureModulePageProps> = ({ mod
               className="mc-exception-action"
               onClick={() => run(() => actions.askAssistant!('How do I upload a POD?'))}
             >
-              Simulate assistant question
+              Ask a demo question
             </button>
           </div>
         ) : null}

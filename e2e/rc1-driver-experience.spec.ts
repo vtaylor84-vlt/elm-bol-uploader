@@ -15,7 +15,7 @@ test.describe('RC1 authenticated shells', () => {
       await expect(
         page.getByText(carrier === 'GLX' ? 'Greenleaf Xpress' : 'BST Expedite Inc').first()
       ).toBeVisible();
-      await expect(page.getByRole('heading', { name: 'No current load available' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'No current trip available' })).toBeVisible();
       await expect(page.getByText('48291')).toHaveCount(0);
       await expect(page.getByText('Dallas')).toHaveCount(0);
       await expect(page.getByRole('navigation', { name: 'Primary' }).first()).toBeVisible();
@@ -40,8 +40,8 @@ test.describe('RC1 authenticated shells', () => {
 
 test.describe('RC1 production routes', () => {
   const routes = [
-    { path: '/home', heading: /Your work|No current load|Next step/i },
-    { path: '/today', heading: /Your work|No current load|Next step/i },
+    { path: '/home', heading: /Your work|No current trip|Next step/i },
+    { path: '/today', heading: /Your work|No current trip|Next step/i },
     { path: '/trips', heading: /Your trips|No live trip list/i },
     { path: '/loads', heading: /Your trips|No live trip list/i },
     { path: '/capture', heading: /What are you submitting/i },

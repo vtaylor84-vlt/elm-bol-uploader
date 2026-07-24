@@ -36,7 +36,7 @@ const EquipmentPage: React.FC = () => {
           <p className="mc-section-copy">
             {hasData
               ? 'Demonstration data only — Showcase equipment preview.'
-              : 'Truck, trailer, and inspection status will appear here when equipment service is connected.'}
+              : 'Truck, trailer, and inspection status will appear here when connected.'}
           </p>
         </header>
 

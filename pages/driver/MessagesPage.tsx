@@ -148,13 +148,13 @@ const MessagesPage: React.FC = () => {
                   <dl className="mc-meta-grid">
                     {selected.relatedLoadNum ? (
                       <div>
-                        <dt>Related load</dt>
+                        <dt>Related trip</dt>
                         <dd>#{selected.relatedLoadNum}</dd>
                       </div>
                     ) : null}
                     {selected.relatedEquipment ? (
                       <div>
-                        <dt>Related equipment</dt>
+                        <dt>Related vehicle</dt>
                         <dd>{selected.relatedEquipment}</dd>
                       </div>
                     ) : null}
@@ -181,7 +181,7 @@ const MessagesPage: React.FC = () => {
                         className="mc-exception-action"
                         onClick={() => runAck(selected.id, 'ack')}
                       >
-                        Simulate acknowledge
+                        Acknowledge (demo)
                       </button>
                     ) : null}
                     <button

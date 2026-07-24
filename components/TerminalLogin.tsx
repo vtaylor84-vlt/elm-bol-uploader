@@ -110,7 +110,7 @@ const TerminalLogin: React.FC<TerminalLoginProps> = ({ onLogin }) => {
           Sign in to Driver Terminal
         </h1>
         <p className="text-xs text-zinc-500 normal-case">
-          Enter your authorized email to open today&apos;s mission.
+          Enter your authorized email to open the Driver Workspace.
         </p>
       </div>
 
@@ -218,7 +218,7 @@ const TerminalLogin: React.FC<TerminalLoginProps> = ({ onLogin }) => {
               </span>
             </h2>
             <p className="text-zinc-400 text-sm leading-relaxed max-w-lg normal-case">
-              Sign in with your approved email, review today&apos;s mission, and submit BOL/POD and
+              Sign in with your approved email, open your Driver Workspace, and submit BOL/POD and
               expense documents through the verified upload path.
             </p>
             <div className="grid grid-cols-2 gap-3 max-w-md pt-1">

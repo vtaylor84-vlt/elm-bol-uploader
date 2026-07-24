@@ -51,7 +51,7 @@ const TerminalAppHeader: React.FC<TerminalAppHeaderProps> = ({
               type="button"
               onClick={() => navigate('/today')}
               className="shrink-0 rounded-lg text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
-              aria-label="ELM CONNECT home — Mission Control Today"
+              aria-label="ELM CONNECT home"
             >
               <ElmBrandLogo size="sm" subtitle={false} />
             </button>

@@ -14,7 +14,7 @@ const EarningsCard: React.FC<EarningsCardProps> = ({ earnings }) => (
         <h2 className="mc-section-title">{earnings.periodLabel}</h2>
       </div>
       {earnings.capability === 'DEMONSTRATION' ? (
-        <span className="mc-capability-chip">Not live pay data</span>
+        <span className="mc-capability-chip">Demo only</span>
       ) : null}
     </div>
     <p className="mc-earnings-value" aria-label="Projected settlement">
