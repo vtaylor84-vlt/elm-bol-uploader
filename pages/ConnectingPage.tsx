@@ -33,7 +33,7 @@ const ConnectingPage: React.FC = () => {
     );
     timers.push(
       window.setTimeout(
-        () => navigate('/today', { replace: true }),
+        () => navigate('/home', { replace: true }),
         CONNECT_STEPS.length * 520 + 700
       )
     );

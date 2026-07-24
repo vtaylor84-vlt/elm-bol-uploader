@@ -13,18 +13,24 @@ type FutureModule =
   | 'documents'
   | 'performance'
   | 'timeline'
-  | 'assistant';
+  | 'assistant'
+  | 'help'
+  | 'preferences'
+  | 'rewards';
 
 const TITLES: Record<FutureModule, string> = {
   messages: 'Messages',
-  truck: 'Truck',
+  truck: 'My vehicle',
   safety: 'Safety',
-  'home-time': 'Home Time',
+  'home-time': 'Schedule & availability',
   benefits: 'Benefits',
   documents: 'Documents',
   performance: 'Performance',
-  timeline: 'Driver Timeline',
-  assistant: 'AI Assistant',
+  timeline: 'Activity',
+  assistant: 'ELM AI',
+  help: 'Help',
+  preferences: 'Notification preferences',
+  rewards: 'Rewards',
 };
 
 interface ShowcaseFutureModulePageProps {
@@ -51,7 +57,7 @@ const ShowcaseFutureModulePage: React.FC<ShowcaseFutureModulePageProps> = ({ mod
         <header>
           <p className="mc-kicker">Showcase</p>
           <h1 className="mc-page-title">{TITLES[module]}</h1>
-          <p className="mc-section-copy">FUTURE CAPABILITY · DEMONSTRATION DATA · NOT CONNECTED TO PRODUCTION</p>
+          <p className="mc-section-copy">Demonstration data · Coming soon / demo module · Not connected to Production</p>
         </header>
 
         {status ? (
@@ -78,7 +84,7 @@ const ShowcaseFutureModulePage: React.FC<ShowcaseFutureModulePageProps> = ({ mod
                     className="mc-exception-action mt-3"
                     onClick={() => run(() => actions.acknowledgeMessage!(m.id))}
                   >
-                    Simulate acknowledge
+                    Mark acknowledged (demo)
                   </button>
                 </ElmCard>
               </li>
@@ -104,7 +110,7 @@ const ShowcaseFutureModulePage: React.FC<ShowcaseFutureModulePageProps> = ({ mod
                     className="mc-exception-action mt-4"
                     onClick={() => run(() => actions.requestMaintenance!())}
                   >
-                    Simulate maintenance request
+                    Request maintenance (demo)
                   </button>
                 </>
               );
@@ -130,7 +136,7 @@ const ShowcaseFutureModulePage: React.FC<ShowcaseFutureModulePageProps> = ({ mod
                     className="mc-exception-action mt-4"
                     onClick={() => run(() => actions.completeTraining!())}
                   >
-                    Simulate training complete
+                    Complete training (demo)
                   </button>
                 </>
               );
@@ -152,7 +158,7 @@ const ShowcaseFutureModulePage: React.FC<ShowcaseFutureModulePageProps> = ({ mod
                     className="mc-exception-action mt-4"
                     onClick={() => run(() => actions.requestHomeTime!())}
                   >
-                    Simulate home-time request
+                    Request home time (demo)
                   </button>
                 </>
               );
@@ -241,9 +247,24 @@ const ShowcaseFutureModulePage: React.FC<ShowcaseFutureModulePageProps> = ({ mod
               className="mc-exception-action"
               onClick={() => run(() => actions.askAssistant!('How do I upload a POD?'))}
             >
-              Simulate assistant question
+              Ask a demo question
             </button>
           </div>
+        ) : null}
+
+        {module === 'help' || module === 'preferences' || module === 'rewards' ? (
+          <ElmCard padding="md">
+            <p className="mc-section-copy">
+              {module === 'help'
+                ? 'Showcase help explains demonstration data, Demo controls, and how to exit safely. No production support ticket is created.'
+                : module === 'preferences'
+                  ? 'Notification preferences are demonstration-only in Showcase.'
+                  : 'Rewards is a future capability preview — Coming soon in Production.'}
+            </p>
+            <span className="mc-capability-chip mt-3 inline-flex">
+              {module === 'rewards' ? 'FUTURE CAPABILITY' : 'DEMONSTRATION DATA'}
+            </span>
+          </ElmCard>
         ) : null}
 
         <p className="text-center">

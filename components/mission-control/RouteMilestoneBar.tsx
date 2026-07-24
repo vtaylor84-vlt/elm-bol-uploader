@@ -18,7 +18,7 @@ const RouteMilestoneBar: React.FC<RouteMilestoneBarProps> = ({
       <div className="flex items-center justify-between gap-2">
         <p className="mc-kicker mb-0">Route progress</p>
         {capabilityNote ? (
-          <span className="mc-capability-chip">Sample milestones</span>
+          <span className="mc-capability-chip">Demo only</span>
         ) : null}
       </div>
       <ol className="mc-milestone" aria-label="Route milestones">

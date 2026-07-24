@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { SHELL_NAV_ITEMS, isShellNavActive, type BottomNavId } from './shellNav.tsx';
+import { MOBILE_NAV_ITEMS, isShellNavActive, type BottomNavId } from './shellNav.tsx';
 
 export type { BottomNavId };
 
@@ -17,7 +17,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ active, routePrefix = '' }) => {
   return (
     <nav className="mc-bottom-nav" aria-label="Primary">
       <ul className="mc-bottom-nav-list">
-        {SHELL_NAV_ITEMS.map((item) => {
+        {MOBILE_NAV_ITEMS.map((item) => {
           const to = `${prefix}${item.path}`;
           const isSelected = isShellNavActive(pathname, item, prefix, active);
 
@@ -31,7 +31,8 @@ const BottomNav: React.FC<BottomNavProps> = ({ active, routePrefix = '' }) => {
                   }`
                 }
                 aria-current={isSelected ? 'page' : undefined}
-                end={item.path === '/today'}
+                aria-label={item.label}
+                end={item.path === '/home'}
               >
                 <span className="mc-bottom-nav-icon">{item.icon}</span>
                 <span className="mc-bottom-nav-label">{item.label}</span>

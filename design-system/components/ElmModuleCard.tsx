@@ -8,6 +8,12 @@ interface ElmModuleCardProps {
   onClick?: () => void;
   disabled?: boolean;
   badge?: string;
+  /** Optional context line — e.g. related load or equipment. */
+  contextLabel?: string;
+  /** Optional recent status line — e.g. missing documents, pending review. */
+  recentStatusLabel?: string;
+  /** Optional short guidance line shown at the bottom of the card. */
+  guidanceLabel?: string;
 }
 
 const accentMap = {
@@ -36,6 +42,9 @@ const ElmModuleCard: React.FC<ElmModuleCardProps> = ({
   onClick,
   disabled = false,
   badge,
+  contextLabel,
+  recentStatusLabel,
+  guidanceLabel,
 }) => {
   const Tag = disabled ? 'div' : 'button';
   const interactive = !disabled;
@@ -72,6 +81,17 @@ const ElmModuleCard: React.FC<ElmModuleCardProps> = ({
             ) : null}
           </div>
           <p className="text-sm text-zinc-400 normal-case mt-2 leading-relaxed">{description}</p>
+          {contextLabel ? (
+            <p className="text-xs text-cyan-300/80 normal-case mt-2 font-medium">{contextLabel}</p>
+          ) : null}
+          {recentStatusLabel ? (
+            <p className="text-xs text-zinc-500 normal-case mt-1">{recentStatusLabel}</p>
+          ) : null}
+          {guidanceLabel ? (
+            <p className="text-xs text-zinc-600 normal-case mt-2 italic leading-relaxed">
+              {guidanceLabel}
+            </p>
+          ) : null}
         </div>
         {interactive ? (
           <span

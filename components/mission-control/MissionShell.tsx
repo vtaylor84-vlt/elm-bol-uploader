@@ -1,19 +1,21 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.tsx';
 import ElmBrandLogo from '../terminal/ElmBrandLogo.tsx';
 import LogoutConfirmDialog from '../terminal/LogoutConfirmDialog.tsx';
 import { MISSION_SHELL } from '../terminal/terminalLayout.ts';
 import BottomNav from './BottomNav.tsx';
-import type { BottomNavId } from './shellNav.tsx';
+import type { BottomNavId, PrimaryNavId } from './shellNav.tsx';
+import { normalizeActiveNav } from './shellNav.tsx';
 import DesktopNavRail from './DesktopNavRail.tsx';
+import { ShellIcons } from './ShellIcons.tsx';
 import { useDriverExperienceOptional } from '../../context/DriverExperienceContext.tsx';
 import { useShowcaseOptional } from '../../context/ShowcaseContext.tsx';
 import { getCompanyDisplayName } from '../../utils/companyMap.ts';
 
 interface MissionShellProps {
   title: string;
-  activeNav: BottomNavId;
+  activeNav: PrimaryNavId | BottomNavId | string;
   connectionLabel?: string;
   children: React.ReactNode;
 }
@@ -29,12 +31,13 @@ const MissionShell: React.FC<MissionShellProps> = ({
   children,
 }) => {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const { logout, session } = useAuth();
   const [showLogout, setShowLogout] = useState(false);
   const experience = useDriverExperienceOptional();
   const showcase = useShowcaseOptional();
   const routePrefix = experience?.routePrefix || '';
-  const homePath = routePrefix ? `${routePrefix}/today` : '/today';
+  const homePath = routePrefix ? `${routePrefix}/home` : '/home';
   const company = getCompanyDisplayName(session?.companyCode);
   const modeLabel =
     experience?.mode === 'showcase'
@@ -42,6 +45,11 @@ const MissionShell: React.FC<MissionShellProps> = ({
       : session?.authRole === 'admin'
         ? 'Admin'
         : 'Driver';
+  const navActive = normalizeActiveNav(activeNav);
+  const unreadNotifications =
+    experience?.mode === 'showcase'
+      ? (experience.dataSource.getNotifications?.().filter((n) => n.unread).length ?? 0)
+      : 0;
 
   const handleLogout = () => {
     showcase?.exitShowcase();
@@ -54,7 +62,7 @@ const MissionShell: React.FC<MissionShellProps> = ({
 
   return (
     <div className="min-h-screen terminal-app-bg text-zinc-100 mc-app mc-shell">
-      <DesktopNavRail active={activeNav} routePrefix={routePrefix} onLogout={openLogout} />
+      <DesktopNavRail active={navActive} routePrefix={routePrefix} onLogout={openLogout} />
 
       <div className="mc-shell-main">
         <header className="mc-shell-header terminal-app-header">
@@ -78,9 +86,52 @@ const MissionShell: React.FC<MissionShellProps> = ({
                 </p>
               </div>
             </div>
-            <button type="button" onClick={openLogout} className="mc-shell-header-logout">
-              Logout
-            </button>
+            <div className="mc-shell-header-utils" aria-label="Global utilities">
+              {experience?.mode === 'showcase' ? (
+                <>
+                  <NavLink
+                    to={`${routePrefix}/search`}
+                    className="mc-shell-util"
+                    aria-label="Search"
+                    title="Search"
+                  >
+                    <ShellIcons.Search />
+                  </NavLink>
+                  <NavLink
+                    to={`${routePrefix}/notifications`}
+                    className="mc-shell-util"
+                    aria-label={
+                      unreadNotifications > 0
+                        ? `Notifications, ${unreadNotifications} unread`
+                        : 'Notifications'
+                    }
+                    title="Notifications"
+                  >
+                    <ShellIcons.Notifications />
+                    {unreadNotifications > 0 ? (
+                      <span className="mc-nav-badge mc-shell-util-badge" aria-hidden>
+                        {unreadNotifications}
+                      </span>
+                    ) : null}
+                  </NavLink>
+                  <NavLink
+                    to={`${routePrefix}/assistant`}
+                    className="mc-shell-util"
+                    aria-label="ELM AI"
+                    title="ELM AI"
+                  >
+                    <ShellIcons.ElmAi />
+                  </NavLink>
+                </>
+              ) : (
+                <Link to="/more" className="mc-shell-util" aria-label="Help and account" title="More">
+                  <ShellIcons.More />
+                </Link>
+              )}
+              <button type="button" onClick={openLogout} className="mc-shell-header-logout">
+                Sign out
+              </button>
+            </div>
           </div>
         </header>
 
@@ -90,8 +141,10 @@ const MissionShell: React.FC<MissionShellProps> = ({
           onCancel={() => setShowLogout(false)}
         />
 
-        <main className={`${MISSION_SHELL} mc-shell-content`}>{children}</main>
-        <BottomNav active={activeNav} routePrefix={routePrefix} />
+        <main className={`${MISSION_SHELL} mc-shell-content`} data-pathname={pathname}>
+          {children}
+        </main>
+        <BottomNav active={navActive} routePrefix={routePrefix as '' | '/showcase'} />
       </div>
     </div>
   );

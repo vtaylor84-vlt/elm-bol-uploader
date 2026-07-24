@@ -91,5 +91,8 @@ export function createProductionDriverDataSource(
     }),
     getTimeline: () => [],
     getAssistantThread: () => [],
+    getNotifications: () => [],
+    getSearchIndex: () => [],
+    getMoreMenu: () => [],
   };
 }

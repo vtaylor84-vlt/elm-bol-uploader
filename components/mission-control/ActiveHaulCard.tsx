@@ -16,17 +16,17 @@ const ActiveHaulCard: React.FC<ActiveHaulCardProps> = ({ haul, dataCapability })
         padding="md"
         as="section"
         className="mc-section"
-        aria-label="Active haul unavailable"
+        aria-label="Current trip unavailable"
       >
         <div className="flex items-start justify-between gap-3 mb-2">
-          <p className="mc-kicker mb-0">Active haul</p>
+          <p className="mc-kicker mb-0">Current trip</p>
           {dataCapability === 'READY_FOR_INTEGRATION' || dataCapability === 'FUTURE' ? (
-            <span className="mc-capability-chip">Not connected</span>
+            <span className="mc-capability-chip">Not available yet</span>
           ) : null}
         </div>
-        <h2 className="mc-section-title">No current load available</h2>
+        <h2 className="mc-section-title">No current trip available</h2>
         <p className="mc-section-copy">
-          There is no assigned load to display right now, or live load connectivity is not yet
+          There is no assigned trip to display right now, or live trip connectivity is not yet
           available. Capture remains available for BOL/POD and expense uploads when you have
           documents ready.
         </p>
@@ -40,17 +40,17 @@ const ActiveHaulCard: React.FC<ActiveHaulCardProps> = ({ haul, dataCapability })
       padding="md"
       as="section"
       className="mc-section space-y-5"
-      aria-label="Active haul"
+      aria-label="Current trip"
     >
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 pb-4 border-b border-white/10">
         <div className="min-w-0 space-y-2">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-[10px] font-mono font-bold text-cyan-300 bg-cyan-500/10 px-2.5 py-1 rounded-lg border border-cyan-500/30">
-              Active haul #{haul.loadNum}
+              Trip #{haul.loadNum}
             </span>
             <span className="mc-status-pill">{haul.statusLabel}</span>
             {dataCapability === 'DEMONSTRATION' ? (
-              <span className="mc-capability-chip">Sample data</span>
+              <span className="mc-capability-chip">Demo only</span>
             ) : null}
           </div>
           <h2 className="mc-haul-route text-xl sm:text-2xl font-black tracking-tight">
@@ -73,7 +73,7 @@ const ActiveHaulCard: React.FC<ActiveHaulCardProps> = ({ haul, dataCapability })
 
       <dl className="mc-meta-grid">
         <div>
-          <dt>Next milestone</dt>
+          <dt>Next stop</dt>
           <dd>{haul.nextMilestone}</dd>
         </div>
         <div>
@@ -86,14 +86,14 @@ const ActiveHaulCard: React.FC<ActiveHaulCardProps> = ({ haul, dataCapability })
             {haul.countdownLabel}
             {dataCapability === 'DEMONSTRATION' ? (
               <span className="block text-[10px] font-medium text-zinc-500 normal-case tracking-normal mt-0.5">
-                Sample timing — not live ETA
+                Demo timing — not a live ETA
               </span>
             ) : null}
           </dd>
         </div>
         {haul.truckNumber ? (
           <div>
-            <dt>Equipment</dt>
+            <dt>Assigned truck &amp; trailer</dt>
             <dd>
               {haul.truckNumber}
               {haul.trailerNumber ? ` · ${haul.trailerNumber}` : ''}
@@ -125,7 +125,7 @@ const ActiveHaulCard: React.FC<ActiveHaulCardProps> = ({ haul, dataCapability })
 
       {haul.missingDocuments.length > 0 ? (
         <div className="pt-1">
-          <p className="mc-kicker mb-2">Missing documents</p>
+          <p className="mc-kicker mb-2">Missing paperwork</p>
           <ul className="flex flex-wrap gap-2">
             {haul.missingDocuments.map((doc) => (
               <li key={doc} className="mc-doc-chip">

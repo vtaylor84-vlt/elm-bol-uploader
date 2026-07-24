@@ -48,7 +48,7 @@ const AuthenticatedShell: React.FC<AuthenticatedShellProps> = ({
                 type="button"
                 onClick={goHome}
                 className="min-w-0 text-left rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
-                aria-label="ELM CONNECT home — Mission Control Today"
+                aria-label="ELM CONNECT home"
               >
                 <ElmBrandLogo size="sm" subtitle={false} />
               </button>

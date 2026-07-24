@@ -54,6 +54,39 @@ export async function seedExpiredShowcaseGrant(page: Page) {
   });
 }
 
+/** Seed a non-expired grant token (server validation still mocked separately). */
+export async function seedValidShowcaseGrant(page: Page) {
+  await page.evaluate(() => {
+    sessionStorage.setItem('elm_showcase_grant', 'e2e.valid.showcase.grant');
+    sessionStorage.setItem('elm_showcase_grant_exp', String(Date.now() + 60 * 60 * 1000));
+  });
+}
+
+/** Mock Netlify showcase-access to allow Showcase entry in Playwright. */
+export async function mockShowcaseAccessAllowed(page: Page) {
+  await page.route('**/showcase-access', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        allowed: true,
+        expiresAt: Date.now() + 60 * 60 * 1000,
+      }),
+    });
+  });
+}
+
+export async function gotoShowcase(
+  page: Page,
+  path: string,
+  carrier: TestCarrier = 'GLX'
+) {
+  await seedAuthenticatedSession(page, adminSession(carrier));
+  await seedValidShowcaseGrant(page);
+  await mockShowcaseAccessAllowed(page);
+  await page.goto(path);
+}
+
 export async function gotoAuthed(page: Page, path: string, profile: SessionFixture) {
   await seedAuthenticatedSession(page, profile);
   await page.goto(path);
