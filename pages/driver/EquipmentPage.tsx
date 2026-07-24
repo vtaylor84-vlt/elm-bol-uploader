@@ -133,7 +133,7 @@ const EquipmentPage: React.FC = () => {
                 </p>
               ) : null}
               <button type="button" className="mc-exception-action mt-4" onClick={reportIssue}>
-                Simulate maintenance request
+                Request maintenance (demo)
               </button>
             </ElmCard>
           </>

@@ -190,7 +190,7 @@ const MessagesPage: React.FC = () => {
                       style={{ background: 'transparent' }}
                       onClick={() => runAck(selected.id, 'reply')}
                     >
-                      Simulate reply
+                        Reply (demo)
                     </button>
                   </div>
                 </div>

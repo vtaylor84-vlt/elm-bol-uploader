@@ -126,7 +126,7 @@ const SafetyPage: React.FC = () => {
                 </p>
               ) : null}
               <button type="button" className="mc-exception-action mt-4" onClick={completeTraining}>
-                Simulate training complete
+                Mark training complete (demo)
               </button>
             </ElmCard>
           </>
