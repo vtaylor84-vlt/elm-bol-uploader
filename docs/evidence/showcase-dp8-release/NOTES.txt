@@ -1,0 +1,32 @@
+mobile-login.png ok
+mobile-home.png ok
+mobile-trips.png ok
+mobile-capture.png ok
+mobile-pay.png ok
+mobile-more.png ok
+mobile-demo-controls-count=0
+mobile-payroll-cta=1
+tablet-login.png ok
+tablet-home.png ok
+tablet-trips.png ok
+tablet-capture.png ok
+tablet-pay.png ok
+tablet-more.png ok
+tablet-demo-controls-count=0
+tablet-payroll-cta=1
+desktop-login.png ok
+desktop-home.png ok
+desktop-trips.png ok
+desktop-capture.png ok
+desktop-pay.png ok
+desktop-more.png ok
+desktop-demo-controls-count=0
+desktop-payroll-cta=1
+wide-login.png ok
+wide-home.png ok
+wide-trips.png ok
+wide-capture.png ok
+wide-pay.png ok
+wide-more.png ok
+wide-demo-controls-count=0
+wide-payroll-cta=1
