@@ -84,7 +84,7 @@ const ShowcaseFutureModulePage: React.FC<ShowcaseFutureModulePageProps> = ({ mod
                     className="mc-exception-action mt-3"
                     onClick={() => run(() => actions.acknowledgeMessage!(m.id))}
                   >
-                    Simulate acknowledge
+                    Mark acknowledged (demo)
                   </button>
                 </ElmCard>
               </li>
@@ -110,7 +110,7 @@ const ShowcaseFutureModulePage: React.FC<ShowcaseFutureModulePageProps> = ({ mod
                     className="mc-exception-action mt-4"
                     onClick={() => run(() => actions.requestMaintenance!())}
                   >
-                    Simulate maintenance request
+                    Request maintenance (demo)
                   </button>
                 </>
               );
@@ -136,7 +136,7 @@ const ShowcaseFutureModulePage: React.FC<ShowcaseFutureModulePageProps> = ({ mod
                     className="mc-exception-action mt-4"
                     onClick={() => run(() => actions.completeTraining!())}
                   >
-                    Simulate training complete
+                    Complete training (demo)
                   </button>
                 </>
               );
@@ -158,7 +158,7 @@ const ShowcaseFutureModulePage: React.FC<ShowcaseFutureModulePageProps> = ({ mod
                     className="mc-exception-action mt-4"
                     onClick={() => run(() => actions.requestHomeTime!())}
                   >
-                    Simulate home-time request
+                    Request home time (demo)
                   </button>
                 </>
               );

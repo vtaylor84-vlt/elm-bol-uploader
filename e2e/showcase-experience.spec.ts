@@ -129,7 +129,10 @@ test.describe('Showcase experience workflows', () => {
     const popupPromise = page.waitForEvent('popup');
     await page.getByRole('button', { name: /Open trip submission/i }).click();
     const popup = await popupPromise;
-    await expect(popup).toHaveURL(/payroll\.elmconnect\.net/);
+    // payroll.elmconnect.net may redirect to the underlying form/auth host.
+    await expect
+      .poll(() => popup.url(), { timeout: 15_000 })
+      .toMatch(/payroll\.elmconnect\.net|docs\.google\.com\/forms|accounts\.google\.com/);
     await popup.close();
   });
 });
