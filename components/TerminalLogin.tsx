@@ -111,7 +111,7 @@ const TerminalLogin: React.FC<TerminalLoginProps> = ({ onLogin }) => {
           Sign in to Driver Workspace
         </h1>
         <p className="text-xs text-zinc-500 normal-case">
-          Your work, trips, paperwork, and pay—all in one place.
+          Upload BOL / POD and Submit Trip Form from one workspace.
         </p>
       </div>
 
@@ -212,14 +212,14 @@ const TerminalLogin: React.FC<TerminalLoginProps> = ({ onLogin }) => {
               Secure driver access
             </p>
             <h2 className="text-4xl xl:text-5xl font-extrabold tracking-tight text-white leading-tight normal-case">
-              Your work, trips, paperwork, and pay—{' '}
+              Your documents and trip form—{' '}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-300">
-                all in one place
+                ready when you are
               </span>
             </h2>
             <p className="text-zinc-400 text-sm leading-relaxed max-w-lg normal-case">
-              Sign in with your approved email to open the Driver Workspace. Submit trip paperwork
-              and continue to payroll trip submission when a trip is ready.
+              Sign in with your approved email to open the Driver Workspace. Upload BOL / POD and
+              Submit Trip Form when you have work to complete.
             </p>
             <div className="grid grid-cols-2 gap-3 max-w-md pt-1">
               <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 flex items-center gap-3">
