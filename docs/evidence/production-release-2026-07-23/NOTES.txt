@@ -1,0 +1,12 @@
+﻿base=https://bol.elmconnect.net
+capturedAt=2026-07-24T03:51:30.042Z
+productionCommitExpected=48ecdb0c
+productionAsset=assets/index-S2h45iwl.js
+rollbackTargetAsset=assets/index-dvHQ6e5-.js
+showcaseDriverAccess=ACCESS DENIED (verified)
+loginHeadline=Your work, trips, paperwork, and pay—all in one place
+payrollCtaOnCapture=present at all four widths
+demoControlsForOrdinaryDriver=0
+/today redirects to /home
+/capture refresh stays on /capture
+pageErrorsObserved=0
