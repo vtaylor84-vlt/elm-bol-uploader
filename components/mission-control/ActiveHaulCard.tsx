@@ -26,9 +26,8 @@ const ActiveHaulCard: React.FC<ActiveHaulCardProps> = ({ haul, dataCapability })
         </div>
         <h2 className="mc-section-title">No current trip available</h2>
         <p className="mc-section-copy">
-          There is no assigned trip to display right now, or live trip connectivity is not yet
-          available. Capture remains available for BOL/POD and expense uploads when you have
-          documents ready.
+          Assigned trip details will appear here when dispatch integration is available. Use Upload
+          BOL / POD or Submit Trip Form from Home when you have work to complete.
         </p>
       </GlassCard>
     );

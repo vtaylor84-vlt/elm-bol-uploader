@@ -160,7 +160,7 @@ function baseMission(
       ],
     },
     primaryAction: {
-      label: 'Open Capture',
+      label: 'Upload BOL / POD',
       href: '/showcase/capture',
       helperText: 'Simulated action · not a production upload',
       capability: 'DEMONSTRATION',

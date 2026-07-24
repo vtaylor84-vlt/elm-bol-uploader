@@ -1,6 +1,7 @@
 import React from 'react';
 import ElmCard from '../../design-system/components/ElmCard.tsx';
 import ElmStatusBadge from '../../design-system/components/ElmStatusBadge.tsx';
+import BrandMark from '../brand/BrandMark.tsx';
 
 const ACCESS_ITEMS = [
   'Verified email access',
@@ -15,7 +16,6 @@ interface LoginBrandPanelProps {
 
 /**
  * Desktop login left rail — brand, trust signals, system status.
- * Not a literal recreation of the mockup; same design language.
  */
 const LoginBrandPanel: React.FC<LoginBrandPanelProps> = ({ className = '' }) => (
   <aside
@@ -32,14 +32,7 @@ const LoginBrandPanel: React.FC<LoginBrandPanelProps> = ({ className = '' }) => 
     </div>
 
     <div className="flex-1 flex flex-col justify-center space-y-8 xl:space-y-10 py-8">
-      <div className="relative w-full max-w-[420px] xl:max-w-[480px]">
-        <img
-          src="/assets/elm-connect-login-brand.png"
-          alt=""
-          aria-hidden
-          className="login-brand-crop-desktop w-full pointer-events-none select-none"
-        />
-      </div>
+      <BrandMark theme="elm" size="hero" className="login-brand-mark" />
 
       <div className="space-y-2">
         <p className="text-[11px] font-black uppercase tracking-[0.42em] text-[#5eb8e8]">
@@ -47,9 +40,6 @@ const LoginBrandPanel: React.FC<LoginBrandPanelProps> = ({ className = '' }) => 
         </p>
         <p className="text-sm xl:text-base text-zinc-400 normal-case leading-relaxed max-w-md">
           Secure driver access
-        </p>
-        <p className="text-[10px] font-black uppercase tracking-[0.35em] text-zinc-500 pt-2">
-          Elite Logistics Manager
         </p>
       </div>
 

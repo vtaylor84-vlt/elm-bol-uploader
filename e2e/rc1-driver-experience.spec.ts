@@ -18,7 +18,13 @@ test.describe('RC1 authenticated shells', () => {
           .filter({ hasText: carrier === 'GLX' ? 'Greenleaf Xpress' : 'BST Expedite Inc' })
           .first()
       ).toBeVisible();
-      await expect(page.getByRole('heading', { name: 'No current trip available' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Assigned trips' })).toBeVisible();
+      await expect(page.getByText(/Assigned trip details will appear here/i).first()).toBeVisible();
+      await expect(page.getByText('Needs attention')).toHaveCount(0);
+      await expect(page.getByText(/Trip paperwork/i)).toHaveCount(0);
+      await expect(page.getByText('Open Capture')).toHaveCount(0);
+      await expect(page.getByRole('button', { name: /Upload BOL \/ POD/i }).first()).toBeVisible();
+      await expect(page.getByRole('button', { name: /Submit Trip Form/i }).first()).toBeVisible();
       await expect(page.getByText('48291')).toHaveCount(0);
       await expect(page.getByText('Dallas')).toHaveCount(0);
       await expect(page.getByRole('navigation', { name: 'Primary' }).first()).toBeVisible();
@@ -43,13 +49,13 @@ test.describe('RC1 authenticated shells', () => {
 
 test.describe('RC1 production routes', () => {
   const routes = [
-    { path: '/home', heading: /Your work|No current trip|Next step/i },
-    { path: '/today', heading: /Your work|No current trip|Next step/i },
-    { path: '/trips', heading: /Your trips|No live trip list/i },
-    { path: '/loads', heading: /Your trips|No live trip list/i },
+    { path: '/home', heading: /Your work|Assigned trips|What do you need to do/i },
+    { path: '/today', heading: /Your work|Assigned trips|What do you need to do/i },
+    { path: '/trips', heading: /Your trips|Assigned trips/i },
+    { path: '/loads', heading: /Your trips|Assigned trips/i },
     { path: '/capture', heading: /What are you submitting/i },
     { path: '/workspace', heading: /What are you submitting/i },
-    { path: '/pay', heading: /Your pay|Settlement not connected|NOT CONNECTED TO PRODUCTION/i },
+    { path: '/pay', heading: /Your pay|Earnings|Submit Trip Form/i },
     { path: '/more', heading: /Account & tools/i },
   ] as const;
 
@@ -64,15 +70,16 @@ test.describe('RC1 production routes', () => {
 
   test('pay isolation shows disconnected disclosure', async ({ page }) => {
     await gotoAuthed(page, '/pay', driverSession('BST'));
-    await expect(page.getByText('NOT CONNECTED TO PRODUCTION').first()).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Settlement not connected' })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Submit Trip Form/i }).first()).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Earnings' })).toBeVisible();
+    await expect(page.getByText('Not available yet').first()).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Settlement layout' })).toHaveCount(0);
     await expect(page.locator('dt', { hasText: 'Gross' })).toHaveCount(0);
   });
 
   test('BOL/POD workflow navigates without submission', async ({ page }) => {
     await gotoAuthed(page, '/capture', driverSession('GLX'));
-    await page.getByRole('button', { name: /Trip paperwork|Upload BOL/i }).first().click();
+    await page.getByRole('button', { name: /Upload BOL \/ POD/i }).first().click();
     await expect(page).toHaveURL(/\/submissions\/bol-pod/);
     await expect(page.getByText(/Admin Upload Mode/i)).toHaveCount(0);
   });
@@ -97,18 +104,24 @@ test.describe('RC1 production routes', () => {
     ).toBeVisible();
   });
 
-  test('Home shows honest earnings and tasks plus last login', async ({ page }) => {
+  test('Home shows dual live actions without Needs Attention or Trip paperwork', async ({ page }) => {
     await gotoAuthed(page, '/home', driverSession('BST'));
     await expect(page.getByText('Not available yet').first()).toBeVisible();
     await expect(page.getByText(/LAST LOGIN|Last login/i).first()).toBeVisible();
-    await expect(page.getByText(/Trip paperwork/i).first()).toBeVisible();
-    const paperwork = page.getByText('Trip paperwork').first();
-    const payroll = page.getByText('Submit trip for payroll').first();
-    await expect(paperwork).toBeVisible();
-    await expect(payroll).toBeVisible();
-    const paperBox = await paperwork.boundingBox();
-    const payBox = await payroll.boundingBox();
-    expect(paperBox && payBox && paperBox.y < payBox.y).toBeTruthy();
+    await expect(page.getByText('Needs attention')).toHaveCount(0);
+    await expect(page.getByText(/Trip paperwork/i)).toHaveCount(0);
+    await expect(page.getByText(/Submit trip for payroll/i)).toHaveCount(0);
+    await expect(page.getByText('Open Capture')).toHaveCount(0);
+    const bol = page.getByRole('button', { name: /Upload BOL \/ POD/i }).first();
+    const form = page.getByRole('button', { name: /Submit Trip Form/i }).first();
+    await expect(bol).toBeVisible();
+    await expect(form).toBeVisible();
+    const bolBox = await bol.boundingBox();
+    const formBox = await form.boundingBox();
+    expect(bolBox && formBox).toBeTruthy();
+    if (bolBox && formBox) {
+      expect(Math.abs(bolBox.height - formBox.height)).toBeLessThan(40);
+    }
   });
 
   test('GLX carrier theme attribute is applied', async ({ page }) => {

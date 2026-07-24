@@ -50,7 +50,7 @@ const OutstandingTasks: React.FC<OutstandingTasksProps> = ({
     {!live ? (
       <p className="mc-section-copy">
         Not available yet. A live task list is not connected for Production drivers. Working actions
-        are Trip paperwork and Submit trip for payroll above.
+        are Upload BOL / POD and Submit Trip Form above.
       </p>
     ) : tasks.length === 0 ? (
       <p className="mc-section-copy">No open tasks.</p>

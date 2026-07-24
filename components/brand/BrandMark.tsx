@@ -1,5 +1,5 @@
 import React from 'react';
-import type { BrandThemeId } from '../../utils/carrierBrand.ts';
+import { BRAND_MARK_SRC, type BrandThemeId } from '../../utils/carrierBrand.ts';
 
 interface BrandMarkProps {
   theme?: BrandThemeId;
@@ -22,14 +22,8 @@ const ALT: Record<BrandThemeId, string> = {
   glx: 'Greenleaf Xpress',
 };
 
-const SRC: Record<BrandThemeId, string> = {
-  elm: '/assets/elm-connect-mark.png',
-  bst: '/assets/bst-logo.svg',
-  glx: '/assets/glx-logo.png',
-};
-
 /**
- * Single brand identity system — ELM CONNECT mark, or carrier logo when authoritative.
+ * Single brand identity system — clean ELM CONNECT mark, or carrier logo when authoritative.
  */
 const BrandMark: React.FC<BrandMarkProps> = ({
   theme = 'elm',
@@ -38,11 +32,12 @@ const BrandMark: React.FC<BrandMarkProps> = ({
   className = '',
 }) => (
   <img
-    src={SRC[theme]}
+    src={BRAND_MARK_SRC[theme]}
     alt={decorative ? '' : ALT[theme]}
     className={`${SIZE[size]} ${className}`.trim()}
     decoding="async"
     draggable={false}
+    data-brand-asset={BRAND_MARK_SRC[theme]}
   />
 );
 

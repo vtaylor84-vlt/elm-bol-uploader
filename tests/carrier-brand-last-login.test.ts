@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { resolveBrandTheme, resolveAuthoritativeCarrier } from '../utils/carrierBrand.ts';
+import { resolveBrandTheme, resolveAuthoritativeCarrier, BRAND_MARK_SRC } from '../utils/carrierBrand.ts';
+import fs from 'node:fs';
+import path from 'node:path';
 import {
   formatLastLogin,
   readPreviousLoginIso,
@@ -38,6 +40,15 @@ describe('carrier brand resolution', () => {
     assert.equal(resolveBrandTheme(session({ companyCode: '' })), 'elm');
     assert.equal(resolveBrandTheme(session({ companyCode: 'UNKNOWN' })), 'elm');
     assert.equal(resolveBrandTheme(null), 'elm');
+  });
+
+  it('uses the clean elm-connect-mark.png asset for ELM fallback', () => {
+    assert.equal(BRAND_MARK_SRC.elm, '/assets/elm-connect-mark.png');
+    assert.ok(!BRAND_MARK_SRC.elm.includes('.svg'));
+    assert.ok(!BRAND_MARK_SRC.elm.includes('login-brand'));
+    const assetPath = path.join(process.cwd(), 'public', 'assets', 'elm-connect-mark.png');
+    assert.ok(fs.existsSync(assetPath), 'clean mark PNG must exist in public/assets');
+    assert.equal(fs.existsSync(path.join(process.cwd(), 'public', 'assets', 'elm-connect-login-brand.png')), false);
   });
 });
 

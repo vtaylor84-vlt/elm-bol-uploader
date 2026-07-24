@@ -30,3 +30,10 @@ export function brandThemeLabel(theme: BrandThemeId): string {
   if (theme === 'glx') return 'Greenleaf Xpress';
   return 'ELM CONNECT';
 }
+
+/** Canonical brand image paths — ELM mark is the clean supplied PNG (not a screenshot crop). */
+export const BRAND_MARK_SRC: Record<BrandThemeId, string> = {
+  elm: '/assets/elm-connect-mark.png',
+  bst: '/assets/bst-logo.svg',
+  glx: '/assets/glx-logo.png',
+};

@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import MissionShell from '../components/mission-control/MissionShell.tsx';
 import RouteMilestoneBar from '../components/mission-control/RouteMilestoneBar.tsx';
 import ElmCard from '../design-system/components/ElmCard.tsx';
-import EmptyState from '../design-system/components/EmptyState.tsx';
 import CapabilityStateBadge from '../components/mission-control/CapabilityStateBadge.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
 import { useDriverExperience } from '../context/DriverExperienceContext.tsx';
@@ -15,6 +14,7 @@ import { isShowcaseGrantPresentAndUnexpired } from '../utils/showcaseGrantStorag
 import type { LoadBucket, LoadListItem } from '../services/dataSource/types.ts';
 import {
   openPayrollTripSubmission,
+  PAYROLL_TRIP_SUBMISSION_HELPER,
   PAYROLL_TRIP_SUBMISSION_LABEL,
 } from '../utils/payrollTripSubmission.ts';
 
@@ -91,7 +91,7 @@ export const LoadsPage: React.FC = () => {
           <p className="mc-section-copy">
             {mode === 'showcase'
               ? 'Demonstration data only — current, upcoming, and completed trips for this scenario.'
-              : 'Assigned trips appear here with stops, appointments, and paperwork status.'}
+              : 'Assigned trip details will appear here when dispatch integration is available.'}
           </p>
         </header>
 
@@ -102,16 +102,18 @@ export const LoadsPage: React.FC = () => {
         ) : null}
 
         {loads.length === 0 ? (
-          <EmptyState
-            kicker="Trips"
-            title="No live trip list yet"
-            description="Your assigned trips will show here when trip service is connected. Use Capture for live BOL/POD and receipt uploads in the meantime."
-            action={
-              <Link to={captureTo} className="mc-exception-action inline-flex no-underline">
-                Open Capture
-              </Link>
-            }
-          />
+          <ElmCard variant="muted" padding="md" as="section" aria-label="Assigned trips">
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <div>
+                <p className="mc-kicker mb-0">Trips</p>
+                <h2 className="mc-section-title">Assigned trips</h2>
+              </div>
+              <CapabilityStateBadge state="NOT_CONNECTED" />
+            </div>
+            <p className="mc-section-copy">
+              Assigned trip details will appear here when dispatch integration is available.
+            </p>
+          </ElmCard>
         ) : (
           <>
             <div className="space-y-3">
@@ -218,7 +220,7 @@ export const LoadsPage: React.FC = () => {
                       <dd>{selected.appointmentLabel || '—'}</dd>
                     </div>
                     <div>
-                      <dt>Trip paperwork</dt>
+                      <dt>BOL / POD</dt>
                       <dd>{selected.documentsLabel || '—'}</dd>
                     </div>
                     <div>
@@ -269,7 +271,7 @@ export const LoadsPage: React.FC = () => {
 
                   {selected.documentRequirements?.length ? (
                     <div>
-                      <p className="mc-kicker mb-2">Trip paperwork</p>
+                      <p className="mc-kicker mb-2">Required documents</p>
                       <ul className="flex flex-wrap gap-2">
                         {selected.documentRequirements.map((doc) => (
                           <li key={doc} className="mc-doc-chip">
@@ -311,19 +313,19 @@ export const LoadsPage: React.FC = () => {
 
                   <div className="flex flex-wrap gap-3 pt-1">
                     <Link
-                      to={`${captureTo}?type=trip_paperwork`}
-                      className="mc-exception-action inline-flex no-underline"
+                      to={`${captureTo}?type=bol_pod`}
+                      className="mc-live-action mc-live-action--compact no-underline"
                     >
-                      Submit paperwork
+                      <span className="mc-live-action-title">Upload BOL / POD</span>
                     </Link>
                     {bucket === 'completed' ||
                     (selected.statusLabel || '').toLowerCase().includes('deliver') ? (
                       <button
                         type="button"
-                        className="mc-exception-action"
+                        className="mc-live-action mc-live-action--compact"
                         onClick={() => openPayrollTripSubmission()}
                       >
-                        {PAYROLL_TRIP_SUBMISSION_LABEL}
+                        <span className="mc-live-action-title">{PAYROLL_TRIP_SUBMISSION_LABEL}</span>
                       </button>
                     ) : null}
                     {mode === 'showcase' ? (
@@ -378,24 +380,57 @@ export const PayPage: React.FC = () => {
           <p className="mc-section-copy">
             {mode === 'showcase'
               ? 'Demonstration settlement for this scenario — not a live payroll run.'
-              : "Pay details aren't available yet."}
+              : 'Submit completed trip details for review. Finalized earnings are not shown here yet.'}
           </p>
         </header>
 
+        <section className="mc-home-live-actions" aria-label="Live pay actions">
+          <button
+            type="button"
+            className="mc-live-action"
+            onClick={() => openPayrollTripSubmission()}
+            aria-label={PAYROLL_TRIP_SUBMISSION_LABEL}
+          >
+            <span className="mc-live-action-kicker">Trip form</span>
+            <span className="mc-live-action-title">{PAYROLL_TRIP_SUBMISSION_LABEL}</span>
+            <span className="mc-live-action-copy">
+              {PAYROLL_TRIP_SUBMISSION_HELPER} This does not display finalized earnings, confirm
+              approval, or prove payment.
+            </span>
+          </button>
+        </section>
+
         {mode === 'production' ? (
-          <section className="elm-disconnected-panel" aria-label="Settlement unavailable">
-            <div className="flex items-start justify-between gap-3 mb-3">
-              <p className="mc-kicker mb-0">Production status</p>
-              <CapabilityStateBadge state="NOT_CONNECTED" />
-            </div>
-            <span className="mc-capability-chip">{pay.disclosure}</span>
-            <h2 className="mt-3">Settlement not connected</h2>
-            <p className="mc-section-copy">
-              Pay details aren&apos;t available yet in this build. No gross, deduction, or net
-              amounts are calculated or displayed. When payroll is connected through the approved
-              architecture, settlement summaries will appear here.
-            </p>
-          </section>
+          <>
+            <ElmCard variant="muted" padding="md" as="section" aria-label="Earnings">
+              <div className="flex items-start justify-between gap-3 mb-2">
+                <h2 className="mc-section-title">Earnings</h2>
+                <CapabilityStateBadge state="NOT_CONNECTED" />
+              </div>
+              <p className="mc-section-copy">
+                Not available yet. Finalized settlement earnings are not connected in this build.
+              </p>
+            </ElmCard>
+            <ElmCard variant="muted" padding="md" as="section" aria-label="Statements">
+              <div className="flex items-start justify-between gap-3 mb-2">
+                <h2 className="mc-section-title">Statements</h2>
+                <CapabilityStateBadge state="NOT_CONNECTED" />
+              </div>
+              <p className="mc-section-copy">
+                Not available yet. Pay statements will appear here when connected to authoritative
+                Production Payroll.
+              </p>
+            </ElmCard>
+            <ElmCard variant="muted" padding="md" as="section" aria-label="Year to date">
+              <div className="flex items-start justify-between gap-3 mb-2">
+                <h2 className="mc-section-title">YTD information</h2>
+                <CapabilityStateBadge state="NOT_CONNECTED" />
+              </div>
+              <p className="mc-section-copy">
+                Not available yet. Year-to-date totals are not calculated or displayed in this build.
+              </p>
+            </ElmCard>
+          </>
         ) : (
           <>
             <ElmCard variant="muted" padding="md" as="section" aria-label="Settlement summary">
@@ -550,22 +585,6 @@ export const PayPage: React.FC = () => {
             </ElmCard>
           </>
         )}
-
-        <ElmCard variant="muted" padding="md" as="section" aria-label="Trip submission">
-          <p className="mc-kicker mb-2">Completed trips</p>
-          <h2 className="mc-section-title">{PAYROLL_TRIP_SUBMISSION_LABEL}</h2>
-          <p className="mc-section-copy">
-            Continue to the payroll trip-submission workflow when a trip is ready. Pay details and
-            statements will appear here when connected — this link does not calculate pay.
-          </p>
-          <button
-            type="button"
-            className="mc-exception-action mt-4"
-            onClick={() => openPayrollTripSubmission()}
-          >
-            Open trip submission
-          </button>
-        </ElmCard>
       </div>
     </MissionShell>
   );

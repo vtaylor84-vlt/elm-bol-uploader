@@ -7,7 +7,9 @@ test.describe('Showcase experience workflows', () => {
     await expect(page.getByText(/DEMO — SHOWCASE/i).first()).toBeVisible();
     await expect(page.getByText('GLX-7721').first()).toBeVisible();
     await expect(page.getByRole('navigation', { name: 'Primary' }).first()).toBeVisible();
-    await expect(page.getByRole('heading', { name: /Next step/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /What do you need to do/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Upload BOL \/ POD/i }).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: /Submit Trip Form/i }).first()).toBeVisible();
   });
 
   test('legacy /showcase/today redirects to Home', async ({ page }) => {
@@ -29,16 +31,15 @@ test.describe('Showcase experience workflows', () => {
     }
   });
 
-  test('Capture presents five plain-language choices', async ({ page }) => {
+  test('Capture presents Upload BOL / POD and Add receipt', async ({ page }) => {
     await gotoShowcase(page, '/showcase/capture', 'BST');
     await expect(page.getByRole('heading', { name: /What are you submitting/i })).toBeVisible({
       timeout: 15_000,
     });
-    await expect(page.getByRole('button', { name: /Trip paperwork/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Receipt/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Freight photos/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Vehicle issue/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Incident evidence/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Upload BOL \/ POD/i }).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: /Add receipt/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Submit Trip Form/i }).first()).toBeVisible();
+    await expect(page.getByText(/Trip paperwork/i)).toHaveCount(0);
   });
 
   test('Pay demonstration shows settlement lines without production claims', async ({ page }) => {
@@ -117,33 +118,37 @@ test.describe('Showcase experience workflows', () => {
 
   test('production pay stays disconnected', async ({ page }) => {
     await gotoAuthed(page, '/pay', driverSession('BST'));
-    await expect(page.getByText('NOT CONNECTED TO PRODUCTION').first()).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Settlement not connected' })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Submit Trip Form/i }).first()).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Earnings' })).toBeVisible();
+    await expect(page.getByText('Not available yet').first()).toBeVisible();
+    await expect(page.getByText(/Submit trip for payroll/i)).toHaveCount(0);
   });
 
-  test('payroll trip submission entry is present on Capture', async ({ page }) => {
+  test('Submit Trip Form entry is present on Capture after Upload BOL / POD', async ({ page }) => {
     await gotoAuthed(page, '/capture', driverSession('GLX'));
-    await expect(
-      page.getByRole('heading', { name: /Submit trip for payroll/i })
-    ).toBeVisible();
-    const paperwork = page.getByRole('button', { name: /Trip paperwork/i }).first();
-    const payrollHeading = page.getByRole('heading', { name: /Submit trip for payroll/i });
-    const paperBox = await paperwork.boundingBox();
-    const payBox = await payrollHeading.boundingBox();
-    expect(paperBox && payBox && paperBox.y < payBox.y).toBeTruthy();
+    const bol = page.getByRole('button', { name: /Upload BOL \/ POD/i }).first();
+    const form = page.getByRole('button', { name: /Submit Trip Form/i }).first();
+    await expect(bol).toBeVisible();
+    await expect(form).toBeVisible();
+    const bolBox = await bol.boundingBox();
+    const formBox = await form.boundingBox();
+    expect(bolBox && formBox && bolBox.y < formBox.y).toBeTruthy();
     const popupPromise = page.waitForEvent('popup');
-    await page.getByRole('button', { name: /Open trip submission/i }).click();
+    await form.click();
     const popup = await popupPromise;
-    // payroll.elmconnect.net may redirect to the underlying form/auth host.
     await expect
       .poll(() => popup.url(), { timeout: 15_000 })
       .toMatch(/payroll\.elmconnect\.net|docs\.google\.com\/forms|accounts\.google\.com/);
     await popup.close();
   });
 
-  test('login uses one ELM mark and non-overlapping email icon', async ({ page }) => {
+  test('login uses clean ELM mark and non-overlapping email icon', async ({ page }) => {
     await page.goto('/login');
-    await expect(page.getByRole('img', { name: 'ELM CONNECT' }).first()).toBeVisible();
+    const mark = page.getByRole('img', { name: 'ELM CONNECT' }).first();
+    await expect(mark).toBeVisible();
+    await expect(mark).toHaveAttribute('src', /elm-connect-mark\.png/);
+    await expect(page.locator('img[src*="elm-connect-login-brand"]')).toHaveCount(0);
+    await expect(page.locator('img[src*="elm-connect-mark.svg"]')).toHaveCount(0);
     const wide = (page.viewportSize()?.width || 0) >= 1024;
     const input = page.locator(wide ? '#driver-email-desktop' : '#driver-email-mobile');
     const icon = input.locator('xpath=preceding-sibling::*[contains(@class,"login-input-icon")][1]');

@@ -15,7 +15,7 @@ export type CapabilityState =
 
 const LABELS: Record<CapabilityState, string> = {
   AVAILABLE: '',
-  NEEDS_ATTENTION: 'Needs attention',
+  NEEDS_ATTENTION: 'Action required',
   COMING_SOON: 'Coming soon',
   NOT_CONNECTED: 'Not available yet',
   RESTRICTED: 'Restricted',
@@ -39,7 +39,7 @@ export function disclosureToCapabilityState(
 
 interface CapabilityStateBadgeProps {
   state: CapabilityState;
-  /** Optional count for Needs attention — omit when not meaningful. */
+  /** Optional count for action-required state — omit when not meaningful. */
   count?: number;
   className?: string;
   /** When true, hide AVAILABLE (no decorative badge). */

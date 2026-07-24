@@ -4,9 +4,7 @@ import { useAuth } from '../context/AuthContext.tsx';
 import { useSubmissionDraft } from '../context/SubmissionDraftContext.tsx';
 import { useDriverExperience } from '../context/DriverExperienceContext.tsx';
 import MissionShell from '../components/mission-control/MissionShell.tsx';
-import ExceptionBanner from '../components/mission-control/ExceptionBanner.tsx';
 import ActiveHaulCard from '../components/mission-control/ActiveHaulCard.tsx';
-import PrimaryActionButton from '../components/mission-control/PrimaryActionButton.tsx';
 import EarningsCard from '../components/mission-control/EarningsCard.tsx';
 import OutstandingTasks from '../components/mission-control/OutstandingTasks.tsx';
 import ElmCard from '../design-system/components/ElmCard.tsx';
@@ -18,6 +16,7 @@ import {
 } from '../utils/missionCapture.ts';
 import {
   openPayrollTripSubmission,
+  PAYROLL_TRIP_SUBMISSION_HELPER,
   PAYROLL_TRIP_SUBMISSION_LABEL,
 } from '../utils/payrollTripSubmission.ts';
 import { formatLastLogin } from '../utils/lastLogin.ts';
@@ -30,8 +29,7 @@ function greetingForNow(): string {
 }
 
 /**
- * Driver Home — task-first command surface ordered by urgency:
- * 1) Next step  2) Needs attention  3) Current trip  4) Recent activity  5) Shortcuts
+ * Driver Home — identity, then the two live actions, then future/unavailable sections.
  */
 const TodayPage: React.FC = () => {
   const { session, previousLoginAt, hasRecordedLogin } = useAuth();
@@ -49,39 +47,37 @@ const TodayPage: React.FC = () => {
       ? 'First recorded login'
       : 'Not available yet';
 
-  const openCapture = useCallback(
-    async (target: MissionCaptureTarget) => {
-      if (mode === 'showcase') {
-        if (actions.submitPodSimulated && target.submissionType === 'BOL_POD') {
-          const result = await actions.submitPodSimulated();
-          setSimMessage(`${result.disclosure}: ${result.message}`);
-        } else if (actions.submitReceiptSimulated) {
-          const result = await actions.submitReceiptSimulated();
-          setSimMessage(`${result.disclosure}: ${result.message}`);
-        }
-        navigate(`${routePrefix}/capture`);
-        return;
+  const openBolPod = useCallback(async () => {
+    const target: MissionCaptureTarget = {
+      submissionType: 'BOL_POD',
+      href: mode === 'showcase' ? `${routePrefix}/capture` : '/submissions/bol-pod',
+    };
+    if (mode === 'showcase') {
+      if (actions.submitPodSimulated) {
+        const result = await actions.submitPodSimulated();
+        setSimMessage(`${result.disclosure}: ${result.message}`);
       }
-      activateMissionCapture({
-        ...target,
-        driverName: session?.driverName || '',
-        company: companyForUpload,
-        clearDraft,
-        startDraft,
-        navigate,
-      });
-    },
-    [
-      mode,
-      actions,
-      routePrefix,
-      session?.driverName,
-      companyForUpload,
+      navigate(`${routePrefix}/capture`);
+      return;
+    }
+    activateMissionCapture({
+      ...target,
+      driverName: session?.driverName || '',
+      company: companyForUpload,
       clearDraft,
       startDraft,
       navigate,
-    ]
-  );
+    });
+  }, [
+    mode,
+    actions,
+    routePrefix,
+    session?.driverName,
+    companyForUpload,
+    clearDraft,
+    startDraft,
+    navigate,
+  ]);
 
   const safety = mode === 'showcase' ? dataSource.getSafetyStatus() : null;
   const pay = mode === 'showcase' ? dataSource.getPaySummary() : null;
@@ -91,10 +87,6 @@ const TodayPage: React.FC = () => {
       ? dataSource.getMessages().find((m) => m.unread && m.ackRequired)
       : null;
   const recentActivity = mode === 'showcase' ? dataSource.getTimeline().slice(0, 3) : [];
-  const attentionCount =
-    (model.exceptions?.length || 0) +
-    (model.tasks?.filter((t) => t.urgency === 'due_now' || t.urgency === 'blocked').length || 0) +
-    (ackMessage ? 1 : 0);
 
   const tripsTo = `${routePrefix}/trips`;
   const captureTo = `${routePrefix}/capture`;
@@ -114,7 +106,6 @@ const TodayPage: React.FC = () => {
               <>
                 {model.companyLabel ? `${model.companyLabel} · ` : ''}
                 Demonstration data only
-                {attentionCount > 0 ? ` · ${attentionCount} need${attentionCount === 1 ? 's' : ''} attention` : ''}
               </>
             ) : (
               <>
@@ -158,82 +149,110 @@ const TodayPage: React.FC = () => {
           </ElmCard>
         ) : null}
 
-        {/* 1. Next step — dominant action */}
-        <section className="mc-home-next" aria-labelledby="home-next-heading">
-          <div className="mc-home-section-head">
-            <h2 id="home-next-heading" className="mc-home-section-title">
-              Next step
-            </h2>
+        {/* Live primary actions — equal prominence */}
+        <section className="mc-home-live-actions" aria-label="Live actions">
+          <h2 className="mc-home-section-title">What do you need to do?</h2>
+          <div className="mc-live-action-grid">
+            <button
+              type="button"
+              className="mc-live-action"
+              onClick={() => openBolPod()}
+              aria-label="Upload BOL / POD"
+            >
+              <span className="mc-live-action-kicker">Documents</span>
+              <span className="mc-live-action-title">Upload BOL / POD</span>
+              <span className="mc-live-action-copy">
+                Camera-first upload for bills of lading and proofs of delivery. Use only when safely
+                stopped.
+              </span>
+            </button>
+            <button
+              type="button"
+              className="mc-live-action"
+              onClick={() => openPayrollTripSubmission()}
+              aria-label={PAYROLL_TRIP_SUBMISSION_LABEL}
+            >
+              <span className="mc-live-action-kicker">Trip form</span>
+              <span className="mc-live-action-title">{PAYROLL_TRIP_SUBMISSION_LABEL}</span>
+              <span className="mc-live-action-copy">{PAYROLL_TRIP_SUBMISSION_HELPER}</span>
+            </button>
           </div>
-          <PrimaryActionButton
-            action={{
-              ...model.primaryAction,
-              href: mode === 'showcase' ? captureTo : model.primaryAction.href,
-              capability: mode === 'showcase' ? 'DEMONSTRATION' : model.primaryAction.capability,
-            }}
-            onActivate={() =>
-              openCapture({
-                submissionType: model.primaryAction.submissionType,
-                href: mode === 'showcase' ? captureTo : model.primaryAction.href,
-              })
-            }
-          />
         </section>
 
-        {/* 2. Needs attention — Trip paperwork priority, then payroll, then tasks */}
-        <section className="mc-home-attention" aria-labelledby="home-attention-heading">
+        {/* Future / unavailable — restrained */}
+        <section className="mc-home-future" aria-labelledby="home-assigned-trips-heading">
           <div className="mc-home-section-head">
-            <h2 id="home-attention-heading" className="mc-home-section-title">
-              Needs attention
+            <h2 id="home-assigned-trips-heading" className="mc-home-section-title">
+              Assigned trips
             </h2>
-            {attentionCount > 0 ? (
-              <CapabilityStateBadge state="NEEDS_ATTENTION" count={attentionCount} />
+            {mode === 'production' ? <CapabilityStateBadge state="NOT_CONNECTED" /> : null}
+            {mode === 'showcase' ? (
+              <Link to={tripsTo} className="mc-home-section-link">
+                All trips
+              </Link>
             ) : null}
           </div>
-          <ExceptionBanner exceptions={model.exceptions} onActivateAction={openCapture} />
-
-          <div className="mc-attention-card mc-attention-card--info">
-            <div className="min-w-0">
-              <p className="mc-kicker mb-1">Trip paperwork</p>
+          {mode === 'production' ? (
+            <ElmCard variant="muted" padding="md" as="div">
               <p className="mc-section-copy">
-                Upload BOL or POD through the verified document capture path. Complete only when
-                safely stopped.
+                Assigned trip details will appear here when dispatch integration is available.
               </p>
-            </div>
-            <button
-              type="button"
-              className="mc-exception-action shrink-0"
-              onClick={() =>
-                openCapture({
-                  submissionType: 'BOL_POD',
-                  href: mode === 'showcase' ? captureTo : '/submissions/bol-pod',
-                })
-              }
-            >
-              Open trip paperwork
-            </button>
-          </div>
+            </ElmCard>
+          ) : (
+            <>
+              <ActiveHaulCard haul={model.activeHaul} dataCapability={model.dataCapability} />
+              {model.activeHaul ? (
+                <div className="mc-home-trip-actions">
+                  <Link to={tripsTo} className="mc-secondary-action no-underline">
+                    View trip
+                  </Link>
+                  <button type="button" className="mc-secondary-action" onClick={() => openBolPod()}>
+                    Upload BOL / POD
+                  </button>
+                  <button
+                    type="button"
+                    className="mc-secondary-action"
+                    onClick={() => openPayrollTripSubmission()}
+                  >
+                    {PAYROLL_TRIP_SUBMISSION_LABEL}
+                  </button>
+                </div>
+              ) : null}
+            </>
+          )}
+        </section>
 
-          <div className="mc-attention-card mc-attention-card--info">
-            <div className="min-w-0">
-              <p className="mc-kicker mb-1">Submit trip for payroll</p>
-              <p className="mc-section-copy">
-                Continue to the payroll trip-submission workflow when a trip is ready. Opens in a
-                new tab so this workspace stays open. Status is not synced back here yet.
-              </p>
+        <aside className="mc-home-aside" aria-label="Status and future capabilities">
+          <ElmCard variant="muted" padding="md" as="section" aria-label="Receipt submission">
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <div>
+                <p className="mc-kicker mb-0">Receipts</p>
+                <h2 className="mc-section-title">Receipt submission</h2>
+              </div>
+              <CapabilityStateBadge state="COMING_SOON" />
             </div>
-            <button
-              type="button"
-              className="mc-secondary-action shrink-0"
-              onClick={() => openPayrollTripSubmission()}
-            >
-              {PAYROLL_TRIP_SUBMISSION_LABEL}
-            </button>
-          </div>
+            <p className="mc-section-copy">
+              Receipt submission is being connected and is not available yet.
+            </p>
+          </ElmCard>
+
+          <EarningsCard earnings={model.earnings} />
 
           <OutstandingTasks
             tasks={tasksLive ? model.tasks : []}
-            onActivateTask={tasksLive ? openCapture : undefined}
+            onActivateTask={
+              tasksLive
+                ? (target) =>
+                    activateMissionCapture({
+                      ...target,
+                      driverName: session?.driverName || '',
+                      company: companyForUpload,
+                      clearDraft,
+                      startDraft,
+                      navigate,
+                    })
+                : undefined
+            }
             live={tasksLive}
           />
 
@@ -270,39 +289,6 @@ const TodayPage: React.FC = () => {
               </Link>
             </div>
           ) : null}
-        </section>
-
-        {/* 3. Current trip */}
-        <section className="mc-home-trip" aria-labelledby="home-trip-heading">
-          <div className="mc-home-section-head">
-            <h2 id="home-trip-heading" className="mc-home-section-title">
-              Current trip
-            </h2>
-            <Link to={tripsTo} className="mc-home-section-link">
-              All trips
-            </Link>
-          </div>
-          <ActiveHaulCard haul={model.activeHaul} dataCapability={model.dataCapability} />
-          {model.activeHaul ? (
-            <div className="mc-home-trip-actions">
-              <Link to={tripsTo} className="mc-secondary-action no-underline">
-                Trip details
-              </Link>
-              <Link to={captureTo} className="mc-secondary-action no-underline">
-                Submit paperwork
-              </Link>
-              {mode === 'showcase' ? (
-                <Link to={messagesTo} className="mc-secondary-action no-underline">
-                  Contact dispatch
-                </Link>
-              ) : null}
-            </div>
-          ) : null}
-        </section>
-
-        {/* Supporting column: pay, HOS, vehicle, activity, shortcuts */}
-        <aside className="mc-home-aside" aria-label="Status and shortcuts">
-          <EarningsCard earnings={model.earnings} />
 
           {mode === 'showcase' && (pay?.reimbursementsPendingLabel || pay?.payrollStatusLabel) ? (
             <ElmCard variant="muted" padding="md" as="section" aria-label="Pay status">
@@ -330,25 +316,6 @@ const TodayPage: React.FC = () => {
             </ElmCard>
           ) : null}
 
-          {mode === 'showcase' && safety?.hosDriveRemainingLabel ? (
-            <ElmCard variant="muted" padding="md" as="section" aria-label="Hours of service">
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <p className="mc-kicker mb-0">Hours &amp; compliance</p>
-                <CapabilityStateBadge state="DEMO_ONLY" />
-              </div>
-              <dl className="mc-metric-grid">
-                <div className="mc-metric-tile">
-                  <dt>Drive remaining</dt>
-                  <dd>{safety.hosDriveRemainingLabel}</dd>
-                </div>
-                <div className="mc-metric-tile">
-                  <dt>Shift remaining</dt>
-                  <dd>{safety.hosShiftRemainingLabel}</dd>
-                </div>
-              </dl>
-            </ElmCard>
-          ) : null}
-
           {mode === 'showcase' && truck ? (
             <ElmCard variant="muted" padding="md" as="section" aria-label="Assigned vehicle">
               <p className="mc-kicker mb-2">Assigned truck &amp; trailer</p>
@@ -365,7 +332,6 @@ const TodayPage: React.FC = () => {
             </ElmCard>
           ) : null}
 
-          {/* 4. Recent activity */}
           {mode === 'showcase' && recentActivity.length > 0 ? (
             <section aria-labelledby="home-activity-heading">
               <h2 id="home-activity-heading" className="mc-home-section-title mb-3">
@@ -388,22 +354,18 @@ const TodayPage: React.FC = () => {
             </section>
           ) : null}
 
-          {/* 5. Contextual shortcuts */}
           {mode === 'showcase' ? (
             <nav className="mc-home-shortcuts" aria-label="Shortcuts">
               <p className="mc-home-section-title mb-3">Shortcuts</p>
               <div className="mc-home-shortcut-row">
                 <Link to={captureTo} className="mc-home-shortcut">
-                  Capture
+                  Upload BOL / POD
                 </Link>
                 <Link to={messagesTo} className="mc-home-shortcut">
                   Messages
                 </Link>
                 <Link to={payTo} className="mc-home-shortcut">
                   Pay
-                </Link>
-                <Link to={`${routePrefix}/assistant`} className="mc-home-shortcut">
-                  ELM AI
                 </Link>
               </div>
               <p className="mc-safe-driving-note">
