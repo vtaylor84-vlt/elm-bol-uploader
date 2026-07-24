@@ -126,6 +126,11 @@ test.describe('Showcase experience workflows', () => {
     await expect(
       page.getByRole('heading', { name: /Submit trip for payroll/i })
     ).toBeVisible();
+    const paperwork = page.getByRole('button', { name: /Trip paperwork/i }).first();
+    const payrollHeading = page.getByRole('heading', { name: /Submit trip for payroll/i });
+    const paperBox = await paperwork.boundingBox();
+    const payBox = await payrollHeading.boundingBox();
+    expect(paperBox && payBox && paperBox.y < payBox.y).toBeTruthy();
     const popupPromise = page.waitForEvent('popup');
     await page.getByRole('button', { name: /Open trip submission/i }).click();
     const popup = await popupPromise;
@@ -134,5 +139,17 @@ test.describe('Showcase experience workflows', () => {
       .poll(() => popup.url(), { timeout: 15_000 })
       .toMatch(/payroll\.elmconnect\.net|docs\.google\.com\/forms|accounts\.google\.com/);
     await popup.close();
+  });
+
+  test('login uses one ELM mark and non-overlapping email icon', async ({ page }) => {
+    await page.goto('/login');
+    await expect(page.getByRole('img', { name: 'ELM CONNECT' }).first()).toBeVisible();
+    const wide = (page.viewportSize()?.width || 0) >= 1024;
+    const input = page.locator(wide ? '#driver-email-desktop' : '#driver-email-mobile');
+    const icon = input.locator('xpath=preceding-sibling::*[contains(@class,"login-input-icon")][1]');
+    await input.fill('verylong.driver.email.address+test@greenleafxpress.example.com');
+    const padLeft = await input.evaluate((el) => getComputedStyle(el).paddingLeft);
+    expect(parseFloat(padLeft)).toBeGreaterThanOrEqual(40);
+    await expect(icon).toBeVisible();
   });
 });

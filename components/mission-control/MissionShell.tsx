@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.tsx';
 import ElmBrandLogo from '../terminal/ElmBrandLogo.tsx';
+import BrandMark from '../brand/BrandMark.tsx';
 import LogoutConfirmDialog from '../terminal/LogoutConfirmDialog.tsx';
 import { MISSION_SHELL } from '../terminal/terminalLayout.ts';
 import BottomNav from './BottomNav.tsx';
@@ -11,6 +12,7 @@ import DesktopNavRail from './DesktopNavRail.tsx';
 import { ShellIcons } from './ShellIcons.tsx';
 import { useDriverExperienceOptional } from '../../context/DriverExperienceContext.tsx';
 import { useShowcaseOptional } from '../../context/ShowcaseContext.tsx';
+import { useCarrierTheme } from '../../context/CarrierThemeContext.tsx';
 import { getCompanyDisplayName } from '../../utils/companyMap.ts';
 
 interface MissionShellProps {
@@ -36,6 +38,7 @@ const MissionShell: React.FC<MissionShellProps> = ({
   const [showLogout, setShowLogout] = useState(false);
   const experience = useDriverExperienceOptional();
   const showcase = useShowcaseOptional();
+  const { theme: brandTheme, label: brandLabel } = useCarrierTheme();
   const routePrefix = experience?.routePrefix || '';
   const homePath = routePrefix ? `${routePrefix}/home` : '/home';
   const company = getCompanyDisplayName(session?.companyCode);
@@ -50,6 +53,11 @@ const MissionShell: React.FC<MissionShellProps> = ({
     experience?.mode === 'showcase'
       ? (experience.dataSource.getNotifications?.().filter((n) => n.unread).length ?? 0)
       : 0;
+  /** Production chrome: carrier logo only when exactly one authoritative carrier. Showcase keeps ELM. */
+  const headerBrandTheme =
+    experience?.mode === 'showcase' ? 'elm' : brandTheme;
+  const headerBrandLabel =
+    experience?.mode === 'showcase' ? 'ELM CONNECT' : brandLabel;
 
   const handleLogout = () => {
     showcase?.exitShowcase();
@@ -72,9 +80,13 @@ const MissionShell: React.FC<MissionShellProps> = ({
                 type="button"
                 onClick={goHome}
                 className="mc-shell-brand-btn"
-                aria-label="ELM CONNECT home"
+                aria-label={`${headerBrandLabel} home`}
               >
-                <ElmBrandLogo size="sm" subtitle={false} />
+                {headerBrandTheme === 'elm' ? (
+                  <ElmBrandLogo size="sm" subtitle={false} />
+                ) : (
+                  <BrandMark theme={headerBrandTheme} size="sm" />
+                )}
               </button>
               <div className="mc-shell-header-meta min-w-0">
                 <p className="mc-shell-header-title">{title}</p>

@@ -1,5 +1,6 @@
 import React from 'react';
 import ElmCard from '../../design-system/components/ElmCard.tsx';
+import CapabilityStateBadge from './CapabilityStateBadge.tsx';
 import type { OutstandingTask } from '../../types/missionControl.ts';
 import type { SubmissionType } from '../../types/submission.ts';
 
@@ -21,14 +22,37 @@ interface OutstandingTasksProps {
     submissionType: SubmissionType;
     href: string;
   }) => void;
+  /**
+   * When false, Production has no live task feed — show honest unavailable state
+   * instead of an empty “No open tasks” that implies a live system.
+   */
+  live?: boolean;
 }
 
-const OutstandingTasks: React.FC<OutstandingTasksProps> = ({ tasks, onActivateTask }) => (
-  <ElmCard variant="default" padding="md" as="section" className="mc-section" aria-label="Open tasks">
-    <p className="mc-kicker mb-2">Outstanding tasks</p>
+const OutstandingTasks: React.FC<OutstandingTasksProps> = ({
+  tasks,
+  onActivateTask,
+  live = true,
+}) => (
+  <ElmCard
+    variant="default"
+    padding="md"
+    as="section"
+    className="mc-section"
+    aria-label="Outstanding tasks"
+  >
+    <div className="flex items-start justify-between gap-3 mb-2">
+      <p className="mc-kicker mb-0">Outstanding tasks</p>
+      {!live ? <CapabilityStateBadge state="NOT_CONNECTED" /> : null}
+    </div>
     <h2 className="mc-section-title mb-4">Open tasks</h2>
 
-    {tasks.length === 0 ? (
+    {!live ? (
+      <p className="mc-section-copy">
+        Not available yet. A live task list is not connected for Production drivers. Working actions
+        are Trip paperwork and Submit trip for payroll above.
+      </p>
+    ) : tasks.length === 0 ? (
       <p className="mc-section-copy">No open tasks.</p>
     ) : (
       <ul className="mc-task-list">

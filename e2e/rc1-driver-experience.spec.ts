@@ -13,7 +13,10 @@ test.describe('RC1 authenticated shells', () => {
       await gotoAuthed(page, '/home', driverSession(carrier));
       await expect(page.getByRole('heading', { name: 'Your work' })).toBeVisible();
       await expect(
-        page.getByText(carrier === 'GLX' ? 'Greenleaf Xpress' : 'BST Expedite Inc').first()
+        page
+          .locator('.mc-shell-header-context, .mc-section-copy')
+          .filter({ hasText: carrier === 'GLX' ? 'Greenleaf Xpress' : 'BST Expedite Inc' })
+          .first()
       ).toBeVisible();
       await expect(page.getByRole('heading', { name: 'No current trip available' })).toBeVisible();
       await expect(page.getByText('48291')).toHaveCount(0);
@@ -74,10 +77,50 @@ test.describe('RC1 production routes', () => {
     await expect(page.getByText(/Admin Upload Mode/i)).toHaveCount(0);
   });
 
-  test('expense workflow navigates without submission', async ({ page }) => {
+  test('expense workflow is Coming soon in Production', async ({ page }) => {
     await gotoAuthed(page, '/capture', driverSession('BST'));
     await page.getByRole('button', { name: /Receipt|Add receipt/i }).first().click();
-    await expect(page).toHaveURL(/\/submissions\/receipt/);
+    await expect(page).not.toHaveURL(/\/submissions\/receipt/);
+    await expect(
+      page.getByText(/Receipt submission is being connected and is not available yet/i).first()
+    ).toBeVisible();
+  });
+
+  test('receipt deep link stays unavailable', async ({ page }) => {
+    await gotoAuthed(page, '/submissions/receipt', driverSession('GLX'));
+    await expect(
+      page.getByRole('heading', { name: 'Receipt', exact: true })
+    ).toBeVisible();
+    await expect(page.getByText(/Coming soon/i).first()).toBeVisible();
+    await expect(
+      page.getByText(/Receipt submission is being connected and is not available yet/i).first()
+    ).toBeVisible();
+  });
+
+  test('Home shows honest earnings and tasks plus last login', async ({ page }) => {
+    await gotoAuthed(page, '/home', driverSession('BST'));
+    await expect(page.getByText('Not available yet').first()).toBeVisible();
+    await expect(page.getByText(/LAST LOGIN|Last login/i).first()).toBeVisible();
+    await expect(page.getByText(/Trip paperwork/i).first()).toBeVisible();
+    const paperwork = page.getByText('Trip paperwork').first();
+    const payroll = page.getByText('Submit trip for payroll').first();
+    await expect(paperwork).toBeVisible();
+    await expect(payroll).toBeVisible();
+    const paperBox = await paperwork.boundingBox();
+    const payBox = await payroll.boundingBox();
+    expect(paperBox && payBox && paperBox.y < payBox.y).toBeTruthy();
+  });
+
+  test('GLX carrier theme attribute is applied', async ({ page }) => {
+    await gotoAuthed(page, '/home', driverSession('GLX'));
+    await expect(page.locator('html')).toHaveAttribute('data-carrier-theme', 'glx');
+    await expect(page.getByRole('img', { name: /Greenleaf Xpress/i }).first()).toBeVisible();
+  });
+
+  test('BST carrier theme attribute is applied', async ({ page }) => {
+    await gotoAuthed(page, '/home', driverSession('BST'));
+    await expect(page.locator('html')).toHaveAttribute('data-carrier-theme', 'bst');
+    await expect(page.getByRole('img', { name: /BST Expedite/i }).first()).toBeVisible();
   });
 
   test('admin mode shows driver selection chrome on BOL/POD', async ({ page }) => {

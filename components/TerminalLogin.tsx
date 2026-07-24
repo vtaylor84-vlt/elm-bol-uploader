@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { verifyDriverEmail } from '../services/driverLoginService.ts';
 import type { DriverSessionProfile } from '../utils/driverSession.ts';
 import LoginBrandHero from './terminal/LoginBrandHero.tsx';
+import BrandMark from './brand/BrandMark.tsx';
 import LoginFooter from './terminal/LoginFooter.tsx';
 import StatusBadge from '../design-system/components/StatusBadge.tsx';
 import GlassCard from '../design-system/components/GlassCard.tsx';
@@ -103,7 +104,7 @@ const TerminalLogin: React.FC<TerminalLoginProps> = ({ onLogin }) => {
     }
   };
 
-  const loginForm = (
+  const renderLoginForm = (fieldId: string) => (
     <GlassCard glowColor="cyan" padding="lg" className="w-full login-card-enter">
       <div className="text-center space-y-1.5 mb-6">
         <h1 className="text-lg sm:text-xl font-bold text-white tracking-tight normal-case">
@@ -116,15 +117,15 @@ const TerminalLogin: React.FC<TerminalLoginProps> = ({ onLogin }) => {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="driver-email" className="login-field-label">
+          <label htmlFor={fieldId} className="login-field-label">
             Driver email
           </label>
-          <div className="relative">
-            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
+          <div className="login-input-wrap">
+            <span className="login-input-icon" aria-hidden>
               <MailIcon />
             </span>
             <input
-              id="driver-email"
+              id={fieldId}
               type="email"
               inputMode="email"
               autoComplete="email"
@@ -133,8 +134,8 @@ const TerminalLogin: React.FC<TerminalLoginProps> = ({ onLogin }) => {
               onChange={(ev) => setEmail(ev.target.value)}
               disabled={isSubmitting}
               aria-invalid={Boolean(error)}
-              aria-describedby={error ? 'login-error' : undefined}
-              className="login-input w-full pl-10 min-h-[52px]"
+              aria-describedby={error ? `${fieldId}-error` : undefined}
+              className="login-input w-full min-h-[52px]"
             />
           </div>
         </div>
@@ -172,7 +173,11 @@ const TerminalLogin: React.FC<TerminalLoginProps> = ({ onLogin }) => {
         />
 
         {error ? (
-          <p id="login-error" className="text-center text-[11px] text-red-400 normal-case" role="alert">
+          <p
+            id={`${fieldId}-error`}
+            className="text-center text-[11px] text-red-400 normal-case"
+            role="alert"
+          >
             {error}
           </p>
         ) : null}
@@ -190,14 +195,9 @@ const TerminalLogin: React.FC<TerminalLoginProps> = ({ onLogin }) => {
       <div className="login-page-gradient" aria-hidden />
 
       <div className="hidden lg:flex flex-col min-h-screen relative z-10">
-        <header className="max-w-7xl w-full mx-auto px-8 pt-6 flex items-center justify-between">
-          <div>
-            <p className="text-xl font-extrabold tracking-wider">
-              ELM<span className="text-cyan-400 font-semibold">CONNECT</span>
-            </p>
-            <p className="text-[10px] text-cyan-300/70 font-mono tracking-widest uppercase mt-1">
-              Elite Logistics Manager
-            </p>
+        <header className="max-w-7xl w-full mx-auto px-8 pt-6 flex items-center justify-between gap-4">
+          <div className="login-desktop-brand">
+            <BrandMark theme="elm" size="md" />
           </div>
           <StatusBadge
             label={`TERMINAL ONLINE ${ELM_VERSION}`}
@@ -218,8 +218,8 @@ const TerminalLogin: React.FC<TerminalLoginProps> = ({ onLogin }) => {
               </span>
             </h2>
             <p className="text-zinc-400 text-sm leading-relaxed max-w-lg normal-case">
-              Sign in with your approved email to open the Driver Workspace. Submit trip paperwork,
-              receipts, and continue to payroll trip submission when a trip is ready.
+              Sign in with your approved email to open the Driver Workspace. Submit trip paperwork
+              and continue to payroll trip submission when a trip is ready.
             </p>
             <div className="grid grid-cols-2 gap-3 max-w-md pt-1">
               <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 flex items-center gap-3">
@@ -235,11 +235,8 @@ const TerminalLogin: React.FC<TerminalLoginProps> = ({ onLogin }) => {
                 <span className="text-xs font-medium text-zinc-200 normal-case">Verified document upload</span>
               </div>
             </div>
-            <div className="pt-4 max-w-sm">
-              <LoginBrandHero />
-            </div>
           </div>
-          <div className="col-span-6 max-w-md w-full mx-auto">{loginForm}</div>
+          <div className="col-span-6 max-w-md w-full mx-auto">{renderLoginForm('driver-email-desktop')}</div>
         </main>
 
         <footer className="p-4 text-center text-[11px] text-zinc-600 font-mono z-20">
@@ -256,7 +253,7 @@ const TerminalLogin: React.FC<TerminalLoginProps> = ({ onLogin }) => {
           />
         </div>
         <LoginBrandHero />
-        <div className="w-full mt-5">{loginForm}</div>
+        <div className="w-full mt-5">{renderLoginForm('driver-email-mobile')}</div>
         <LoginFooter />
       </div>
     </div>

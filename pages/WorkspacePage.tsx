@@ -85,9 +85,10 @@ const WorkspacePage: React.FC = () => {
         description: 'Fuel, tolls, lumper, and repair receipts',
         taskLabel: 'Add receipt',
         icon: <ReceiptPercentIcon className="mc-capture-choice-icon" aria-hidden />,
-        productionHref: '/submissions/receipt',
+        // Preserve route code for later; Production storage destination is not verified.
+        productionHref: undefined,
         showcaseAction: 'receipt',
-        state: demo ? 'DEMO_ONLY' : 'AVAILABLE',
+        state: demo ? 'DEMO_ONLY' : 'COMING_SOON',
       },
       {
         id: 'freight_photos',
@@ -132,7 +133,11 @@ const WorkspacePage: React.FC = () => {
 
   const runChoice = async (choice: CaptureChoice) => {
     if (choice.state === 'COMING_SOON') {
-      setSimMessage('Coming soon — this capture type is not available yet.');
+      if (choice.id === 'receipt') {
+        setSimMessage('Receipt submission is being connected and is not available yet.');
+      } else {
+        setSimMessage('Coming soon — this capture type is not available yet.');
+      }
       return;
     }
 
@@ -159,7 +164,7 @@ const WorkspacePage: React.FC = () => {
 
     clearDraft();
     startDraft({
-      submissionType: choice.productionHref.includes('receipt') ? 'EXPENSE_RECEIPT' : 'BOL_POD',
+      submissionType: 'BOL_POD',
       driverName: session?.driverName || '',
       company,
     });
@@ -186,30 +191,6 @@ const WorkspacePage: React.FC = () => {
             {haul.appointmentLabel ? ` · ${haul.appointmentLabel}` : ''}
           </p>
         ) : null}
-
-        <section className="mc-payroll-submit-card" aria-labelledby="payroll-submit-heading">
-          <div className="mc-payroll-submit-card-main">
-            <span className="mc-capture-choice-glyph" aria-hidden>
-              <BanknotesIcon className="mc-capture-choice-icon" />
-            </span>
-            <div className="min-w-0">
-              <h2 id="payroll-submit-heading" className="mc-capture-choice-title">
-                {PAYROLL_TRIP_SUBMISSION_LABEL}
-              </h2>
-              <p className="mc-capture-choice-desc">
-                Continue to the payroll trip-submission workflow for completed trips. Your Driver
-                Workspace session stays open. Submission status is not synced back here yet.
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            className="mc-exception-action"
-            onClick={() => openPayrollTripSubmission()}
-          >
-            Open trip submission
-          </button>
-        </section>
 
         {simMessage ? (
           <p className="mc-sim-status" role="status">
@@ -246,44 +227,113 @@ const WorkspacePage: React.FC = () => {
         ) : null}
 
         <ul className="mc-capture-choices">
-          {ordered.map((choice) => {
-            const unavailable = choice.state === 'COMING_SOON';
-            return (
-              <li key={choice.id}>
-                <button
-                  type="button"
-                  className={`mc-capture-choice${unavailable ? ' is-unavailable' : ''}${
-                    preselected === choice.id ? ' is-preselected' : ''
-                  }`}
-                  onClick={() => runChoice(choice)}
-                  aria-label={`${choice.title}: ${choice.taskLabel}. ${choice.description}`}
-                >
-                  <span className="mc-capture-choice-glyph" aria-hidden>
-                    {choice.icon}
-                  </span>
-                  <span className="mc-capture-choice-body">
-                    <span className="mc-capture-choice-title-row">
-                      <span className="mc-capture-choice-title">{choice.title}</span>
-                      <CapabilityStateBadge
-                        state={
-                          choice.state === 'COMING_SOON'
-                            ? 'COMING_SOON'
-                            : choice.state === 'DEMO_ONLY'
-                              ? 'DEMO_ONLY'
-                              : 'AVAILABLE'
-                        }
-                      />
+          {ordered
+            .filter((c) => c.id === 'trip_paperwork')
+            .map((choice) => {
+              const unavailable = choice.state === 'COMING_SOON';
+              return (
+                <li key={choice.id}>
+                  <button
+                    type="button"
+                    className={`mc-capture-choice${unavailable ? ' is-unavailable' : ''}${
+                      preselected === choice.id ? ' is-preselected' : ''
+                    }`}
+                    onClick={() => runChoice(choice)}
+                    aria-label={`${choice.title}: ${choice.taskLabel}. ${choice.description}`}
+                  >
+                    <span className="mc-capture-choice-glyph" aria-hidden>
+                      {choice.icon}
                     </span>
-                    <span className="mc-capture-choice-task">{choice.taskLabel}</span>
-                    <span className="mc-capture-choice-desc">{choice.description}</span>
-                  </span>
-                  <span className="mc-capture-choice-cam" aria-hidden>
-                    <CameraIcon className="mc-capture-choice-icon" />
-                  </span>
-                </button>
-              </li>
-            );
-          })}
+                    <span className="mc-capture-choice-body">
+                      <span className="mc-capture-choice-title-row">
+                        <span className="mc-capture-choice-title">{choice.title}</span>
+                        <CapabilityStateBadge
+                          state={
+                            choice.state === 'COMING_SOON'
+                              ? 'COMING_SOON'
+                              : choice.state === 'DEMO_ONLY'
+                                ? 'DEMO_ONLY'
+                                : 'AVAILABLE'
+                          }
+                        />
+                      </span>
+                      <span className="mc-capture-choice-task">{choice.taskLabel}</span>
+                      <span className="mc-capture-choice-desc">{choice.description}</span>
+                    </span>
+                    <span className="mc-capture-choice-cam" aria-hidden>
+                      <CameraIcon className="mc-capture-choice-icon" />
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+        </ul>
+
+        <section className="mc-payroll-submit-card" aria-labelledby="payroll-submit-heading">
+          <div className="mc-payroll-submit-card-main">
+            <span className="mc-capture-choice-glyph" aria-hidden>
+              <BanknotesIcon className="mc-capture-choice-icon" />
+            </span>
+            <div className="min-w-0">
+              <h2 id="payroll-submit-heading" className="mc-capture-choice-title">
+                {PAYROLL_TRIP_SUBMISSION_LABEL}
+              </h2>
+              <p className="mc-capture-choice-desc">
+                Continue to the payroll trip-submission workflow for completed trips. Your Driver
+                Workspace session stays open. Submission status is not synced back here yet.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="mc-exception-action"
+            onClick={() => openPayrollTripSubmission()}
+          >
+            Open trip submission
+          </button>
+        </section>
+
+        <ul className="mc-capture-choices">
+          {ordered
+            .filter((c) => c.id !== 'trip_paperwork')
+            .map((choice) => {
+              const unavailable = choice.state === 'COMING_SOON';
+              return (
+                <li key={choice.id}>
+                  <button
+                    type="button"
+                    className={`mc-capture-choice${unavailable ? ' is-unavailable' : ''}${
+                      preselected === choice.id ? ' is-preselected' : ''
+                    }`}
+                    onClick={() => runChoice(choice)}
+                    aria-label={`${choice.title}: ${choice.taskLabel}. ${choice.description}`}
+                  >
+                    <span className="mc-capture-choice-glyph" aria-hidden>
+                      {choice.icon}
+                    </span>
+                    <span className="mc-capture-choice-body">
+                      <span className="mc-capture-choice-title-row">
+                        <span className="mc-capture-choice-title">{choice.title}</span>
+                        <CapabilityStateBadge
+                          state={
+                            choice.state === 'COMING_SOON'
+                              ? 'COMING_SOON'
+                              : choice.state === 'DEMO_ONLY'
+                                ? 'DEMO_ONLY'
+                                : 'AVAILABLE'
+                          }
+                        />
+                      </span>
+                      <span className="mc-capture-choice-task">{choice.taskLabel}</span>
+                      <span className="mc-capture-choice-desc">{choice.description}</span>
+                    </span>
+                    <span className="mc-capture-choice-cam" aria-hidden>
+                      <CameraIcon className="mc-capture-choice-icon" />
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
         </ul>
 
         <p className="mc-safe-driving-note">

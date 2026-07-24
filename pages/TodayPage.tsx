@@ -20,6 +20,7 @@ import {
   openPayrollTripSubmission,
   PAYROLL_TRIP_SUBMISSION_LABEL,
 } from '../utils/payrollTripSubmission.ts';
+import { formatLastLogin } from '../utils/lastLogin.ts';
 
 function greetingForNow(): string {
   const hour = new Date().getHours();
@@ -33,7 +34,7 @@ function greetingForNow(): string {
  * 1) Next step  2) Needs attention  3) Current trip  4) Recent activity  5) Shortcuts
  */
 const TodayPage: React.FC = () => {
-  const { session } = useAuth();
+  const { session, previousLoginAt, hasRecordedLogin } = useAuth();
   const { clearDraft, startDraft } = useSubmissionDraft();
   const navigate = useNavigate();
   const { mode, routePrefix, dataSource, actions } = useDriverExperience();
@@ -41,6 +42,12 @@ const TodayPage: React.FC = () => {
 
   const model = useMemo(() => dataSource.getMissionControl(), [dataSource]);
   const companyForUpload = getCompanyDisplayName(session?.companyCode);
+  const tasksLive = mode === 'showcase';
+  const lastLoginLabel = previousLoginAt
+    ? formatLastLogin(previousLoginAt)
+    : hasRecordedLogin
+      ? 'First recorded login'
+      : 'Not available yet';
 
   const openCapture = useCallback(
     async (target: MissionCaptureTarget) => {
@@ -116,6 +123,12 @@ const TodayPage: React.FC = () => {
               </>
             )}
           </p>
+          {mode === 'production' ? (
+            <p className="mc-last-login" aria-label={`Last login ${lastLoginLabel}`}>
+              <span className="mc-last-login-kicker">Last login</span>
+              <span className="mc-last-login-value">{lastLoginLabel}</span>
+            </p>
+          ) : null}
         </header>
 
         {simMessage ? (
@@ -167,7 +180,7 @@ const TodayPage: React.FC = () => {
           />
         </section>
 
-        {/* 2. Needs attention */}
+        {/* 2. Needs attention — Trip paperwork priority, then payroll, then tasks */}
         <section className="mc-home-attention" aria-labelledby="home-attention-heading">
           <div className="mc-home-section-head">
             <h2 id="home-attention-heading" className="mc-home-section-title">
@@ -178,44 +191,51 @@ const TodayPage: React.FC = () => {
             ) : null}
           </div>
           <ExceptionBanner exceptions={model.exceptions} onActivateAction={openCapture} />
-          <OutstandingTasks tasks={model.tasks} onActivateTask={openCapture} />
 
-          {(model.activeHaul?.missingDocuments?.length ||
-            model.exceptions.some((e) => (e.title || '').toLowerCase().includes('paper'))) ? (
-            <div className="mc-attention-card mc-attention-card--info">
-              <div className="min-w-0">
-                <p className="mc-kicker mb-1">Trip submission</p>
-                <p className="mc-section-copy">
-                  When paperwork is ready, continue to the payroll trip-submission workflow. Status
-                  is not synced back to this screen yet.
-                </p>
-              </div>
-              <button
-                type="button"
-                className="mc-exception-action shrink-0"
-                onClick={() => openPayrollTripSubmission()}
-              >
-                {PAYROLL_TRIP_SUBMISSION_LABEL}
-              </button>
+          <div className="mc-attention-card mc-attention-card--info">
+            <div className="min-w-0">
+              <p className="mc-kicker mb-1">Trip paperwork</p>
+              <p className="mc-section-copy">
+                Upload BOL or POD through the verified document capture path. Complete only when
+                safely stopped.
+              </p>
             </div>
-          ) : (
-            <div className="mc-attention-card mc-attention-card--info">
-              <div className="min-w-0">
-                <p className="mc-kicker mb-1">Trip submission</p>
-                <p className="mc-section-copy">
-                  Submit a completed trip for payroll when you are ready. Opens in a new tab so this
-                  workspace stays open.
-                </p>
-              </div>
-              <button
-                type="button"
-                className="mc-secondary-action shrink-0"
-                onClick={() => openPayrollTripSubmission()}
-              >
-                {PAYROLL_TRIP_SUBMISSION_LABEL}
-              </button>
+            <button
+              type="button"
+              className="mc-exception-action shrink-0"
+              onClick={() =>
+                openCapture({
+                  submissionType: 'BOL_POD',
+                  href: mode === 'showcase' ? captureTo : '/submissions/bol-pod',
+                })
+              }
+            >
+              Open trip paperwork
+            </button>
+          </div>
+
+          <div className="mc-attention-card mc-attention-card--info">
+            <div className="min-w-0">
+              <p className="mc-kicker mb-1">Submit trip for payroll</p>
+              <p className="mc-section-copy">
+                Continue to the payroll trip-submission workflow when a trip is ready. Opens in a
+                new tab so this workspace stays open. Status is not synced back here yet.
+              </p>
             </div>
-          )}
+            <button
+              type="button"
+              className="mc-secondary-action shrink-0"
+              onClick={() => openPayrollTripSubmission()}
+            >
+              {PAYROLL_TRIP_SUBMISSION_LABEL}
+            </button>
+          </div>
+
+          <OutstandingTasks
+            tasks={tasksLive ? model.tasks : []}
+            onActivateTask={tasksLive ? openCapture : undefined}
+            live={tasksLive}
+          />
 
           {mode === 'showcase' && ackMessage ? (
             <div className="mc-attention-card mc-attention-card--critical">

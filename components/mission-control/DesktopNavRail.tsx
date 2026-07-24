@@ -7,7 +7,10 @@ import {
   type BottomNavId,
 } from './shellNav.tsx';
 import { useDriverExperienceOptional } from '../../context/DriverExperienceContext.tsx';
+import { useCarrierTheme } from '../../context/CarrierThemeContext.tsx';
 import { ShellIcons } from './ShellIcons.tsx';
+import BrandMark from '../brand/BrandMark.tsx';
+import ElmBrandLogo from '../terminal/ElmBrandLogo.tsx';
 
 interface DesktopNavRailProps {
   active: PrimaryNavId | BottomNavId;
@@ -27,13 +30,19 @@ const DesktopNavRail: React.FC<DesktopNavRailProps> = ({
   const { pathname } = useLocation();
   const prefix = routePrefix || '';
   const experience = useDriverExperienceOptional();
+  const { theme: brandTheme } = useCarrierTheme();
   const mode = experience?.mode || 'production';
   const items = desktopNavItems(mode);
+  const railTheme = mode === 'showcase' ? 'elm' : brandTheme;
 
   return (
     <aside className="mc-desktop-rail" aria-label="Application">
       <div className="mc-desktop-rail-brand">
-        <p className="mc-desktop-rail-kicker">ELM CONNECT</p>
+        {railTheme === 'elm' ? (
+          <ElmBrandLogo size="sm" subtitle={false} />
+        ) : (
+          <BrandMark theme={railTheme} size="sm" />
+        )}
         <p className="mc-desktop-rail-sub">Driver Workspace</p>
       </div>
 

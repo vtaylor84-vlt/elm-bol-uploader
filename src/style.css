@@ -431,16 +431,42 @@ body.elm-login-page #root {
   margin-bottom: 0.5rem;
 }
 
+.login-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.login-input-icon {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 1;
+}
+
 .login-input {
-  min-height: 48px;
-  padding: 0.75rem 1rem;
+  min-height: 52px;
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 3rem;
   border-radius: 10px;
   background: rgba(4, 8, 16, 0.9);
   border: 1px solid rgba(63, 63, 70, 0.65);
   font-size: 15px;
+  line-height: 1.35;
   color: #f4f4f5;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
+  text-overflow: ellipsis;
+}
+
+.login-input:hover:not(:disabled) {
+  border-color: rgba(82, 82, 91, 0.9);
 }
 
 .login-input:focus {
@@ -448,10 +474,90 @@ body.elm-login-page #root {
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12);
 }
 
+.login-input[aria-invalid='true'] {
+  border-color: rgba(244, 63, 94, 0.55);
+  box-shadow: 0 0 0 2px rgba(244, 63, 94, 0.12);
+}
+
+.login-input:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
 .login-input::placeholder {
   color: #52525b;
   text-transform: none;
   font-weight: 400;
+}
+
+.login-desktop-brand {
+  max-width: 220px;
+}
+
+.brand-mark {
+  display: block;
+  height: auto;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+  object-position: left center;
+}
+
+.brand-mark--sm {
+  height: 36px;
+  max-width: 140px;
+}
+
+.brand-mark--md {
+  height: 52px;
+  max-width: 200px;
+}
+
+.brand-mark--lg {
+  height: 72px;
+  max-width: 260px;
+}
+
+.brand-mark--hero,
+.login-brand-mark {
+  height: auto;
+  width: min(100%, 280px);
+  max-height: 120px;
+  margin-inline: auto;
+  object-position: center;
+}
+
+.elm-brand-logo {
+  display: inline-flex;
+  align-items: center;
+  line-height: 0;
+}
+
+.elm-brand-logo--center {
+  justify-content: center;
+  width: 100%;
+}
+
+.mc-last-login {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 0.75rem;
+}
+
+.mc-last-login-kicker {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #71717a;
+}
+
+.mc-last-login-value {
+  font-size: 0.85rem;
+  color: #d4d4d8;
+  font-variant-numeric: tabular-nums;
 }
 
 .login-reference-card {
@@ -1027,7 +1133,7 @@ body.elm-login-page #root {
 }
 
 .mc-exception-action:focus-visible {
-  outline: 2px solid #93c5fd;
+  outline: 2px solid var(--carrier-focus);
   outline-offset: 2px;
 }
 
@@ -1115,7 +1221,7 @@ body.elm-login-page #root {
 }
 
 .mc-primary-action .elm-btn-primary {
-  box-shadow: 0 6px 28px rgba(37, 99, 235, 0.55);
+  box-shadow: 0 6px 28px var(--carrier-accent-glow);
 }
 
 .mc-primary-helper {
@@ -1254,14 +1360,14 @@ body.elm-login-page #root {
 }
 
 .mc-bottom-nav-item.is-active {
-  color: #93c5fd;
-  background: rgba(59, 130, 246, 0.12);
+  color: var(--carrier-accent);
+  background: var(--carrier-accent-muted);
 }
 
 .mc-bottom-nav-item--capture.is-active {
-  color: #bfdbfe;
-  background: rgba(59, 130, 246, 0.18);
-  box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.25);
+  color: var(--carrier-accent);
+  background: var(--carrier-nav-active-bg);
+  box-shadow: inset 0 0 0 1px var(--carrier-accent-border);
 }
 
 .mc-bottom-nav-label {
@@ -1345,6 +1451,48 @@ body.elm-login-page #root {
   --elm-emerald-success: #10b981;
   --elm-amber-warning: #f59e0b;
   --elm-rose-critical: #f43f5e;
+  /* Carrier theme accents (default = ELM / BST blue-cyan) */
+  --carrier-accent: #22d3ee;
+  --carrier-accent-strong: #2563eb;
+  --carrier-accent-muted: rgba(34, 211, 238, 0.12);
+  --carrier-accent-glow: rgba(6, 182, 212, 0.35);
+  --carrier-accent-border: rgba(59, 130, 246, 0.28);
+  --carrier-nav-active-bg: rgba(37, 99, 235, 0.16);
+  --carrier-nav-active-bg-strong: rgba(37, 99, 235, 0.22);
+  --carrier-focus: #67e8f9;
+}
+
+html[data-carrier-theme='bst'] {
+  --carrier-accent: #22d3ee;
+  --carrier-accent-strong: #2563eb;
+  --carrier-accent-muted: rgba(34, 211, 238, 0.12);
+  --carrier-accent-glow: rgba(6, 182, 212, 0.35);
+  --carrier-accent-border: rgba(59, 130, 246, 0.28);
+  --carrier-nav-active-bg: rgba(37, 99, 235, 0.16);
+  --carrier-nav-active-bg-strong: rgba(37, 99, 235, 0.22);
+  --carrier-focus: #67e8f9;
+}
+
+html[data-carrier-theme='glx'] {
+  --carrier-accent: #4ade80;
+  --carrier-accent-strong: #16a34a;
+  --carrier-accent-muted: rgba(74, 222, 128, 0.12);
+  --carrier-accent-glow: rgba(22, 163, 74, 0.35);
+  --carrier-accent-border: rgba(74, 222, 128, 0.3);
+  --carrier-nav-active-bg: rgba(22, 163, 74, 0.16);
+  --carrier-nav-active-bg-strong: rgba(22, 163, 74, 0.24);
+  --carrier-focus: #86efac;
+}
+
+html[data-carrier-theme='elm'] {
+  --carrier-accent: #22d3ee;
+  --carrier-accent-strong: #2563eb;
+  --carrier-accent-muted: rgba(34, 211, 238, 0.12);
+  --carrier-accent-glow: rgba(6, 182, 212, 0.35);
+  --carrier-accent-border: rgba(59, 130, 246, 0.28);
+  --carrier-nav-active-bg: rgba(37, 99, 235, 0.16);
+  --carrier-nav-active-bg-strong: rgba(37, 99, 235, 0.22);
+  --carrier-focus: #67e8f9;
 }
 
 .elm-glass-card {
@@ -1916,17 +2064,17 @@ body.elm-login-page #root {
   }
 
   .mc-desktop-rail-item.is-active {
-    color: #e0f2fe;
-    background: rgba(37, 99, 235, 0.16);
-    border-color: rgba(59, 130, 246, 0.28);
+    color: #ecfdf5;
+    background: var(--carrier-nav-active-bg);
+    border-color: var(--carrier-accent-border);
   }
 
   .mc-desktop-rail-item--capture.is-active {
-    background: rgba(37, 99, 235, 0.22);
+    background: var(--carrier-nav-active-bg-strong);
   }
 
   .mc-desktop-rail-item:focus-visible {
-    outline: 2px solid #67e8f9;
+    outline: 2px solid var(--carrier-focus);
     outline-offset: 2px;
   }
 
@@ -3096,8 +3244,27 @@ body.elm-login-page #root {
 }
 
 .mc-attention-card--info {
-  border-color: rgba(56, 189, 248, 0.3);
-  background: rgba(56, 189, 248, 0.07);
+  border-color: var(--carrier-accent-border);
+  background: var(--carrier-accent-muted);
+}
+
+html[data-carrier-theme='glx'] .elm-cta--primary,
+html[data-carrier-theme='glx'] .elm-btn-primary,
+html[data-carrier-theme='glx'] .terminal-btn-primary,
+html[data-carrier-theme='glx'] .login-connect-btn {
+  background: linear-gradient(90deg, #22c55e 0%, #16a34a 55%, #15803d 100%) !important;
+  border-color: rgba(74, 222, 128, 0.4) !important;
+  box-shadow: 0 4px 24px rgba(22, 163, 74, 0.4) !important;
+}
+
+html[data-carrier-theme='glx'] .mc-shell-header-title,
+html[data-carrier-theme='glx'] .mc-kicker {
+  color: #bbf7d0;
+}
+
+html[data-carrier-theme='glx'] .mc-payroll-submit-card {
+  border-color: rgba(74, 222, 128, 0.4);
+  background: linear-gradient(160deg, rgba(20, 83, 45, 0.4), rgba(9, 12, 22, 0.92));
 }
 
 

@@ -54,10 +54,11 @@ export function createProductionDriverDataSource(
       },
       {
         id: 'expense',
-        title: 'Expenses & Repairs',
-        description: 'Submit receipts for fuel, tolls, travel, or repairs.',
-        href: '/submissions/receipt',
-        capability: 'LIVE',
+        title: 'Receipt',
+        description:
+          'Receipt submission is being connected and is not available yet. Authoritative storage is not verified.',
+        href: '/capture',
+        capability: 'FUTURE',
       },
     ],
     getMessages: () => [],

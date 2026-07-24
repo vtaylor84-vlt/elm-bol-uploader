@@ -10,7 +10,7 @@
     "preview": "node ./node_modules/vite/bin/vite.js preview",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "biome lint .",
-    "test": "node --experimental-strip-types --test netlify/functions/_shared/allowedOrigins.test.js netlify/functions/_shared/showcaseGrant.test.js tests/rc1-isolation.test.ts tests/auth-cleanup.test.ts tests/showcase-experience.test.ts",
+    "test": "node --experimental-strip-types --test netlify/functions/_shared/allowedOrigins.test.js netlify/functions/_shared/showcaseGrant.test.js tests/rc1-isolation.test.ts tests/auth-cleanup.test.ts tests/showcase-experience.test.ts tests/carrier-brand-last-login.test.ts",
     "test:e2e": "playwright test",
     "audit:a11y": "node ./scripts/audit-a11y.mjs",
     "shots:rc1": "node ./scripts/capture-rc1-screenshots.mjs"

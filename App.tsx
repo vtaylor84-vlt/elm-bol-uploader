@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext.tsx';
+import { CarrierThemeProvider } from './context/CarrierThemeContext.tsx';
 import { ShowcaseProvider } from './context/ShowcaseContext.tsx';
 import { SubmissionDraftProvider } from './context/SubmissionDraftContext.tsx';
 import ProtectedRoute from './components/routing/ProtectedRoute.tsx';
@@ -32,10 +33,11 @@ import AssistantPage from './pages/driver/AssistantPage.tsx';
  */
 const App: React.FC = () => (
   <AuthProvider>
-    <ShowcaseProvider>
-      <SubmissionDraftProvider>
-        <BrowserRouter>
-          <Routes>
+    <CarrierThemeProvider>
+      <ShowcaseProvider>
+        <SubmissionDraftProvider>
+          <BrowserRouter>
+            <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route
               path="/connecting"
@@ -149,7 +151,8 @@ const App: React.FC = () => (
           </Routes>
         </BrowserRouter>
       </SubmissionDraftProvider>
-    </ShowcaseProvider>
+      </ShowcaseProvider>
+    </CarrierThemeProvider>
   </AuthProvider>
 );
 
